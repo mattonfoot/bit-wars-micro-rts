@@ -28,7 +28,8 @@ class Game {
     this.box = null;
     this.paused = false; this.running = false;
     this.lastAlert = null; this.lastAlertTime = -99;
-    this.menu = new Menu(document.getElementById('menu'), document.getElementById('pause'), document.getElementById('gameover'), (s) => this.start(s));
+    this.menu = new Menu(document.getElementById('menu'), document.getElementById('pause'), document.getElementById('gameover'), (s) => { this.clearSave(); this.start(s); }, (save) => this.resume(save));
+    window.addEventListener('pagehide', () => this.save());
     this.hud = new HUD(this);
     this.input = new Input(this.canvas, {
       tap: (x, y, e) => this.onTap(x, y, e), doubleTap: (x, y) => this.onDoubleTap(x, y), longPress: (x, y) => this.onLongPress(x, y),
@@ -72,36 +73,54 @@ class Game {
   start(settings) {
     this.settings = settings;
     const enemyFaction = FACTION_KEYS[Math.floor(Math.random() * 3)];
-    this.map = generateMap({ size: +settings.size || 64, theme: settings.theme, seed: settings.seed });
-    this.world = new World(this.map, [{ faction: settings.faction, name: 'You' }, { faction: enemyFaction, ai: settings.difficulty, name: 'Enemy' }], { seed: settings.seed + ':' + Date.now() });
+    const map = generateMap({ size: +settings.size || 64, theme: settings.theme, seed: settings.seed });
+    const world = new World(map, [{ faction: settings.faction, name: 'You' }, { faction: enemyFaction, ai: settings.difficulty, name: 'Enemy' }], { seed: settings.seed + ':' + Date.now() });
+    this.begin(world, settings);
+    const hq = this.world.byId(this.world.players[0].hqId);
+    this.camera.zoom = window.innerWidth < 700 ? 1.0 : 1.2;
+    this.camera.centerOn(hq.x + 60, hq.y + 60);
+    this.select([hq.id]);
+    this.hud.toast(`${map.name} · vs ${FACTIONS[enemyFaction].name} (${settings.difficulty})`, '');
+    setTimeout(() => this.hud.toast('Capture strategic points to earn Flux. Build an extractor on an ore vein.', 'good'), 2500);
+    if (window.innerHeight > window.innerWidth) setTimeout(() => this.hud.toast('Tip: rotate to landscape for a wider view', ''), 5000);
+  }
+  resume(save) {
+    let world;
+    try { world = World.fromSave(save.world); } catch (e) { console.error('save corrupt', e); this.clearSave(); this.menu.render(); return; }
+    this.begin(world, save.settings);
+    if (save.camera) { this.camera.zoom = save.camera.zoom; this.camera.centerOn(save.camera.x, save.camera.y); }
+    this.hud.toast('Battle resumed', 'good');
+  }
+  begin(world, settings) {
+    this.settings = settings;
+    this.world = world; this.map = world.map;
     this.ai = new AI(this.world, 1, settings.difficulty);
     this.renderer = new Renderer(this.canvas, this.world, this.camera, this.viewer);
     this.minimap = new Minimap(this.hud.minimapCanvas, this.world, this.renderer, this.viewer);
     this.camera.setWorld(this.map.w * TILE, this.map.h * TILE);
-    this.camera.zoom = window.innerWidth < 700 ? 1.0 : 1.2;
-    const hq = this.world.byId(this.world.players[0].hqId);
-    this.camera.centerOn(hq.x + 60, hq.y + 60);
     this.selection.clear(); this.mode = 'normal'; this.buildGhost = null; this.box = null;
     this.hud.setMode(null); this.hud.clearToasts();
     this.menu.hide(); this.hud.show();
-    this.running = true; this.paused = false; this.acc = 0; this.last = performance.now(); this.overShown = false;
-    this.select([hq.id]);
-    const themeName = this.map.name;
-    this.hud.toast(`${themeName} · vs ${FACTIONS[enemyFaction].name} (${settings.difficulty})`, '');
-    setTimeout(() => this.hud.toast('Capture strategic points to earn Flux. Build an extractor on an ore vein.', 'good'), 2500);
-    if (window.innerHeight > window.innerWidth) setTimeout(() => this.hud.toast('Tip: rotate to landscape for a wider view', ''), 5000);
+    this.running = true; this.paused = false; this.acc = 0; this.last = performance.now(); this.overShown = false; this.saveTimer = 0;
     this.audio.play('ui');
     try { localStorage.setItem('bw_last', JSON.stringify(settings)); } catch (e) { /* ignore */ }
   }
-  quit() { this.running = false; this.hud.hide(); this.menu.show(); }
+  save() {
+    if (!this.running || !this.world || this.world.gameOver) return;
+    try {
+      localStorage.setItem('bw_save', JSON.stringify({ settings: this.settings, savedAt: Date.now(), world: this.world.serialize(), camera: { x: this.camera.x, y: this.camera.y, zoom: this.camera.zoom } }));
+    } catch (e) { /* storage full or unavailable */ }
+  }
+  clearSave() { try { localStorage.removeItem('bw_save'); } catch (e) { /* ignore */ } }
+  quit() { this.save(); this.running = false; this.hud.hide(); this.menu.render(); this.menu.show(); }
   openPause() {
     if (!this.running || this.paused) return;
-    this.paused = true;
+    this.paused = true; this.save();
     this.menu.showPause({
       muted: this.audio.muted,
       resume: () => { this.paused = false; this.last = performance.now(); },
       toggleSound: () => this.toggleSound(),
-      restart: () => { this.paused = false; this.start(this.settings); },
+      restart: () => { this.paused = false; this.clearSave(); this.start(this.settings); },
       quit: () => { this.paused = false; this.quit(); },
     });
   }
@@ -125,6 +144,7 @@ class Game {
     }
     this.handleEvents();
     this.keyboardPan(dtReal);
+    if (!this.paused && !this.world.gameOver) { this.saveTimer = (this.saveTimer || 0) + dtReal; if (this.saveTimer > 8) { this.saveTimer = 0; this.save(); } }
     // dirty terrain
     if (this.world.dirtyTiles.length) { for (const i of this.world.dirtyTiles) this.renderer.terrain.redrawTile(i); this.world.dirtyTiles.length = 0; this.minimap.dirty = true; }
     this.renderer.fog.update(this.world.players[this.viewer].vision, Math.floor(this.world.ticks / 6));
@@ -133,7 +153,7 @@ class Game {
     this.minimap.draw(this.camera, dtReal);
     this.hud.update(dtReal);
     if (this.world.gameOver && !this.overShown) {
-      this.overShown = true;
+      this.overShown = true; this.clearSave();
       const won = this.world.winner === this.viewer;
       this.audio.play(won ? 'victory' : 'defeat');
       setTimeout(() => this.menu.showGameOver({ won, time: this.world.time, me: this.world.players[0].stats, enemy: this.world.players[1].stats, handlers: { restart: () => this.start(this.settings), quit: () => this.quit() } }), 1800);
@@ -308,7 +328,7 @@ class Game {
       const hit = this.entityAt(wx, wy, false);
       if (hit) this.world.cmdAttack(sq, hit); else this.world.cmdAttackMove(sq, wx, wy);
       this.audio.play('order');
-      if (navigator.vibrate) navigator.vibrate(15);
+      if (this.haptic) this.haptic('MEDIUM'); else if (navigator.vibrate) navigator.vibrate(15);
     } else {
       const hit = this.entityAt(wx, wy, true);
       if (hit && hit.kind === 'squad') this.onDoubleTap(sx, sy);
@@ -409,7 +429,22 @@ class Game {
   }
 }
 
+// Native shell (Capacitor) integration: no service worker, hidden status bar, haptics plugin, back-grounding.
+const cap = window.Capacitor;
+export const isNative = !!(cap && cap.isNativePlatform && cap.isNativePlatform());
+function nativeSetup(game) {
+  const P = cap.Plugins || {};
+  try { P.StatusBar?.hide?.(); } catch (e) { /* ignore */ }
+  try { P.SplashScreen?.hide?.(); } catch (e) { /* ignore */ }
+  try { P.App?.addListener?.('appStateChange', ({ isActive }) => { if (!isActive && game.running && !game.paused) game.openPause(); }); } catch (e) { /* ignore */ }
+  if (P.Haptics) {
+    game.haptic = (style = 'MEDIUM') => { try { P.Haptics.impact({ style }); } catch (e) { /* ignore */ } };
+  }
+  document.documentElement.classList.add('native');
+}
+
 window.addEventListener('load', () => {
   window.game = new Game();
-  if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('./sw.js').catch(() => {});
+  if (isNative) nativeSetup(window.game);
+  else if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('./sw.js').catch(() => {});
 });

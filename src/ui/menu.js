@@ -6,8 +6,8 @@ import { unitIconSVG, buildingIconSVG } from '../render/shapes.js';
 const DEFAULTS = { faction: 'blue', theme: 'verdant', difficulty: 'normal', size: 64, seed: '' };
 
 export class Menu {
-  constructor(root, pauseRoot, overRoot, onStart) {
-    this.root = root; this.pauseRoot = pauseRoot; this.overRoot = overRoot; this.onStart = onStart;
+  constructor(root, pauseRoot, overRoot, onStart, onResume) {
+    this.root = root; this.pauseRoot = pauseRoot; this.overRoot = overRoot; this.onStart = onStart; this.onResume = onResume;
     this.settings = { ...DEFAULTS };
     try { Object.assign(this.settings, JSON.parse(localStorage.getItem('bw_settings') || '{}')); } catch (e) { /* ignore */ }
     this.render();
@@ -35,6 +35,7 @@ export class Menu {
         </div>
         <h2>Enemy</h2>
         <div class="chips" id="diffChips"></div>
+        <div id="resumeWrap"></div>
         <button class="big" id="btnStart">BATTLE</button>
         <div class="install" id="installHint">On iPhone: open in Safari, tap Share, then <b>Add to Home Screen</b> to install as an app.</div>
         <details style="margin-top:14px"><summary class="help" style="cursor:pointer"><b>How to play</b> — controls, systems, rosters</summary>
@@ -80,6 +81,19 @@ export class Menu {
     chips('#sizeChips', [48, 64, 80], 'size', (v) => (v === 48 ? 'Small' : v === 64 ? 'Medium' : 'Large'));
     chips('#diffChips', ['easy', 'normal', 'hard'], 'difficulty', (v) => v[0].toUpperCase() + v.slice(1));
     r.querySelector('#seedRnd').onclick = () => { r.querySelector('#seedInput').value = this.randomSeed(); };
+    // resume a saved battle
+    let save = null;
+    try { save = JSON.parse(localStorage.getItem('bw_save') || 'null'); } catch (e) { save = null; }
+    if (save && save.world && !save.world.gameOver) {
+      const t = Math.floor(save.world.time), mins = Math.floor(t / 60), secs = String(t % 60).padStart(2, '0');
+      const f = FACTIONS[save.settings.faction], ef = FACTIONS[save.world.players[1].faction];
+      const b = document.createElement('button'); b.className = 'big'; b.id = 'btnResume';
+      b.innerHTML = `RESUME BATTLE <span style="font-weight:500;font-size:13px;opacity:.75">· ${save.world.map.name} · ${f.name} vs ${ef.name} · ${mins}:${secs}</span>`;
+      b.onclick = () => this.onResume(save);
+      r.querySelector('#resumeWrap').appendChild(b);
+      r.querySelector('#btnStart').textContent = 'NEW BATTLE';
+      r.querySelector('#btnStart').classList.add('secondary');
+    }
     r.querySelector('#btnStart').onclick = () => {
       s.seed = r.querySelector('#seedInput').value.trim();
       this.save();
@@ -106,7 +120,9 @@ export class Menu {
       h.appendChild(ul); ro.appendChild(h);
     }
     this.updateBlurb();
-    if (window.matchMedia('(display-mode: standalone)').matches || navigator.standalone) r.querySelector('#installHint').textContent = 'Installed. Tip: play in landscape.';
+    const native = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+    if (native) r.querySelector('#installHint').remove();
+    else if (window.matchMedia('(display-mode: standalone)').matches || navigator.standalone) r.querySelector('#installHint').textContent = 'Installed. Tip: play in landscape.';
   }
   updateBlurb() {
     const t = this.settings.theme;

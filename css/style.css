@@ -123,3 +123,6 @@ h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: var
 @media (max-width: 720px) { .factions { grid-template-columns: 1fr; } .fcard { display: grid; grid-template-columns: 42px 1fr; gap: 0 10px; } .fcard svg { margin: 0; grid-row: span 3; } .fcard ul { display: none; } }
 @media (max-height: 420px) { #info { padding: 4px 8px; min-height: 34px; font-size: 11px; } #info .cw { display: none; } #info .icon, #info .icon svg { width: 28px; height: 28px; } #info .bars { width: 70px; } }
 @media (max-width: 520px) { #info { display: none; } #cmd { width: 168px; } #cmd button { height: 48px; } }
+
+/* Native shell: no text selection callouts, no rubber-banding */
+html.native, html.native body { -webkit-touch-callout: none; overscroll-behavior: none; }

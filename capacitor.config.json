@@ -1,0 +1,17 @@
+{
+  "appId": "com.bitwars.microrts",
+  "appName": "Bit Wars",
+  "webDir": "www",
+  "backgroundColor": "#0b0d12",
+  "ios": {
+    "contentInset": "never",
+    "scrollEnabled": false,
+    "allowsLinkPreview": false,
+    "backgroundColor": "#0b0d12",
+    "preferredContentMode": "mobile"
+  },
+  "plugins": {
+    "SplashScreen": { "launchShowDuration": 800, "launchAutoHide": true, "backgroundColor": "#0b0d12", "showSpinner": false },
+    "StatusBar": { "overlaysWebView": true, "style": "DARK" }
+  }
+}

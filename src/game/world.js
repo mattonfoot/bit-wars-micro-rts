@@ -59,6 +59,7 @@ export class World {
       stats: { kills: 0, losses: 0, built: 0, destroyed: 0, captured: 0 },
       oreIncome: 0, fluxIncome: 0,
     }));
+    if (opts.restore) return;
     for (const p of this.players) {
       const s = map.starts[p.id];
       const hq = this.placeBuilding(p.id, hqKey(p.faction), s.tx - 1, s.ty - 1, true);
@@ -66,6 +67,58 @@ export class World {
       hq.rally = null;
     }
     this.updateVision(true);
+  }
+
+  // ---------- save / restore (plain JSON, round-trips exactly)
+  serialize() {
+    const m = this.map;
+    return {
+      v: 1, time: this.time, ticks: this.ticks, nextId: this.nextId, rng: this.rng.s, winner: this.winner, gameOver: this.gameOver,
+      map: { w: m.w, h: m.h, theme: m.theme, seed: m.seed, name: m.name, starts: m.starts, ore: m.ore, points: m.points, tiles: Array.from(m.tiles), hp: Array.from(m.hp) },
+      players: this.players.map((p) => ({
+        id: p.id, name: p.name, faction: p.faction, isAI: p.isAI, difficulty: p.difficulty, ore: p.ore, flux: p.flux, pop: p.pop, alive: p.alive, hqId: p.hqId,
+        vision: Array.from(p.vision), heroAlive: p.heroAlive, heroQueued: p.heroQueued, incomeMult: p.incomeMult, upgrades: { ...p.upgrades }, known: [...p.known.values()], stats: { ...p.stats },
+      })),
+      squads: this.squads.map((s) => ({
+        id: s.id, owner: s.owner, key: s.key, x: s.x, y: s.y, facing: s.facing, members: s.members.map((mm) => ({ hp: mm.hp, shield: mm.shield, slot: mm.slot, px: mm.px, py: mm.py, hero: mm.hero })),
+        morale: s.morale, broken: s.broken, lastHit: s.lastHit, order: s.order, path: s.path, pathIdx: s.pathIdx, targetId: s.targetId, cooldown: s.cooldown, setup: s.setup, moving: s.moving,
+        reinforce: s.reinforce, reinforceTimer: s.reinforceTimer, hero: s.hero ? s.hero.key : null, homeX: s.homeX, homeY: s.homeY, repathTimer: s.repathTimer, acquireTimer: s.acquireTimer, cover: s.cover, spawnTime: s.spawnTime, killCount: s.killCount,
+      })),
+      buildings: this.buildings.map((b) => ({
+        id: b.id, owner: b.owner, key: b.key, tx: b.tx, ty: b.ty, hp: b.hp, shield: b.shield, progress: b.progress, done: b.done, queue: [...b.queue], queueProgress: b.queueProgress, rally: b.rally, cooldown: b.cooldown, targetId: b.targetId, lastHit: b.lastHit, facing: b.facing,
+      })),
+      points: this.points.map((p) => ({ owner: p.owner, progress: p.progress, capturer: p.capturer, contested: p.contested })),
+      projectiles: this.projectiles.map((p) => ({ ...p })),
+    };
+  }
+  static fromSave(d) {
+    const map = { ...d.map, tiles: Uint8Array.from(d.map.tiles), hp: Uint16Array.from(d.map.hp) };
+    const w = new World(map, d.players.map((p) => ({ faction: p.faction, ai: p.isAI ? p.difficulty : null, name: p.name })), { seed: map.seed, restore: true });
+    w.time = d.time; w.ticks = d.ticks; w.winner = d.winner; w.gameOver = d.gameOver;
+    for (const b of d.buildings) {
+      w.nextId = b.id;
+      const nb = w.placeBuilding(b.owner, b.key, b.tx, b.ty, b.done);
+      Object.assign(nb, { hp: b.hp, shield: b.shield, progress: b.progress, done: b.done, queue: [...b.queue], queueProgress: b.queueProgress, rally: b.rally, cooldown: b.cooldown, targetId: b.targetId, lastHit: b.lastHit, facing: b.facing });
+    }
+    for (const s of d.squads) {
+      w.nextId = s.id;
+      const ns = w.spawnSquad(s.owner, s.key, s.x, s.y, { size: 0 });
+      ns.members = s.members.map((mm) => ({ ...mm }));
+      ns.hero = s.hero ? w.faction(s.owner).units[s.hero] : null;
+      Object.assign(ns, { facing: s.facing, morale: s.morale, broken: s.broken, lastHit: s.lastHit, order: s.order, path: s.path, pathIdx: s.pathIdx, targetId: s.targetId, cooldown: s.cooldown, setup: s.setup, moving: s.moving, reinforce: s.reinforce, reinforceTimer: s.reinforceTimer, homeX: s.homeX, homeY: s.homeY, repathTimer: s.repathTimer, acquireTimer: s.acquireTimer, cover: s.cover, spawnTime: s.spawnTime, killCount: s.killCount });
+    }
+    w.nextId = d.nextId;
+    d.players.forEach((p, i) => {
+      const np = w.players[i];
+      Object.assign(np, { ore: p.ore, flux: p.flux, pop: p.pop, alive: p.alive, hqId: p.hqId, heroAlive: p.heroAlive, heroQueued: p.heroQueued, incomeMult: p.incomeMult, upgrades: { ...p.upgrades }, stats: { ...p.stats } });
+      np.vision = Uint8Array.from(p.vision);
+      np.known = new Map(p.known.map((k) => [k.id, k]));
+    });
+    d.points.forEach((p, i) => Object.assign(w.points[i], { owner: p.owner, progress: p.progress, capturer: p.capturer, contested: p.contested }));
+    w.projectiles = d.projectiles.map((p) => ({ ...p }));
+    w.rebuildIndex();
+    w.rng.s = d.rng; // last: spawning consumed random numbers
+    return w;
   }
 
   // ---------- helpers

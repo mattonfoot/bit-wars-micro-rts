@@ -2,9 +2,18 @@
 
 A fast, squad-based real-time strategy game for phones. Installable on iPhone as a home-screen app (PWA), playable in any modern browser, zero dependencies, no build step.
 
-**Play:** serve the folder with any static server (`npm start`), or deploy to GitHub Pages (workflow included).
+**Play in a browser:** serve the folder with any static server (`npm start`), or deploy to GitHub Pages (workflow included).
 
-## Install on iPhone
+**Native iOS app (App Store):** the `ios/` folder is a Capacitor project that wraps the same game. See [docs/APP_STORE.md](docs/APP_STORE.md) for the build, TestFlight and submission steps. Short version on a Mac with Xcode:
+
+```
+npm install
+npm run ios:open     # build www/, sync into the Xcode project, open it
+```
+
+Battles autosave every few seconds and on backgrounding, and the menu offers **Resume battle** after a relaunch.
+
+## Install as a web app (without the App Store)
 
 1. Open the game URL in **Safari**.
 2. Tap **Share** → **Add to Home Screen**.
@@ -58,12 +67,16 @@ npm run test:map   # map generation: 90 maps, connectivity checks
 npm run test:sim   # headless AI vs AI across all faction matchups
 npm run sim -- blue red verdant seed 20   # one headless game, per-minute summary
 npm run screenshots                        # Playwright smoke test at iPhone viewport
-npm run icons                              # regenerate PNG icons from SVG
+npm run icons                              # regenerate PNG/App Store icons and splash from SVG
+npm run build                              # assemble the web bundle into www/ for native builds
+npm run ios:sync                           # build + copy into the Xcode project (Mac)
 ```
 
 `src/game` and `src/map` are DOM-free and run in Node; everything under `src/render`, `src/ui` and `src/engine/input.js` is browser-only.
 
 ```
+ios/        Capacitor iOS project (Swift Package Manager, no CocoaPods)
+tools/      icon/splash generation, www build, headless sim, Playwright screenshots
 src/
   engine/   rng, math, camera, gesture input, procedural audio
   game/     data (factions), world (simulation), combat, pathfinding, ai

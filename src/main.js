@@ -82,7 +82,7 @@ class Game {
     const hq = this.world.byId(this.world.players[0].hqId);
     this.camera.centerOn(hq.x + 60, hq.y + 60);
     this.selection.clear(); this.mode = 'normal'; this.buildGhost = null; this.box = null;
-    this.hud.setMode(null);
+    this.hud.setMode(null); this.hud.clearToasts();
     this.menu.hide(); this.hud.show();
     this.running = true; this.paused = false; this.acc = 0; this.last = performance.now(); this.overShown = false;
     this.select([hq.id]);

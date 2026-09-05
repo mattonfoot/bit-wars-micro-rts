@@ -19,6 +19,7 @@ export class HUD {
   }
   show() { this.root.classList.remove('hidden'); }
   hide() { this.root.classList.add('hidden'); }
+  clearToasts() { this.el.toasts.innerHTML = ''; this.lastToast.clear(); }
   setMode(label) { this.el.mode.textContent = label || ''; this.el.mode.classList.toggle('show', !!label); }
   toast(text, kind = '', onClick = null, throttleMs = 0) {
     if (throttleMs) { const t = performance.now(); if ((this.lastToast.get(text) || 0) + throttleMs > t) return; this.lastToast.set(text, t); }

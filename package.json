@@ -1,0 +1,16 @@
+{
+  "name": "bit-wars-micro-rts",
+  "version": "1.0.0",
+  "description": "Squad-based real-time strategy for mobile. Installable PWA, zero dependencies.",
+  "type": "module",
+  "scripts": {
+    "start": "npx http-server . -p 8080 -c-1",
+    "test": "node test/gen.test.mjs && node test/sim.test.mjs",
+    "test:map": "node test/gen.test.mjs",
+    "test:sim": "node test/sim.test.mjs",
+    "sim": "node tools/sim-one.mjs",
+    "icons": "node tools/gen-icons.mjs",
+    "screenshots": "node tools/screenshot.mjs"
+  },
+  "license": "MIT"
+}

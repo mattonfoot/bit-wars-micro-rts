@@ -1,1 +1,73 @@
-# bit-wars-micro-rts
+# Bit Wars: Micro RTS
+
+A fast, squad-based real-time strategy game for phones. Installable on iPhone as a home-screen app (PWA), playable in any modern browser, zero dependencies, no build step.
+
+**Play:** serve the folder with any static server (`npm start`), or deploy to GitHub Pages (workflow included).
+
+## Install on iPhone
+
+1. Open the game URL in **Safari**.
+2. Tap **Share** → **Add to Home Screen**.
+3. Launch from the home screen: it runs full-screen, offline, in landscape.
+
+## The game
+
+Two commanders, one procedurally generated battleground, one objective: reduce the enemy headquarters to rubble.
+
+### Three factions, nothing shared
+
+| | Vector Swarm (blue, triangles) | Iron Foundry (red, squares) | Aegis Collective (green, circles) |
+|---|---|---|---|
+| Identity | Numbers, speed, flanks | Steel, suppression, siege | Shields, precision, patience |
+| Infantry | Dart Swarm (8, melee), Needle Squad (5, anti-armour), Wedge Raiders (4, flankers) | Bolt Squad (4, line), Hammer Team (2, set-up suppression gun), Breachers (3, demolition) | Warden Cell (3, shielded), Lens Team (2, snipers), Pulse Ring (4, morale disruptors) |
+| Vehicles | Kite Wing (flying harasser), Obelisk (siege walker) | Crusher Tank (blast cannon), Mortar Block (artillery) | Halo (shield projector), Nova Sphere (orbital artillery) |
+| Hero | The Apex: speed + morale aura | The Foreman: armour + repair aura | The Oracle: vision + shield aura |
+| Structures | Hive, Lode Burrow, Nest, Spire, Thorn, Claim Spike | Foundry, Drill Rig, Iron Works, Bunker, Armoury, Watch Post | Core, Siphon, Array, Bastion, Sanctum, Beacon |
+
+Every unit has a damage type (light, anti-armour, energy, blast, melee) and an armour class (infantry, heavy, vehicle, shielded, structure). The counter matrix lives in `src/game/data.js`; every squad card in the game shows what it is strong and weak against.
+
+### Systems
+
+- **Frontline economics.** Ore comes from extractors on ore veins. Flux comes only from strategic points you hold with infantry. Fortify a point with an outpost for more income and to force the enemy to destroy it before recapturing.
+- **Squads, not soldiers.** Reinforce a bled squad anywhere (faster near base). Attach your hero to a squad mid-fight.
+- **Cover.** Brush, craters and rubble give light cover. Rocks, walls and ruins give heavy cover from the shooter's side. Blast weapons destroy cover and leave craters.
+- **Morale.** Sustained fire and casualties break squads: broken squads fight at a third of their strength and take 50% more damage. Flanking (attacking from behind) hits harder and breaks faster. Retreat sends a squad sprinting home to recover.
+- **Fog of war.** Vision comes from units and structures; enemy structures you have seen are remembered on the minimap.
+- **Meaningful losses.** Squads die permanently, structures leave rubble, lose the HQ and the war is over.
+- **Five themes.** Verdant Basin, Ashfall, Frostbite, Ruined City, Crystal Dunes. Maps are point-symmetric so both sides get identical terrain; seeds are shareable.
+
+### Controls (touch)
+
+| Gesture | Action |
+|---|---|
+| Tap unit / squad icon | Select squad (tap the icon again to jump the camera) |
+| Tap ground / enemy | Move / attack with the selection |
+| Long-press ground | Attack-move |
+| Double-tap unit | Select all of that type on screen |
+| One-finger drag | Pan · **Box** button turns the next drag into box-select |
+| Pinch | Zoom |
+| Tap minimap | Jump camera |
+
+Mouse: left-click/drag selects, right-click commands, wheel zooms, middle-drag pans. Keys: `A` attack-move, `M` move, `H` hold, `S` stop, `R` retreat, `E` reinforce, `B` build, `F` select army, `1-9` squads, `Space` jump to last alert, `Esc` cancel.
+
+## Development
+
+```
+npm start          # serve on http://localhost:8080
+npm run test:map   # map generation: 90 maps, connectivity checks
+npm run test:sim   # headless AI vs AI across all faction matchups
+npm run sim -- blue red verdant seed 20   # one headless game, per-minute summary
+npm run screenshots                        # Playwright smoke test at iPhone viewport
+npm run icons                              # regenerate PNG icons from SVG
+```
+
+`src/game` and `src/map` are DOM-free and run in Node; everything under `src/render`, `src/ui` and `src/engine/input.js` is browser-only.
+
+```
+src/
+  engine/   rng, math, camera, gesture input, procedural audio
+  game/     data (factions), world (simulation), combat, pathfinding, ai
+  map/      terrain constants, themes, generator
+  render/   terrain layer, fog, shapes, world renderer
+  ui/       hud, minimap, menu
+```

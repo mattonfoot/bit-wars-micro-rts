@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <title>Bit Wars: Micro RTS</title>
+  <meta name="description" content="Fast squad-based real-time strategy for mobile. Three asymmetric factions, procedural battlegrounds, cover, morale and frontline economics." />
+  <meta name="theme-color" content="#0b0d12" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Bit Wars" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <div id="hud" class="hidden">
+    <div id="topbar">
+      <div class="res ore" title="Ore: mined by extractors on ore veins"><i class="ico"></i><span id="oreVal">0</span><span class="inc" id="oreInc"></span></div>
+      <div class="res flux" title="Flux: earned by holding strategic points"><i class="ico"></i><span id="fluxVal">0</span><span class="inc" id="fluxInc"></span></div>
+      <div class="res pop" title="Population"><span id="popVal">0/40</span></div>
+      <div class="pts" id="ptsVal" title="Strategic points"></div>
+      <div class="spacer"></div>
+      <span id="timer">0:00</span>
+      <button id="btnSound" title="Sound">🔊</button>
+      <button id="btnMenu" title="Menu">☰</button>
+    </div>
+    <div id="squadbar"></div>
+    <div id="modeBanner"></div>
+    <div id="toasts"></div>
+    <div id="minimapWrap"><canvas id="minimap"></canvas></div>
+    <div id="info" class="empty"></div>
+    <div id="cmd"></div>
+  </div>
+
+  <div id="menu" class="overlay"></div>
+  <div id="pause" class="overlay hidden"></div>
+  <div id="gameover" class="overlay hidden"></div>
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

@@ -32,7 +32,7 @@ try {
       const ef = w.players[1].faction; const keys = Object.keys(w.faction(1).units).filter((k) => !w.faction(1).units[k].hero).slice(0, 3);
       for (let i = 0; i < 3; i++) w.spawnSquad(1, keys[i], ex + i * T * 0.5, ey + (i - 1) * 2 * T);
       // a wall line between them
-      for (let dy = -3; dy <= 3; dy++) { const tx = Math.floor((bx + 4 * T) / T), ty = Math.floor(ey / T) + dy; if (dy !== 0) { w.map.tiles[ty * w.w + tx] = 7; w.map.hp[ty * w.w + tx] = 260; w.dirtyTiles.push(ty * w.w + tx); } }
+      for (let dy = -3; dy <= 3; dy++) { if (dy === 0) continue; const i = w.grid.cellAt(bx + 4 * T, ey + dy * w.grid.V); if (i >= 0 && !w.blocked[i]) { w.map.tiles[i] = 7; w.map.hp[i] = 260; w.dirtyTiles.push(i); } }
       w.updateVision(true);
       g.camera.zoom = 1.6; g.camera.centerOn(bx + 3 * T, by + T);
       g.selectAllArmy();

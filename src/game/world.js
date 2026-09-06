@@ -1,5 +1,6 @@
 // Core simulation. DOM-free so it can run headless in Node for tests and balance sims.
 import { T, TILE, TILE_SPEED, TILE_HP, isPassable, isBuildable } from '../map/terrain.js';
+import { HexGrid } from '../map/hexgrid.js';
 import { FACTIONS, POP_CAP, START_ORE, START_FLUX, hqKey, reinforceCost } from './data.js';
 import { findPath, smoothPath, lineWalkable, nearestPassable } from './pathfinding.js';
 import { coverAt, COVER_DMG, COVER_SUPP, isFlank, dmgMult } from './combat.js';
@@ -24,17 +25,6 @@ function formationSlots(n, radius) {
   return out;
 }
 
-const circleCache = new Map();
-function circleOffsets(r) {
-  const key = Math.round(r * 2);
-  if (circleCache.has(key)) return circleCache.get(key);
-  const R = key / 2, out = [];
-  const ir = Math.ceil(R);
-  for (let dy = -ir; dy <= ir; dy++) for (let dx = -ir; dx <= ir; dx++) if (dx * dx + dy * dy <= R * R + 0.5) out.push([dx, dy]);
-  circleCache.set(key, out);
-  return out;
-}
-
 export class World {
   constructor(map, players, opts = {}) {
     this.map = map;
@@ -45,16 +35,17 @@ export class World {
     this.squads = []; this.buildings = []; this.projectiles = [];
     this.events = []; // consumed by renderer / audio each frame
     this.dirtyTiles = []; // terrain changed; renderer redraws these
-    this.blocked = new Uint8Array(map.w * map.h); // building occupancy (building id + 1)
+    this.grid = map.grid;
+    this.blocked = new Int32Array(this.grid.N); // building occupancy (building id)
     this.winner = NONE;
     this.gameOver = false;
     this.restrict = {}; // owner -> { units: Set|null, buildings: Set|null } (campaign chapters)
-    this.points = map.points.map((p, i) => ({ i, tx: p.tx, ty: p.ty, x: (p.tx + 0.5) * TILE, y: (p.ty + 0.5) * TILE, owner: NONE, progress: 0, capturer: NONE, outpost: 0, contested: false }));
-    this.ore = map.ore.map((o, i) => ({ i, tx: o.tx, ty: o.ty, x: (o.tx + 0.5) * TILE, y: (o.ty + 0.5) * TILE, building: 0 }));
+    this.points = map.points.map((p, i) => ({ i, cell: p.i, x: p.x, y: p.y, owner: NONE, progress: 0, capturer: NONE, outpost: 0, contested: false }));
+    this.ore = map.ore.map((o, i) => ({ i, cell: o.i, x: o.x, y: o.y, building: 0 }));
     this.players = players.map((p, i) => ({
       id: i, name: p.name || (i === 0 ? 'You' : 'Enemy'), faction: p.faction, isAI: !!p.ai, difficulty: p.ai || null,
       ore: START_ORE, flux: START_FLUX, pop: 0, alive: true, hqId: 0,
-      vision: new Uint8Array(map.w * map.h), heroAlive: false, heroQueued: false,
+      vision: new Uint8Array(map.grid.N), heroAlive: false, heroQueued: false,
       incomeMult: p.incomeMult || 1, upgrades: { hp: 1, shield: 1 },
       known: new Map(), // enemy buildings once seen: id -> snapshot
       stats: { kills: 0, losses: 0, built: 0, destroyed: 0, captured: 0 },
@@ -62,8 +53,7 @@ export class World {
     }));
     if (opts.restore) return;
     for (const p of this.players) {
-      const s = map.starts[p.id];
-      const hq = this.placeBuilding(p.id, hqKey(p.faction), s.tx - 1, s.ty - 1, true);
+      const hq = this.placeBuilding(p.id, hqKey(p.faction), map.starts[p.id].i, true);
       p.hqId = hq.id;
       hq.rally = null;
     }
@@ -87,7 +77,7 @@ export class World {
         reinforce: s.reinforce, reinforceTimer: s.reinforceTimer, hero: s.hero ? s.hero.key : null, homeX: s.homeX, homeY: s.homeY, repathTimer: s.repathTimer, acquireTimer: s.acquireTimer, cover: s.cover, spawnTime: s.spawnTime, killCount: s.killCount,
       })),
       buildings: this.buildings.map((b) => ({
-        id: b.id, owner: b.owner, key: b.key, tx: b.tx, ty: b.ty, hp: b.hp, shield: b.shield, progress: b.progress, done: b.done, queue: [...b.queue], queueProgress: b.queueProgress, rally: b.rally, cooldown: b.cooldown, targetId: b.targetId, lastHit: b.lastHit, facing: b.facing,
+        id: b.id, owner: b.owner, key: b.key, cell: b.cell, hp: b.hp, shield: b.shield, progress: b.progress, done: b.done, queue: [...b.queue], queueProgress: b.queueProgress, rally: b.rally, cooldown: b.cooldown, targetId: b.targetId, lastHit: b.lastHit, facing: b.facing,
       })),
       points: this.points.map((p) => ({ owner: p.owner, progress: p.progress, capturer: p.capturer, contested: p.contested })),
       projectiles: this.projectiles.map((p) => ({ ...p })),
@@ -95,11 +85,12 @@ export class World {
   }
   static fromSave(d) {
     const map = { ...d.map, tiles: Uint8Array.from(d.map.tiles), hp: Uint16Array.from(d.map.hp) };
+    map.grid = new HexGrid(map.w, map.h, `${map.theme}:${map.seed}:${map.w}`);
     const w = new World(map, d.players.map((p) => ({ faction: p.faction, ai: p.isAI ? p.difficulty : null, name: p.name })), { seed: map.seed, restore: true });
     w.time = d.time; w.ticks = d.ticks; w.winner = d.winner; w.gameOver = d.gameOver;
     for (const b of d.buildings) {
       w.nextId = b.id;
-      const nb = w.placeBuilding(b.owner, b.key, b.tx, b.ty, b.done);
+      const nb = w.placeBuilding(b.owner, b.key, b.cell, b.done);
       Object.assign(nb, { hp: b.hp, shield: b.shield, progress: b.progress, done: b.done, queue: [...b.queue], queueProgress: b.queueProgress, rally: b.rally, cooldown: b.cooldown, targetId: b.targetId, lastHit: b.lastHit, facing: b.facing });
     }
     for (const s of d.squads) {
@@ -131,29 +122,22 @@ export class World {
     for (const s of this.squads) this._idx.set(s.id, s);
     for (const b of this.buildings) this._idx.set(b.id, b);
   }
-  tileIdx(x, y) { return Math.floor(y / TILE) * this.w + Math.floor(x / TILE); }
-  tileAtWorld(x, y) {
-    const tx = Math.floor(x / TILE), ty = Math.floor(y / TILE);
-    if (tx < 0 || ty < 0 || tx >= this.w || ty >= this.h) return T.MOUNTAIN;
-    return this.map.tiles[ty * this.w + tx];
-  }
-  isBlockedTile(tx, ty) { return this.blocked[ty * this.w + tx] !== 0; }
-  blockedFn() { return (x, y) => this.blocked[y * this.w + x] !== 0; }
+  cellAt(x, y) { return this.grid.cellAt(x, y); }
+  tileAtWorld(x, y) { const i = this.grid.cellAt(x, y); return i < 0 ? T.MOUNTAIN : this.map.tiles[i]; }
+  isBlockedTile(i) { return this.blocked[i] !== 0; }
+  blockedFn() { return (i) => this.blocked[i] !== 0; }
   passableWorld(x, y, flying) {
-    if (flying) return x >= 0 && y >= 0 && x < this.w * TILE && y < this.h * TILE;
-    const tx = Math.floor(x / TILE), ty = Math.floor(y / TILE);
-    if (tx < 0 || ty < 0 || tx >= this.w || ty >= this.h) return false;
-    return isPassable(this.map.tiles[ty * this.w + tx]) && !this.blocked[ty * this.w + tx];
+    if (flying) return x >= 0 && y >= 0 && x < this.grid.worldW && y < this.grid.worldH;
+    const i = this.grid.cellAt(x, y);
+    if (i < 0) return false;
+    return isPassable(this.map.tiles[i]) && !this.blocked[i];
   }
+  isBorderCell(i) { const c = this.grid.col(i), r = this.grid.row(i); return c === 0 || r === 0 || c === this.w - 1 || r === this.h - 1; }
   faction(pid) { return FACTIONS[this.players[pid].faction]; }
   allowed(owner, kind, key) { const r = this.restrict[owner]; if (!r) return true; const set = kind === 'unit' ? r.units : r.buildings; return !set || set.has(key); }
   emit(e) { this.events.push(e); }
-  visible(pid, x, y) {
-    const tx = Math.floor(x / TILE), ty = Math.floor(y / TILE);
-    if (tx < 0 || ty < 0 || tx >= this.w || ty >= this.h) return false;
-    return this.players[pid].vision[ty * this.w + tx] === 2;
-  }
-  explored(pid, tx, ty) { return this.players[pid].vision[ty * this.w + tx] > 0; }
+  visible(pid, x, y) { const i = this.grid.cellAt(x, y); return i >= 0 && this.players[pid].vision[i] === 2; }
+  explored(pid, i) { return i >= 0 && this.players[pid].vision[i] > 0; }
   enemiesOf(pid) { return this.players.filter((p) => p.id !== pid && p.alive).map((p) => p.id); }
   formationRadius(s) { return s.def.size === 1 ? s.def.radius + 2 : 8 + Math.sqrt(s.members.length) * 5; }
   memberMaxHp(s) { return Math.round(s.def.hp * this.players[s.owner].upgrades.hp); }
@@ -190,19 +174,22 @@ export class World {
     const hp = this.memberMaxHp(s), sh = this.memberMaxShield(s);
     return { hp, shield: sh, slot, px: s.x + sl[0], py: s.y + sl[1], hero: false };
   }
-  placeBuilding(owner, key, tx, ty, instant = false) {
+  footprint(def, cell) { return this.grid.cluster(cell, def.w >= 2 ? 1 : 0); }
+  placeBuilding(owner, key, cell, instant = false) {
     const fac = this.faction(owner);
     const def = fac.buildings[key];
+    const cells = this.footprint(def, cell);
+    const [x, y] = this.grid.center(cell);
     const b = {
       id: this.nextId++, kind: 'building', owner, faction: fac.key, key, def,
-      tx, ty, w: def.w, h: def.h, x: (tx + def.w / 2) * TILE, y: (ty + def.h / 2) * TILE,
+      cell, cells, x, y,
       hp: instant ? def.hp : Math.max(1, def.hp * 0.1), maxHp: def.hp, shield: instant ? (def.shield || 0) : 0, maxShield: def.shield || 0,
       progress: instant ? 1 : 0, done: instant, queue: [], queueProgress: 0, rally: null, cooldown: 0, targetId: 0,
-      dead: false, lastHit: -99, pointIdx: NONE, oreIdx: NONE, facing: 0, radius: Math.max(def.w, def.h) * TILE * 0.5,
+      dead: false, lastHit: -99, pointIdx: NONE, oreIdx: NONE, facing: 0, radius: def.w >= 2 ? this.grid.R * 2.3 : this.grid.R * 0.95,
     };
-    for (let y = ty; y < ty + def.h; y++) for (let x = tx; x < tx + def.w; x++) this.blocked[y * this.w + x] = b.id;
-    if (def.onOre) { const o = this.ore.find((o) => o.tx === tx && o.ty === ty); if (o) { o.building = b.id; b.oreIdx = o.i; } }
-    if (def.onPoint) { const p = this.points.find((p) => p.tx === tx && p.ty === ty); if (p) { p.outpost = b.id; b.pointIdx = p.i; } }
+    for (const c of cells) this.blocked[c] = b.id;
+    if (def.onOre) { const o = this.ore.find((o) => o.cell === cell); if (o) { o.building = b.id; b.oreIdx = o.i; } }
+    if (def.onPoint) { const p = this.points.find((p) => p.cell === cell); if (p) { p.outpost = b.id; b.pointIdx = p.i; } }
     this.buildings.push(b);
     this.rebuildIndex();
     this.players[owner].stats.built++;
@@ -210,55 +197,58 @@ export class World {
   }
 
   // ---------- build validation
-  buildRadiusOk(owner, cx, cy) {
+  buildRadiusOk(owner, x, y) {
     for (const b of this.buildings) {
       if (b.owner !== owner || b.dead || !b.done) continue;
-      const r = b.def.hq ? 11 : b.def.buildRadius || 4.5;
-      if (dist(cx, cy, b.tx + b.w / 2, b.ty + b.h / 2) <= r) return true;
+      const r = (b.def.hq ? 11 : b.def.buildRadius || 4.5) * TILE;
+      if (dist(x, y, b.x, b.y) <= r) return true;
     }
     return false;
   }
-  canPlace(owner, key, tx, ty) {
+  canPlace(owner, key, cell) {
     const def = this.faction(owner).buildings[key];
     if (!def || def.hq) return { ok: false, reason: 'Cannot build that' };
     if (!this.allowed(owner, 'building', key)) return { ok: false, reason: 'Not available in this chapter' };
+    if (cell < 0 || cell >= this.grid.N) return { ok: false, reason: 'Out of bounds' };
     const p = this.players[owner];
     if (p.ore < def.cost.ore || p.flux < def.cost.flux) return { ok: false, reason: 'Not enough resources' };
     if (def.onOre) {
-      const o = this.ore.find((o) => o.tx === tx && o.ty === ty);
+      const o = this.ore.find((o) => o.cell === cell);
       if (!o) return { ok: false, reason: 'Must be placed on an ore vein' };
       if (o.building && !this.byId(o.building)?.dead) return { ok: false, reason: 'Vein already claimed' };
     } else if (def.onPoint) {
-      const pt = this.points.find((p) => p.tx === tx && p.ty === ty);
+      const pt = this.points.find((p) => p.cell === cell);
       if (!pt) return { ok: false, reason: 'Must be placed on a strategic point' };
       if (pt.owner !== owner) return { ok: false, reason: 'Capture the point first' };
       if (pt.outpost && !this.byId(pt.outpost)?.dead) return { ok: false, reason: 'Point already fortified' };
     } else {
-      for (let y = ty; y < ty + def.h; y++) for (let x = tx; x < tx + def.w; x++) {
-        if (x < 1 || y < 1 || x >= this.w - 1 || y >= this.h - 1) return { ok: false, reason: 'Out of bounds' };
-        if (!isBuildable(this.map.tiles[y * this.w + x])) return { ok: false, reason: 'Blocked terrain' };
-        if (this.blocked[y * this.w + x]) return { ok: false, reason: 'Overlaps a structure' };
-        if (this.points.some((pt) => pt.tx === x && pt.ty === y)) return { ok: false, reason: 'Cannot cover a strategic point' };
+      const cells = this.footprint(def, cell);
+      if (cells.length < (def.w >= 2 ? 7 : 1)) return { ok: false, reason: 'Out of bounds' };
+      for (const c of cells) {
+        if (this.isBorderCell(c)) return { ok: false, reason: 'Out of bounds' };
+        if (!isBuildable(this.map.tiles[c])) return { ok: false, reason: 'Blocked terrain' };
+        if (this.blocked[c]) return { ok: false, reason: 'Overlaps a structure' };
+        if (this.points.some((pt) => pt.cell === c)) return { ok: false, reason: 'Cannot cover a strategic point' };
       }
-      if (!this.explored(owner, tx, ty)) return { ok: false, reason: 'Unexplored' };
+      if (!this.explored(owner, cell)) return { ok: false, reason: 'Unexplored' };
     }
-    if (!this.buildRadiusOk(owner, tx + def.w / 2, ty + def.h / 2)) return { ok: false, reason: 'Too far from your structures' };
+    const [x, y] = this.grid.center(cell);
+    if (!this.buildRadiusOk(owner, x, y)) return { ok: false, reason: 'Too far from your structures' };
     return { ok: true };
   }
 
   // ---------- commands
-  cmdBuild(owner, key, tx, ty) {
-    const chk = this.canPlace(owner, key, tx, ty);
+  cmdBuild(owner, key, cell) {
+    const chk = this.canPlace(owner, key, cell);
     if (!chk.ok) return chk;
     const def = this.faction(owner).buildings[key];
     const p = this.players[owner];
     p.ore -= def.cost.ore; p.flux -= def.cost.flux;
-    const b = this.placeBuilding(owner, key, tx, ty, false);
+    const b = this.placeBuilding(owner, key, cell, false);
     // push squads off the footprint
     for (const s of this.squads) {
       if (s.def.flying) continue;
-      const stx = Math.floor(s.x / TILE), sty = Math.floor(s.y / TILE);
-      if (stx >= tx && stx < tx + def.w && sty >= ty && sty < ty + def.h) this.unstick(s);
+      if (b.cells.includes(this.grid.cellAt(s.x, s.y))) this.unstick(s);
     }
     this.emit({ type: 'build', x: b.x, y: b.y, owner });
     return { ok: true, building: b };
@@ -314,8 +304,8 @@ export class World {
       let px = x + (c - (cols - 1) / 2) * spacing, py = y + (r - (Math.ceil(n / cols) - 1) / 2) * spacing;
       const flying = squads[i].def.flying;
       if (!this.passableWorld(px, py, flying)) {
-        const np = nearestPassable(this.map, Math.floor(px / TILE), Math.floor(py / TILE), { blocked: this.blockedFn(), flying });
-        if (np) { px = (np[0] + 0.5) * TILE; py = (np[1] + 0.5) * TILE; } else { px = x; py = y; }
+        const np = nearestPassable(this.map, this.grid.cellAt(px, py), { blocked: this.blockedFn(), flying });
+        if (np >= 0) { [px, py] = this.grid.center(np); } else { px = x; py = y; }
       }
       out.push([px, py]);
     }
@@ -360,8 +350,8 @@ export class World {
       if (d < bd) { bd = d; best = b; }
     }
     if (!best) return { x, y };
-    const np = nearestPassable(this.map, best.tx - 1, best.ty + best.h, { blocked: this.blockedFn() });
-    return np ? { x: (np[0] + 0.5) * TILE, y: (np[1] + 0.5) * TILE } : { x: best.x, y: best.y + best.h * TILE };
+    const sp = this.spawnPointFor(best, false);
+    return { x: sp.x, y: sp.y };
   }
   cmdReinforce(s, count = 1) {
     const p = this.players[s.owner];
@@ -398,25 +388,26 @@ export class World {
   // ---------- pathing
   setPath(s, x, y, quick = false) {
     const flying = !!s.def.flying;
-    const sx = Math.floor(s.x / TILE), sy = Math.floor(s.y / TILE);
-    let tx = Math.floor(x / TILE), ty = Math.floor(y / TILE);
-    tx = clamp(tx, 0, this.w - 1); ty = clamp(ty, 0, this.h - 1);
-    if (flying || lineWalkable(this.map, sx, sy, tx, ty, this.blockedFn(), flying)) {
+    const g = this.grid;
+    x = clamp(x, g.R, g.worldW - g.R); y = clamp(y, g.R, g.worldH - g.R);
+    const si = g.cellAt(s.x, s.y), ti = g.cellAt(x, y);
+    if (flying || (si >= 0 && lineWalkable(this.map, s.x, s.y, x, y, this.blockedFn(), flying))) {
       s.path = [[x, y]]; s.pathIdx = 0; return true;
     }
-    const raw = findPath(this.map, sx, sy, tx, ty, { blocked: this.blockedFn(), flying, partial: true, maxNodes: quick ? 900 : 4000 });
+    if (si < 0 || ti < 0) { s.path = null; return false; }
+    const raw = findPath(this.map, si, ti, { blocked: this.blockedFn(), flying, partial: true, maxNodes: quick ? 900 : 4000 });
     if (!raw) { s.path = null; return false; }
-    const sm = smoothPath(this.map, raw, this.blockedFn(), flying);
-    s.path = sm.map(([px, py]) => [(px + 0.5) * TILE, (py + 0.5) * TILE]);
-    // last waypoint: exact target if that tile is the destination tile
-    const last = sm[sm.length - 1];
-    if (last[0] === tx && last[1] === ty) s.path[s.path.length - 1] = [x, y];
+    s.path = smoothPath(this.map, raw, this.blockedFn(), flying);
+    if (raw[raw.length - 1] === ti) s.path[s.path.length - 1] = [x, y];
     s.pathIdx = s.path.length > 1 ? 1 : 0;
     return true;
   }
   unstick(s) {
-    const np = nearestPassable(this.map, Math.floor(s.x / TILE), Math.floor(s.y / TILE), { blocked: this.blockedFn(), flying: s.def.flying });
-    if (np) { s.x = (np[0] + 0.5) * TILE; s.y = (np[1] + 0.5) * TILE; }
+    const g = this.grid;
+    let i = g.cellAt(s.x, s.y);
+    if (i < 0) i = g.cellAt(clamp(s.x, g.R, g.worldW - g.R), clamp(s.y, g.R, g.worldH - g.R));
+    const np = nearestPassable(this.map, i, { blocked: this.blockedFn(), flying: s.def.flying });
+    if (np >= 0) { [s.x, s.y] = g.center(np); }
   }
 
   // ---------- main tick
@@ -526,18 +517,15 @@ export class World {
     this.emit({ type: 'upgrade', owner });
   }
   spawnPointFor(b, flying) {
-    // try tiles around the footprint, preferring the side facing the map centre
-    const cx = this.w / 2, cy = this.h / 2;
-    const cands = [];
-    for (let y = b.ty - 1; y <= b.ty + b.h; y++) for (let x = b.tx - 1; x <= b.tx + b.w; x++) {
-      if (x < 0 || y < 0 || x >= this.w || y >= this.h) continue;
-      if (x >= b.tx && x < b.tx + b.w && y >= b.ty && y < b.ty + b.h) continue;
-      if (!flying && (!isPassable(this.map.tiles[y * this.w + x]) || this.blocked[y * this.w + x])) continue;
-      cands.push([x, y, Math.hypot(x - cx, y - cy)]);
-    }
-    cands.sort((a, b2) => a[2] - b2[2]);
-    const c = cands[0] || [b.tx, b.ty + b.h];
-    return { x: (c[0] + 0.5) * TILE, y: (c[1] + 0.5) * TILE };
+    // cells around the footprint, preferring the side facing the map centre
+    const g = this.grid;
+    let ring = g.fringe(b.cells);
+    let cands = ring.filter((c) => flying || (isPassable(this.map.tiles[c]) && !this.blocked[c]));
+    if (!cands.length) { ring = g.fringe(ring.concat(b.cells)); cands = ring.filter((c) => isPassable(this.map.tiles[c]) && !this.blocked[c]); }
+    if (!cands.length) return { x: b.x, y: b.y + b.radius + g.R };
+    cands.sort((a, c) => Math.hypot(g.cxs[a] - g.cx, g.cys[a] - g.cy) - Math.hypot(g.cxs[c] - g.cx, g.cys[c] - g.cy));
+    const [x, y] = g.center(cands[0]);
+    return { x, y };
   }
 
   // ---------- squads
@@ -762,11 +750,7 @@ export class World {
 
   // ---------- targeting
   entityDist(a, b) {
-    if (b.kind === 'building') {
-      const x0 = b.tx * TILE, y0 = b.ty * TILE, x1 = x0 + b.w * TILE, y1 = y0 + b.h * TILE;
-      const cx = clamp(a.x, x0, x1), cy = clamp(a.y, y0, y1);
-      return dist(a.x, a.y, cx, cy);
-    }
+    if (b.kind === 'building') return Math.max(0, dist(a.x, a.y, b.x, b.y) - b.radius);
     return Math.max(0, dist(a.x, a.y, b.x, b.y) - this.formationRadius(b) * 0.6);
   }
   inRange(a, b, range) { return this.entityDist(a, b) <= range; }
@@ -919,8 +903,7 @@ export class World {
   destroyBuilding(b, byOwner, silent = false) {
     if (b.dead) return;
     b.dead = true; b.hp = 0;
-    for (let y = b.ty; y < b.ty + b.h; y++) for (let x = b.tx; x < b.tx + b.w; x++) {
-      const i = y * this.w + x;
+    for (const i of b.cells) {
       if (this.blocked[i] === b.id) this.blocked[i] = 0;
       if (!silent && this.map.tiles[i] !== T.ORE) { this.map.tiles[i] = T.RUBBLE; this.map.hp[i] = 0; this.dirtyTiles.push(i); }
     }
@@ -967,13 +950,11 @@ export class World {
     if (pr.terrain) this.damageTerrain(pr.tx, pr.ty, R, pr.terrain, pr.owner);
   }
   damageTerrain(x, y, R, amount, byOwner = NONE) {
-    const tx0 = Math.floor((x - R) / TILE), ty0 = Math.floor((y - R) / TILE), tx1 = Math.floor((x + R) / TILE), ty1 = Math.floor((y + R) / TILE);
-    for (let ty = ty0; ty <= ty1; ty++) for (let tx = tx0; tx <= tx1; tx++) {
-      if (tx < 1 || ty < 1 || tx >= this.w - 1 || ty >= this.h - 1) continue;
-      const i = ty * this.w + tx;
-      const cx = (tx + 0.5) * TILE, cy = (ty + 0.5) * TILE;
+    const g = this.grid;
+    for (const i of g.cellsWithin(x, y, R + g.R * 0.5)) {
+      if (this.isBorderCell(i)) continue;
+      const cx = g.cxs[i], cy = g.cys[i];
       const d = dist(cx, cy, x, y);
-      if (d > R + TILE * 0.4) continue;
       const t = this.map.tiles[i];
       if (TILE_HP[t] > 0) {
         this.map.hp[i] -= amount * (1 - 0.4 * Math.min(1, d / R));
@@ -982,7 +963,7 @@ export class World {
           this.dirtyTiles.push(i);
           this.emit({ type: 'terrainDestroyed', x: cx, y: cy, tile: t, owner: byOwner });
         }
-      } else if (t === T.GROUND && d < TILE * 0.7 && this.rng.chance(0.6) && !this.blocked[i]) {
+      } else if (t === T.GROUND && d < g.R * 1.2 && this.rng.chance(0.6) && !this.blocked[i]) {
         this.map.tiles[i] = T.CRATER; this.dirtyTiles.push(i);
       }
     }
@@ -1027,19 +1008,13 @@ export class World {
     for (const p of this.players) {
       const v = p.vision;
       for (let i = 0; i < v.length; i++) if (v[i] === 2) v[i] = 1;
-      const stamp = (x, y, r) => {
-        const tx = Math.floor(x / TILE), ty = Math.floor(y / TILE);
-        for (const [dx, dy] of circleOffsets(r)) {
-          const nx = tx + dx, ny = ty + dy;
-          if (nx >= 0 && ny >= 0 && nx < this.w && ny < this.h) v[ny * this.w + nx] = 2;
-        }
-      };
+      const stamp = (x, y, r) => { for (const i of this.grid.cellsWithin(x, y, r * TILE + this.grid.R * 0.5)) v[i] = 2; };
       for (const s of this.squads) if (s.owner === p.id && !s.dead) stamp(s.x, s.y, s.def.sight + s.buff.sight);
       for (const b of this.buildings) if (b.owner === p.id && !b.dead) stamp(b.x, b.y, b.def.sight);
       // remember enemy buildings
       for (const b of this.buildings) {
         if (b.owner === p.id || b.dead) continue;
-        if (this.visible(p.id, b.x, b.y)) p.known.set(b.id, { id: b.id, key: b.key, faction: b.faction, owner: b.owner, tx: b.tx, ty: b.ty, w: b.w, h: b.h, x: b.x, y: b.y, hp: b.hp, maxHp: b.maxHp, hq: !!b.def.hq, name: b.def.name });
+        if (this.visible(p.id, b.x, b.y)) p.known.set(b.id, { id: b.id, key: b.key, faction: b.faction, owner: b.owner, cell: b.cell, cells: b.cells, x: b.x, y: b.y, radius: b.radius, hp: b.hp, maxHp: b.maxHp, hq: !!b.def.hq, name: b.def.name });
       }
     }
   }

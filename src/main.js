@@ -127,7 +127,7 @@ class Game {
     if (this.campaign) this.hud.setObjectives(this.campaign.list(), this.campaign.def.title, this.campaign.stage, this.campaign.def.stages.length); else this.hud.setObjectives(null);
     this.renderer = new Renderer(this.canvas, this.world, this.camera, this.viewer);
     this.minimap = new Minimap(this.hud.minimapCanvas, this.world, this.renderer, this.viewer);
-    this.camera.setWorld(this.map.w * TILE, this.map.h * TILE);
+    this.camera.setWorld(this.map.grid.worldW, this.map.grid.worldH);
     this.selection.clear(); this.mode = 'normal'; this.buildGhost = null; this.box = null;
     this.hud.setMode(null); this.hud.clearToasts();
     this.menu.hide(); this.hud.show();
@@ -306,7 +306,7 @@ class Game {
       if (wantOwn === true && b.owner !== this.viewer) continue;
       if (wantOwn === false && b.owner === this.viewer) continue;
       if (b.owner !== this.viewer && !this.renderer.visibleAt(b.x, b.y)) continue;
-      if (wx >= b.tx * TILE - slack && wx <= (b.tx + b.w) * TILE + slack && wy >= b.ty * TILE - slack && wy <= (b.ty + b.h) * TILE + slack) return b;
+      if (dist(wx, wy, b.x, b.y) <= b.radius + slack) return b;
     }
     return null;
   }
@@ -466,20 +466,20 @@ class Game {
   placeGhost(wx, wy, confirmIfSame) {
     const g = this.buildGhost; if (!g?.key) return;
     const def = FACTIONS[this.world.players[this.viewer].faction].buildings[g.key];
-    let tx = Math.floor(wx / TILE) - Math.floor(def.w / 2) + (def.w === 2 ? 1 : 0), ty = Math.floor(wy / TILE) - Math.floor(def.h / 2) + (def.h === 2 ? 1 : 0);
-    if (def.w === 2) tx = Math.round(wx / TILE) - 1; if (def.h === 2) ty = Math.round(wy / TILE) - 1;
-    if (def.onOre) { const o = this.world.ore.filter((o) => dist(o.x, o.y, wx, wy) < TILE * 2.5).sort((a, b) => dist(a.x, a.y, wx, wy) - dist(b.x, b.y, wx, wy))[0]; if (o) { tx = o.tx; ty = o.ty; } }
-    if (def.onPoint) { const p = this.world.points.filter((p) => dist(p.x, p.y, wx, wy) < TILE * 3).sort((a, b) => dist(a.x, a.y, wx, wy) - dist(b.x, b.y, wx, wy))[0]; if (p) { tx = p.tx; ty = p.ty; } }
-    tx = clamp(tx, 0, this.world.w - def.w); ty = clamp(ty, 0, this.world.h - def.h);
-    const same = g.tx === tx && g.ty === ty;
-    const chk = this.world.canPlace(this.viewer, g.key, tx, ty);
-    g.tx = tx; g.ty = ty; g.ok = chk.ok; g.reason = chk.reason;
+    const grid = this.world.grid;
+    let cell = grid.cellAt(clamp(wx, grid.R, grid.worldW - grid.R), clamp(wy, grid.R, grid.worldH - grid.R));
+    if (def.onOre) { const o = this.world.ore.filter((o) => dist(o.x, o.y, wx, wy) < TILE * 2.5).sort((a, b) => dist(a.x, a.y, wx, wy) - dist(b.x, b.y, wx, wy))[0]; if (o) cell = o.cell; }
+    if (def.onPoint) { const p = this.world.points.filter((p) => dist(p.x, p.y, wx, wy) < TILE * 3).sort((a, b) => dist(a.x, a.y, wx, wy) - dist(b.x, b.y, wx, wy))[0]; if (p) cell = p.cell; }
+    if (cell < 0) return;
+    const same = g.cell === cell;
+    const chk = this.world.canPlace(this.viewer, g.key, cell);
+    g.cell = cell; g.ok = chk.ok; g.reason = chk.reason;
     if (confirmIfSame && same && chk.ok) this.confirmBuild();
     else if (confirmIfSame && !chk.ok) this.hud.toast(chk.reason, 'bad', null, 800);
   }
   confirmBuild() {
-    const g = this.buildGhost; if (!g?.key || g.tx === undefined) return;
-    const r = this.world.cmdBuild(this.viewer, g.key, g.tx, g.ty);
+    const g = this.buildGhost; if (!g?.key || g.cell === undefined) return;
+    const r = this.world.cmdBuild(this.viewer, g.key, g.cell);
     if (r.ok) { this.audio.play('built'); this.minimap.dirty = true; const def = r.building.def; if (def.onOre || def.onPoint) this.buildGhost = { key: g.key }; else this.setMode('normal', true); }
     else this.hud.toast(r.reason, 'bad');
   }

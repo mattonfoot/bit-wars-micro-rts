@@ -39,7 +39,7 @@ for (const camp of Object.values(CAMPAIGNS)) {
   run(30);
   assert.equal(c.stage, 1, 'stage after training');
   const ore = c.oreByRank(0); w.players[0].ore = 500;
-  assert.ok(w.cmdBuild(0, 'lode', ore.tx, ore.ty).ok, 'build lode');
+  assert.ok(w.cmdBuild(0, 'lode', ore.cell).ok, 'build lode');
   run(20);
   assert.equal(c.stage, 2, 'stage after lode');
   const p0 = c.pointByRank(0);

@@ -55,10 +55,10 @@ export class AI {
     this.saving = false;
     const want = (k) => { if (afford(k)) return true; this.saving = true; return false; };
     // extractors on reachable free veins (within build radius), nearest first
-    const free = w.ore.filter((o) => !o.building || w.byId(o.building)?.dead).filter((o) => w.buildRadiusOk(this.pid, o.tx + 0.5, o.ty + 0.5)).sort((a, b) => dist(a.x, a.y, hq.x, hq.y) - dist(b.x, b.y, hq.x, hq.y));
+    const free = w.ore.filter((o) => !o.building || w.byId(o.building)?.dead).filter((o) => w.buildRadiusOk(this.pid, o.x, o.y)).sort((a, b) => dist(a.x, a.y, hq.x, hq.y) - dist(b.x, b.y, hq.x, hq.y));
     if (free.length) {
       if (!want(bo.ext)) return;
-      for (const o of free) if (w.cmdBuild(this.pid, bo.ext, o.tx, o.ty).ok) return;
+      for (const o of free) if (w.cmdBuild(this.pid, bo.ext, o.cell).ok) return;
     }
     const nProd = mine.filter((b) => b.def.trains && !b.def.hq).length;
     const wantProd = t < 90 ? 1 : t < 240 ? 2 : 3;
@@ -77,7 +77,7 @@ export class AI {
         if (pt.owner !== this.pid || (pt.outpost && !w.byId(pt.outpost)?.dead)) continue;
         if (w.squads.some((s) => !s.dead && s.owner !== this.pid && dist(s.x, s.y, pt.x, pt.y) < 8 * TILE)) continue;
         if (!want(bo.outpost)) return;
-        if (w.cmdBuild(this.pid, bo.outpost, pt.tx, pt.ty).ok) return;
+        if (w.cmdBuild(this.pid, bo.outpost, pt.cell).ok) return;
       }
     }
     if (bo.upgrade && t > 200 && count(bo.upgrade) === 0) { if (!want(bo.upgrade)) return; if (this.tryBuildNear(bo.upgrade, hq)) return; }
@@ -89,19 +89,17 @@ export class AI {
     }
   }
   tryBuildNear(key, hq, towardCentre = false) {
-    const w = this.w, def = this.fac.buildings[key];
-    const cx = w.w / 2, cy = w.h / 2;
-    const dirX = Math.sign(cx - hq.tx), dirY = Math.sign(cy - hq.ty);
+    const w = this.w, g = w.grid;
     const cands = [];
-    for (let r = 2; r <= 9; r++) for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
-      if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
-      const tx = hq.tx + 1 + dx - Math.floor(def.w / 2), ty = hq.ty + 1 + dy - Math.floor(def.h / 2);
-      let score = r + w.rng.range(0, 1.5);
-      if (towardCentre) score -= (dx * dirX + dy * dirY) * 0.4;
-      cands.push([score, tx, ty]);
+    for (const c of g.cluster(hq.cell, 10)) {
+      const d = g.hexDist(c, hq.cell);
+      if (d < 3) continue;
+      let score = d + w.rng.range(0, 1.5);
+      if (towardCentre) score -= (Math.hypot(hq.x - g.cx, hq.y - g.cy) - Math.hypot(g.cxs[c] - g.cx, g.cys[c] - g.cy)) / TILE * 0.4;
+      cands.push([score, c]);
     }
     cands.sort((a, b) => a[0] - b[0]);
-    for (const [, tx, ty] of cands) { if (w.cmdBuild(this.pid, key, tx, ty).ok) return true; }
+    for (const [, c] of cands) { if (w.cmdBuild(this.pid, key, c).ok) return true; }
     return false;
   }
 
@@ -211,10 +209,10 @@ export class AI {
     if (this.mode !== 'attack') {
       // rally between base and the centre
       if (!this.rally) {
-        const cx = w.w * TILE / 2, cy = w.h * TILE / 2;
+        const cx = w.grid.cx, cy = w.grid.cy;
         const rx = hq.x + (cx - hq.x) * 0.35, ry = hq.y + (cy - hq.y) * 0.35;
-        const np = nearestPassable(w.map, Math.floor(rx / TILE), Math.floor(ry / TILE), { blocked: w.blockedFn() });
-        this.rally = np ? { x: (np[0] + 0.5) * TILE, y: (np[1] + 0.5) * TILE } : { x: rx, y: ry };
+        const np = nearestPassable(w.map, w.grid.cellAt(rx, ry), { blocked: w.blockedFn() });
+        this.rally = np >= 0 ? { x: w.grid.cxs[np], y: w.grid.cys[np] } : { x: rx, y: ry };
       }
       const idle = army.filter((s) => s.order.type === 'idle' && dist(s.x, s.y, this.rally.x, this.rally.y) > 6 * TILE);
       if (idle.length) w.cmdAttackMove(idle, this.rally.x, this.rally.y);
@@ -253,7 +251,7 @@ export class AI {
     const pts = w.points.filter((p) => enemyIds.includes(p.owner));
     if (pts.length) { const p = pts[0]; return { x: p.x, y: p.y }; }
     const es = w.map.starts[enemyIds[0]];
-    return es ? { x: (es.tx + 0.5) * TILE, y: (es.ty + 0.5) * TILE } : null;
+    return es ? { x: es.x, y: es.y } : null;
   }
   micro(squads) {
     if (!this.d.micro) return;

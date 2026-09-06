@@ -161,7 +161,7 @@ export class HUD {
     const g = this.g, w = g.world, p = w.players[g.viewer], f = FACTIONS[p.faction];
     const sq = g.selectedSquads(), bl = g.selectedBuildings();
     const mode = g.mode;
-    const key = `${mode}|${sq.map((s) => s.id).join(',')}|${bl.map((b) => b.id + ':' + b.queue.length + ':' + (b.done ? 1 : 0)).join(',')}|${sq.filter((s) => s.hero).length}|${g.buildGhost?.key || ''}|${g.buildGhost?.tx ?? ''}|${Math.floor(p.ore / 10)}|${Math.floor(p.flux / 10)}|${p.pop}|${p.heroAlive}|${p.heroQueued}`;
+    const key = `${mode}|${sq.map((s) => s.id).join(',')}|${bl.map((b) => b.id + ':' + b.queue.length + ':' + (b.done ? 1 : 0)).join(',')}|${sq.filter((s) => s.hero).length}|${g.buildGhost?.key || ''}|${g.buildGhost?.cell ?? ''}|${Math.floor(p.ore / 10)}|${Math.floor(p.flux / 10)}|${p.pop}|${p.heroAlive}|${p.heroQueued}`;
     const cmd = this.el.cmd;
     if (key === this.cmdKey) { this.updateCmdProgress(bl); return; }
     this.cmdKey = key;
@@ -176,7 +176,7 @@ export class HUD {
         const el = this.btn(`${buildingIconSVG(p.faction, b, f.color, 22)}<span>${b.name}</span>${costHtml(b.cost, ok)}`, () => g.startBuild(b.key), (gh?.key === b.key ? 'on ' : '') + (ok ? '' : 'dis'), b.desc);
         cmd.appendChild(el);
       }
-      if (gh?.key && gh.tx !== undefined) cmd.appendChild(this.btn(gh.ok ? '✔ Confirm placement' : '✖ ' + (gh.reason || 'Invalid'), () => g.confirmBuild(), 'wide ' + (gh.ok ? 'on' : 'dis')));
+      if (gh?.key && gh.cell !== undefined) cmd.appendChild(this.btn(gh.ok ? '✔ Confirm placement' : '✖ ' + (gh.reason || 'Invalid'), () => g.confirmBuild(), 'wide ' + (gh.ok ? 'on' : 'dis')));
       else if (gh?.key) { const h = document.createElement('div'); h.className = 'hint'; h.textContent = f.buildings[gh.key].onOre ? 'Tap an ore vein' : f.buildings[gh.key].onPoint ? 'Tap a captured strategic point' : 'Tap where to build (near your structures)'; cmd.appendChild(h); }
       cmd.appendChild(this.btn('Cancel', () => g.setMode('normal'), 'wide'));
       return;

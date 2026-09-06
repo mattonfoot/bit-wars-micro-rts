@@ -1,4 +1,5 @@
-// Grid A* with a binary heap. Fast enough to run synchronously on every command (64x64 = 4096 nodes).
+// Hex-grid A* with a binary heap, plus flood fill, nearest-passable search and string-pulling.
+// All functions take the map object ({ grid, tiles }) and cell indices.
 import { TILE_SPEED, isPassable } from '../map/terrain.js';
 
 class Heap {
@@ -6,23 +7,13 @@ class Heap {
   push(node) {
     const a = this.a; a.push(node);
     let i = a.length - 1;
-    while (i > 0) {
-      const p = (i - 1) >> 1;
-      if (a[p].f <= a[i].f) break;
-      [a[p], a[i]] = [a[i], a[p]]; i = p;
-    }
+    while (i > 0) { const p = (i - 1) >> 1; if (a[p].f <= a[i].f) break; [a[p], a[i]] = [a[i], a[p]]; i = p; }
   }
   pop() {
     const a = this.a; const top = a[0]; const last = a.pop();
     if (a.length) {
       a[0] = last; let i = 0;
-      for (;;) {
-        const l = i * 2 + 1, r = l + 1; let m = i;
-        if (l < a.length && a[l].f < a[m].f) m = l;
-        if (r < a.length && a[r].f < a[m].f) m = r;
-        if (m === i) break;
-        [a[m], a[i]] = [a[i], a[m]]; i = m;
-      }
+      for (;;) { const l = i * 2 + 1, r = l + 1; let m = i; if (l < a.length && a[l].f < a[m].f) m = l; if (r < a.length && a[r].f < a[m].f) m = r; if (m === i) break; [a[m], a[i]] = [a[i], a[m]]; i = m; }
     }
     return top;
   }
@@ -35,149 +26,122 @@ function scratch(N) {
   return _scratch;
 }
 
-const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
-
 /**
- * A* over a tile grid.
- * @param {object} grid {w,h,tiles:Uint8Array}
- * @param {number} sx,sy start tile; tx,ty target tile
- * @param {object} opts { blocked(x,y)=>bool extra blockers, cost(x,y)=>number|Infinity, carve: allow impassable at high cost, flying }
- * @returns {Array<[number,number]>|null}
+ * A* from cell si to cell ti.
+ * opts: { blocked(i)=>bool, carve (impassable at high cost), flying, maxNodes, partial }
+ * @returns {number[]|null} cell indices
  */
-export function findPath(grid, sx, sy, tx, ty, opts = {}) {
-  const { w, h, tiles } = grid;
-  const extra = opts.blocked;
-  const flying = !!opts.flying;
-  const carve = !!opts.carve;
-  const maxNodes = opts.maxNodes || w * h;
-  const inb = (x, y) => x >= 0 && y >= 0 && x < w && y < h;
-  const passCost = (x, y) => {
-    const t = tiles[y * w + x];
+export function findPath(map, si, ti, opts = {}) {
+  const { grid, tiles } = map;
+  const N = grid.N;
+  const extra = opts.blocked, flying = !!opts.flying, carve = !!opts.carve;
+  const maxNodes = opts.maxNodes || N;
+  const cost = (i) => {
+    const t = tiles[i];
     if (flying) return 1;
-    if (extra && extra(x, y)) return carve ? 8 : Infinity;
+    if (extra && extra(i)) return carve ? 8 : Infinity;
     const s = TILE_SPEED[t];
     if (s <= 0) return carve ? (t === 4 ? 40 : 12) : Infinity;
     return 1 / s;
   };
-  if (!inb(sx, sy) || !inb(tx, ty)) return null;
-  if (!carve && passCost(tx, ty) === Infinity) {
-    // Find nearest passable tile to target.
-    const n = nearestPassable(grid, tx, ty, opts);
-    if (!n) return null;
-    tx = n[0]; ty = n[1];
-  }
-  const N = w * h;
+  if (si < 0 || ti < 0 || si >= N || ti >= N) return null;
+  if (!carve && cost(ti) === Infinity) { const n = nearestPassable(map, ti, opts); if (n < 0) return null; ti = n; }
   const sc = scratch(N);
   const g = sc.g, parent = sc.parent, closed = sc.closed;
   g.fill(Infinity); parent.fill(-1); closed.fill(0);
-  const start = sy * w + sx, goal = ty * w + tx;
-  g[start] = 0;
+  g[si] = 0;
   const heap = new Heap();
-  const hfn = (x, y) => { const dx = Math.abs(x - tx), dy = Math.abs(y - ty); return Math.max(dx, dy) + 0.414 * Math.min(dx, dy); };
-  heap.push({ i: start, f: hfn(sx, sy) });
-  let expanded = 0;
-  let best = start, bestH = hfn(sx, sy);
+  const tc = grid.cube(ti);
+  const hfn = (i) => { const c = grid.cube(i); return Math.max(Math.abs(c[0] - tc[0]), Math.abs(c[1] - tc[1]), Math.abs(c[2] - tc[2])); };
+  heap.push({ i: si, f: hfn(si) });
+  let expanded = 0, best = si, bestH = hfn(si);
+  const nb = grid.nb;
   while (heap.size) {
     const { i } = heap.pop();
     if (closed[i]) continue;
     closed[i] = 1;
-    if (i === goal) { best = i; break; }
+    if (i === ti) { best = i; break; }
     if (++expanded > maxNodes) break;
-    const x = i % w, y = (i / w) | 0;
-    const hh = hfn(x, y);
+    const hh = hfn(i);
     if (hh < bestH) { bestH = hh; best = i; }
-    for (let d = 0; d < 8; d++) {
-      const nx = x + DIRS[d][0], ny = y + DIRS[d][1];
-      if (!inb(nx, ny)) continue;
-      const ni = ny * w + nx;
-      if (closed[ni]) continue;
-      const c = passCost(nx, ny);
+    for (let k = 0; k < 6; k++) {
+      const n = nb[i * 6 + k];
+      if (n < 0 || closed[n]) continue;
+      const c = cost(n);
       if (c === Infinity) continue;
-      if (d >= 4) {
-        // no corner cutting through blocked tiles
-        if (passCost(x + DIRS[d][0], y) === Infinity || passCost(x, y + DIRS[d][1]) === Infinity) continue;
-      }
-      const step = (d >= 4 ? 1.4142 : 1) * c;
-      const ng = g[i] + step;
-      if (ng < g[ni]) {
-        g[ni] = ng; parent[ni] = i;
-        heap.push({ i: ni, f: ng + hfn(nx, ny) });
-      }
+      const ng = g[i] + c;
+      if (ng < g[n]) { g[n] = ng; parent[n] = i; heap.push({ i: n, f: ng + hfn(n) }); }
     }
   }
-  if (best !== goal && !opts.partial) {
-    if (bestH > 2 && !carve) return null;
-  }
+  if (best !== ti && !opts.partial && bestH > 2 && !carve) return null;
   const path = [];
   let cur = best;
-  while (cur !== -1) { path.push([cur % w, (cur / w) | 0]); cur = parent[cur]; }
+  while (cur !== -1) { path.push(cur); cur = parent[cur]; }
   path.reverse();
   return path;
 }
 
-export function nearestPassable(grid, tx, ty, opts = {}) {
-  const { w, h, tiles } = grid;
-  const extra = opts.blocked;
-  for (let r = 0; r < 12; r++) {
-    for (let dy = -r; dy <= r; dy++) {
-      for (let dx = -r; dx <= r; dx++) {
-        if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
-        const x = tx + dx, y = ty + dy;
-        if (x < 0 || y < 0 || x >= w || y >= h) continue;
-        if ((opts.flying || isPassable(tiles[y * w + x])) && !(extra && extra(x, y))) return [x, y];
-      }
-    }
+/** Nearest passable, unblocked cell to i by hex rings (BFS). -1 if none within 14 rings. */
+export function nearestPassable(map, i, opts = {}) {
+  const { grid, tiles } = map;
+  if (i < 0) return -1;
+  const ok = (c) => (opts.flying || isPassable(tiles[c])) && !(opts.blocked && opts.blocked(c));
+  if (ok(i)) return i;
+  const seen = new Uint8Array(grid.N); seen[i] = 1;
+  let frontier = [i];
+  for (let d = 0; d < 14 && frontier.length; d++) {
+    const next = [];
+    for (const c of frontier) for (let k = 0; k < 6; k++) { const n = grid.nb[c * 6 + k]; if (n < 0 || seen[n]) continue; seen[n] = 1; if (ok(n)) return n; next.push(n); }
+    frontier = next;
   }
-  return null;
+  return -1;
 }
 
-/** BFS reachability set from (sx,sy). Returns Uint8Array mask. */
-export function flood(grid, sx, sy, blocked) {
-  const { w, h, tiles } = grid;
-  const seen = new Uint8Array(w * h);
-  const q = [sy * w + sx];
-  seen[q[0]] = 1;
+/** Reachability mask from cell si. */
+export function flood(map, si, blocked) {
+  const { grid, tiles } = map;
+  const seen = new Uint8Array(grid.N);
+  if (si < 0) return seen;
+  const q = [si]; seen[si] = 1;
   while (q.length) {
     const i = q.pop();
-    const x = i % w, y = (i / w) | 0;
-    for (let d = 0; d < 4; d++) {
-      const nx = x + DIRS[d][0], ny = y + DIRS[d][1];
-      if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
-      const ni = ny * w + nx;
-      if (seen[ni]) continue;
-      if (!isPassable(tiles[ni]) || (blocked && blocked(nx, ny))) continue;
-      seen[ni] = 1; q.push(ni);
+    for (let k = 0; k < 6; k++) {
+      const n = grid.nb[i * 6 + k];
+      if (n < 0 || seen[n]) continue;
+      if (!isPassable(tiles[n]) || (blocked && blocked(n))) continue;
+      seen[n] = 1; q.push(n);
     }
   }
   return seen;
 }
 
-/** True if the straight segment between two tile centres only crosses passable tiles. */
-export function lineWalkable(grid, x0, y0, x1, y1, blocked, flying) {
+/** True if the straight segment between two world points crosses only passable, unblocked cells. */
+export function lineWalkable(map, x0, y0, x1, y1, blocked, flying) {
   if (flying) return true;
-  const { w, tiles } = grid;
-  const dx = x1 - x0, dy = y1 - y0;
-  const steps = Math.max(1, Math.ceil(Math.max(Math.abs(dx), Math.abs(dy)) * 2));
-  for (let i = 0; i <= steps; i++) {
-    const t = i / steps;
-    const x = Math.round(x0 + dx * t), y = Math.round(y0 + dy * t);
-    if (x < 0 || y < 0 || x >= w || y >= grid.h) return false;
-    if (!isPassable(tiles[y * w + x]) || (blocked && blocked(x, y))) return false;
+  const { grid, tiles } = map;
+  const d = Math.hypot(x1 - x0, y1 - y0);
+  const steps = Math.max(1, Math.ceil(d / (grid.R * 0.45)));
+  let last = -2;
+  for (let s = 0; s <= steps; s++) {
+    const t = s / steps;
+    const i = grid.cellAt(x0 + (x1 - x0) * t, y0 + (y1 - y0) * t);
+    if (i === last) continue;
+    last = i;
+    if (i < 0 || !isPassable(tiles[i]) || (blocked && blocked(i))) return false;
   }
   return true;
 }
 
-/** String-pull a tile path into fewer waypoints. */
-export function smoothPath(grid, path, blocked, flying) {
-  if (!path || path.length < 3) return path;
-  const out = [path[0]];
+/** String-pull a cell path into world waypoints ([x,y]). */
+export function smoothPath(map, path, blocked, flying) {
+  const { grid } = map;
+  const pts = path.map((i) => grid.center(i));
+  if (pts.length < 3) return pts;
+  const out = [pts[0]];
   let anchor = 0;
-  for (let i = 2; i < path.length; i++) {
-    if (!lineWalkable(grid, path[anchor][0], path[anchor][1], path[i][0], path[i][1], blocked, flying)) {
-      out.push(path[i - 1]);
-      anchor = i - 1;
-    }
+  for (let i = 2; i < pts.length; i++) {
+    if (!lineWalkable(map, pts[anchor][0], pts[anchor][1], pts[i][0], pts[i][1], blocked, flying)) { out.push(pts[i - 1]); anchor = i - 1; }
   }
-  out.push(path[path.length - 1]);
+  out.push(pts[pts.length - 1]);
   return out;
 }

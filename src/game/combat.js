@@ -1,5 +1,5 @@
 // Pure combat helpers: cover, flanking, damage multipliers.
-import { T, TILE, TILE_COVER_IN, TILE_COVER_ADJ } from '../map/terrain.js';
+import { TILE_COVER_IN, TILE_COVER_ADJ } from '../map/terrain.js';
 import { DMG_MATRIX } from './data.js';
 import { angleDiff } from '../engine/math.js';
 
@@ -8,26 +8,20 @@ import { angleDiff } from '../engine/math.js';
  * 0 none, 1 light (standing in brush/crater/rubble), 2 heavy (obstacle between unit and shooter).
  */
 export function coverAt(map, x, y, sx, sy) {
-  const tx = Math.floor(x / TILE), ty = Math.floor(y / TILE);
-  if (tx < 0 || ty < 0 || tx >= map.w || ty >= map.h) return 0;
-  let level = TILE_COVER_IN[map.tiles[ty * map.w + tx]];
-  if (sx !== undefined) {
-    // Direction towards shooter, rounded to 8 directions.
+  const g = map.grid;
+  const i = g.cellAt(x, y);
+  if (i < 0) return 0;
+  let level = TILE_COVER_IN[map.tiles[i]];
+  if (sx !== undefined && level < 2) {
+    // Neighbouring cells within 60° of the direction to the shooter can give heavy cover.
     const ang = Math.atan2(sy - y, sx - x);
-    const dir = Math.round(ang / (Math.PI / 4));
-    const DX = [1, 1, 0, -1, -1, -1, 0, 1], DY = [0, 1, 1, 1, 0, -1, -1, -1];
-    const d = ((dir % 8) + 8) % 8;
-    const nx = tx + DX[d], ny = ty + DY[d];
-    if (nx >= 0 && ny >= 0 && nx < map.w && ny < map.h) {
-      const adj = TILE_COVER_ADJ[map.tiles[ny * map.w + nx]];
+    for (let k = 0; k < 6; k++) {
+      const n = g.neighbor(i, k);
+      if (n < 0) continue;
+      const na = Math.atan2(g.cys[n] - g.cys[i], g.cxs[n] - g.cxs[i]);
+      if (Math.abs(angleDiff(ang, na)) > Math.PI / 3 + 0.05) continue;
+      const adj = TILE_COVER_ADJ[map.tiles[n]];
       if (adj > level) level = adj;
-    }
-    // Also check the two neighbouring directions for a slightly generous heavy cover.
-    if (level < 2) {
-      for (const dd of [(d + 1) % 8, (d + 7) % 8]) {
-        const ax = tx + DX[dd], ay = ty + DY[dd];
-        if (ax >= 0 && ay >= 0 && ax < map.w && ay < map.h && TILE_COVER_ADJ[map.tiles[ay * map.w + ax]] === 2) { level = 2; break; }
-      }
     }
   }
   return level;

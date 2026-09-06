@@ -21,7 +21,7 @@ try {
   const themes = ['ashfall', 'frost', 'crystal', 'urban', 'verdant'];
   const factions = ['green', 'blue', 'red', 'green', 'blue'];
   for (let i = 0; i < themes.length; i++) {
-    await page.evaluate(([t, f]) => { const g = window.game; g.menu.hide(); g.start({ faction: f, theme: t, difficulty: 'normal', size: 64, seed: 'gallery' }); g.renderer.showFog = false; g.camera.zoom = g.camera.minZoom; g.camera.centerOn(1024, 1024); g.select([]); }, [themes[i], factions[i]]);
+    await page.evaluate(([t, f]) => { const g = window.game; g.menu.hide(); g.start({ faction: f, theme: t, difficulty: 'normal', size: 64, seed: 'gallery' }); g.renderer.showFog = false; g.camera.zoom = g.camera.minZoom; g.camera.centerOn(g.world.grid.cx, g.world.grid.cy); g.select([]); }, [themes[i], factions[i]]);
     await page.waitForTimeout(400);
     await page.screenshot({ path: `${out}/theme-${themes[i]}.png` });
     if (i < 3) {
@@ -31,7 +31,7 @@ try {
         const units = Object.keys(w.faction(0).units);
         units.forEach((k, j) => w.spawnSquad(0, k, hq.x + 3 * T + (j % 3) * 4 * T, hq.y - T + Math.floor(j / 3) * 3.5 * T));
         const B = Object.values(w.faction(0).buildings).filter((b) => !b.hq);
-        let k = 0; for (const b of B) { for (let dy = -6; dy <= 6 && k < 99; dy++) for (let dx = -6; dx <= 6; dx++) { const r = w.cmdBuild(0, b.key, hq.tx + dx, hq.ty + dy); if (r.ok) { r.building.done = true; r.building.progress = 1; r.building.hp = r.building.maxHp; k++; dy = 99; break; } } }
+        for (const b of B) { for (const c of w.grid.cluster(hq.cell, 7)) { const r = w.cmdBuild(0, b.key, c); if (r.ok) { r.building.done = true; r.building.progress = 1; r.building.hp = r.building.maxHp; break; } } }
         g.camera.zoom = 1.3; g.camera.centerOn(hq.x + 4 * T, hq.y + T);
         g.select([w.squads[0].id]);
       });

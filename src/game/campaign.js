@@ -27,8 +27,8 @@ export class Campaign {
     c.computeRanks();
     const P = def.player, E = def.enemy;
     // headquarters
-    if (P.hq !== false) { const s = map.starts[0]; const hq = world.placeBuilding(0, hqKey(P.faction), s.tx - 1, s.ty - 1, true); world.players[0].hqId = hq.id; }
-    if (E.hq !== false) { const s = map.starts[1]; const hq = world.placeBuilding(1, hqKey(E.faction), s.tx - 1, s.ty - 1, true); world.players[1].hqId = hq.id; }
+    if (P.hq !== false) { const hq = world.placeBuilding(0, hqKey(P.faction), map.starts[0].i, true); world.players[0].hqId = hq.id; }
+    if (E.hq !== false) { const hq = world.placeBuilding(1, hqKey(E.faction), map.starts[1].i, true); world.players[1].hqId = hq.id; }
     world.players[0].ore = P.ore ?? START_ORE; world.players[0].flux = P.flux ?? START_FLUX;
     world.players[1].ore = E.ore ?? START_ORE; world.players[1].flux = E.flux ?? START_FLUX;
     if (E.incomeMult) world.players[1].incomeMult = E.incomeMult;
@@ -45,35 +45,37 @@ export class Campaign {
   }
   computeRanks() {
     const w = this.world, s = w.map.starts[0];
-    const d = (o) => Math.hypot(o.tx - s.tx, o.ty - s.ty);
+    const d = (o) => Math.hypot(o.x - s.x, o.y - s.y);
     this.pointRanks = [...w.points].sort((a, b) => d(a) - d(b));
     this.oreRanks = [...w.ore].sort((a, b) => d(a) - d(b));
   }
   pointByRank(k) { return this.pointRanks[Math.max(0, Math.min(this.pointRanks.length - 1, k))]; }
   oreByRank(k) { return this.oreRanks[Math.max(0, Math.min(this.oreRanks.length - 1, k))]; }
-  /** Resolve a position spec to a tile [tx,ty]. */
-  tileOf(at, owner = 0) {
-    const w = this.world, st = w.map.starts;
-    if (at === 'base') return [st[owner].tx, st[owner].ty];
-    if (at === 'playerBase') return [st[0].tx, st[0].ty];
-    if (at === 'enemyBase') return [st[1].tx, st[1].ty];
-    if (at === 'center') return [Math.floor(w.w / 2), Math.floor(w.h / 2)];
-    if (typeof at === 'string' && at.startsWith('point:')) { const p = this.pointByRank(+at.slice(6)); return [p.tx, p.ty]; }
-    if (typeof at === 'string' && at.startsWith('ore:')) { const o = this.oreByRank(+at.slice(4)); return [o.tx, o.ty]; }
-    if (Array.isArray(at)) { const b = st[owner]; return [b.tx + at[0], b.ty + at[1]]; }
-    if (at && at.tx !== undefined) return [at.tx, at.ty];
-    return [st[owner].tx, st[owner].ty];
+  /** Resolve a position spec to a cell index. */
+  cellOf(at, owner = 0) {
+    const w = this.world, g = w.grid, st = w.map.starts;
+    if (at === 'base') return st[owner].i;
+    if (at === 'playerBase') return st[0].i;
+    if (at === 'enemyBase') return st[1].i;
+    if (at === 'center') return g.cellAt(g.cx, g.cy);
+    if (typeof at === 'string' && at.startsWith('point:')) return this.pointByRank(+at.slice(6)).cell;
+    if (typeof at === 'string' && at.startsWith('ore:')) return this.oreByRank(+at.slice(4)).cell;
+    if (Array.isArray(at)) { const b = st[owner]; const c = Math.max(1, Math.min(w.w - 2, g.col(b.i) + at[0])), r = Math.max(1, Math.min(w.h - 2, g.row(b.i) + at[1])); return g.index(c, r); }
+    if (at && at.cell !== undefined) return at.cell;
+    return st[owner].i;
   }
-  worldOf(at, owner = 0) { const [tx, ty] = this.tileOf(at, owner); return { x: (tx + 0.5) * TILE, y: (ty + 0.5) * TILE, tx, ty }; }
+  tileOf(at, owner = 0) { const i = this.cellOf(at, owner); return [this.world.grid.col(i), this.world.grid.row(i)]; }
+  worldOf(at, owner = 0) { const i = this.cellOf(at, owner); const [x, y] = this.world.grid.center(i); return { x, y, cell: i }; }
   placeSquad(owner, spec) {
-    const w = this.world;
+    const w = this.world, g = w.grid;
     const n = spec.n || 1;
     for (let i = 0; i < n; i++) {
-      let [tx, ty] = this.tileOf(spec.at, owner);
-      tx += (i % 3) * 2; ty += Math.floor(i / 3) * 2;
+      const base = this.cellOf(spec.at, owner);
+      let c = Math.min(w.w - 2, g.col(base) + (i % 3) * 2), r = Math.min(w.h - 2, g.row(base) + Math.floor(i / 3) * 2);
       const def = w.faction(owner).units[spec.key];
-      const np = nearestPassable(w.map, tx, ty, { blocked: w.blockedFn(), flying: def.flying }) || [tx, ty];
-      const s = w.spawnSquad(owner, spec.key, (np[0] + 0.5) * TILE, (np[1] + 0.5) * TILE);
+      let np = nearestPassable(w.map, g.index(c, r), { blocked: w.blockedFn(), flying: def.flying });
+      if (np < 0) np = base;
+      const s = w.spawnSquad(owner, spec.key, g.cxs[np], g.cys[np]);
       if (spec.hp) for (const m of s.members) m.hp *= spec.hp;
       if (spec.order === 'hold') w.cmdHold([s]);
       if (spec.order === 'attackBase') w.cmdAttackMove([s], ...(() => { const p = this.worldOf('playerBase'); return [p.x, p.y]; })());
@@ -81,17 +83,14 @@ export class Campaign {
     }
   }
   placeStructure(owner, spec) {
-    const w = this.world, def = w.faction(owner).buildings[spec.key];
-    let [tx, ty] = this.tileOf(spec.at, owner);
-    if (def.onOre || def.onPoint) { const b = w.placeBuilding(owner, spec.key, tx, ty, true); if (def.onPoint) { const pt = w.points.find((p) => p.tx === tx && p.ty === ty); if (pt) { pt.owner = owner; pt.progress = 100; } } return b; }
-    for (let r = 0; r < 8; r++) for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
-      if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
-      const x0 = tx + dx, y0 = ty + dy;
-      let ok = true;
-      for (let y = y0; y < y0 + def.h && ok; y++) for (let x = x0; x < x0 + def.w; x++) {
-        if (x < 1 || y < 1 || x >= w.w - 1 || y >= w.h - 1 || !isBuildable(w.map.tiles[y * w.w + x]) || w.blocked[y * w.w + x] || w.points.some((p) => p.tx === x && p.ty === y)) { ok = false; break; }
-      }
-      if (ok) return w.placeBuilding(owner, spec.key, x0, y0, true);
+    const w = this.world, g = w.grid, def = w.faction(owner).buildings[spec.key];
+    const cell = this.cellOf(spec.at, owner);
+    if (def.onOre || def.onPoint) { const b = w.placeBuilding(owner, spec.key, cell, true); if (def.onPoint) { const pt = w.points.find((p) => p.cell === cell); if (pt) { pt.owner = owner; pt.progress = 100; } } return b; }
+    const cands = g.cluster(cell, 8).sort((a, b) => g.hexDist(a, cell) - g.hexDist(b, cell));
+    for (const c of cands) {
+      const cells = w.footprint(def, c);
+      if (cells.length < (def.w >= 2 ? 7 : 1)) continue;
+      if (cells.every((x) => !w.isBorderCell(x) && isBuildable(w.map.tiles[x]) && !w.blocked[x] && !w.points.some((p) => p.cell === x))) return w.placeBuilding(owner, spec.key, c, true);
     }
     return null;
   }
@@ -199,8 +198,9 @@ export class Campaign {
       const from = this.worldOf(wv.from || 'enemyBase', 1), to = this.worldOf(wv.target || 'playerBase', 0);
       for (const u of wv.units) for (let k = 0; k < (u.n || 1); k++) {
         const udef = w.faction(1).units[u.key]; if (!udef) continue;
-        const np = nearestPassable(w.map, from.tx + (k % 3) * 2, from.ty + Math.floor(k / 3) * 2, { blocked: w.blockedFn(), flying: udef.flying }) || [from.tx, from.ty];
-        const s = w.spawnSquad(1, u.key, (np[0] + 0.5) * TILE, (np[1] + 0.5) * TILE);
+        const g = w.grid, c = Math.min(w.w - 2, g.col(from.cell) + (k % 3) * 2), r = Math.min(w.h - 2, g.row(from.cell) + Math.floor(k / 3) * 2);
+        let np = nearestPassable(w.map, g.index(c, r), { blocked: w.blockedFn(), flying: udef.flying }); if (np < 0) np = from.cell;
+        const s = w.spawnSquad(1, u.key, g.cxs[np], g.cys[np]);
         w.cmdAttackMove([s], to.x, to.y);
       }
       this.messages.push({ kind: 'wave', text: wv.text || 'Enemy wave incoming!' });

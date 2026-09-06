@@ -50,6 +50,7 @@ Every unit has a damage type (light, anti-armour, energy, blast, melee) and an a
 - **Fog of war.** Vision comes from units and structures; enemy structures you have seen are remembered on the minimap.
 - **Meaningful losses.** Squads die permanently, structures leave rubble, lose the HQ and the war is over.
 - **Five themes.** Verdant Basin, Ashfall, Frostbite, Ruined City, Crystal Dunes. Maps are point-symmetric so both sides get identical terrain; seeds are shareable.
+- **Irregular hex grid.** The battlefield is a hexagonal grid whose corner points are displaced by fractal noise, so cells, coastlines and contour lines are never straight. Pathfinding, cover, vision and building footprints all use the same jittered cells the renderer draws, and the displacement is point-symmetric so mirrored halves still match exactly (`src/map/hexgrid.js`).
 - **Vector-map look.** Black ground with thin outlines: white contour lines for mountains, blue coastlines around water, grey edges along paths, brown outlines for walls and ruins, green outlines for vegetation. Units are solid coloured shapes so they always stand out from the terrain.
 
 ### Controls (touch)

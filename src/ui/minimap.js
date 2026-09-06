@@ -21,36 +21,44 @@ export class Minimap {
     this.dpr = dpr; this.dirty = true;
   }
   alert(x, y) { this.alerts.push({ x, y, t: 0 }); }
-  toWorld(mx, my) { const s = (this.world.w * TILE) / this.size; return [mx * s, my * s]; }
+  layout() {
+    const g = this.world.grid, px = this.size * this.dpr;
+    const scale = px / Math.max(g.worldW, g.worldH);
+    return { scale, ox: (px - g.worldW * scale) / 2, oy: (px - g.worldH * scale) / 2 };
+  }
+  toWorld(mx, my) { const { scale, ox, oy } = this.layout(); return [(mx * this.dpr - ox) / scale, (my * this.dpr - oy) / scale]; }
   draw(camera, dt) {
-    const { ctx, world, size, dpr } = this;
-    const scale = (size * dpr) / (world.w * TILE);
+    const { ctx, world } = this;
+    const g = world.grid;
+    const { scale, ox, oy } = this.layout();
     if (this.dirty) {
       const tc = this.terrainCache.getContext('2d');
-      tc.imageSmoothingEnabled = false;
-      tc.drawImage(this.renderer.terrain.mini, 0, 0, this.terrainCache.width, this.terrainCache.height);
+      tc.fillStyle = '#000'; tc.fillRect(0, 0, this.terrainCache.width, this.terrainCache.height);
+      tc.imageSmoothingEnabled = true;
+      tc.drawImage(this.renderer.terrain.mini, ox, oy, g.worldW * scale, g.worldH * scale);
       this.dirty = false;
     }
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.drawImage(this.terrainCache, 0, 0);
     ctx.save();
+    ctx.translate(ox, oy);
     ctx.scale(scale, scale);
     // fog
-    if (this.renderer.showFog) { ctx.imageSmoothingEnabled = false; ctx.globalAlpha = 0.85; ctx.drawImage(this.renderer.fog.canvas, 0, 0, world.w * TILE, world.h * TILE); ctx.globalAlpha = 1; }
+    if (this.renderer.showFog) { const fr = this.renderer.fog.rect; ctx.imageSmoothingEnabled = true; ctx.globalAlpha = 0.85; ctx.drawImage(this.renderer.fog.canvas, fr.x, fr.y, fr.w, fr.h); ctx.globalAlpha = 1; }
     const vis = (x, y) => !this.renderer.showFog || world.visible(this.viewer, x, y);
     const vf = world.players[this.viewer].faction;
     // known enemy buildings
     for (const k of world.players[this.viewer].known.values()) {
       const c = factionColors(k.faction, k.owner, this.viewer, vf);
-      ctx.fillStyle = c.fill; ctx.globalAlpha = 0.6; ctx.fillRect(k.tx * TILE, k.ty * TILE, k.w * TILE, k.h * TILE); ctx.globalAlpha = 1;
+      ctx.fillStyle = c.fill; ctx.globalAlpha = 0.6; ctx.beginPath(); ctx.arc(k.x, k.y, k.radius, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
     }
     // buildings
     for (const b of world.buildings) {
       if (b.dead) continue;
       if (b.owner !== this.viewer && !vis(b.x, b.y)) continue;
       const c = factionColors(b.faction, b.owner, this.viewer, vf);
-      ctx.fillStyle = c.fill; ctx.fillRect(b.tx * TILE, b.ty * TILE, b.w * TILE, b.h * TILE);
-      if (b.def.hq) { ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5 / scale; ctx.strokeRect(b.tx * TILE, b.ty * TILE, b.w * TILE, b.h * TILE); }
+      ctx.fillStyle = c.fill; ctx.beginPath(); ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2); ctx.fill();
+      if (b.def.hq) { ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5 / scale; ctx.stroke(); }
     }
     // points
     for (const p of world.points) {
@@ -60,7 +68,7 @@ export class Minimap {
       if (p.contested) { ctx.strokeStyle = '#fff'; ctx.lineWidth = 2 / scale; ctx.beginPath(); ctx.arc(p.x, p.y, TILE * 1.6, 0, Math.PI * 2); ctx.stroke(); }
     }
     // ore
-    for (const o of world.ore) { if (!world.explored(this.viewer, o.tx, o.ty)) continue; ctx.fillStyle = '#ffe680'; ctx.fillRect(o.x - TILE * 0.5, o.y - TILE * 0.5, TILE, TILE); }
+    for (const o of world.ore) { if (!world.explored(this.viewer, o.cell)) continue; ctx.fillStyle = '#ffe680'; ctx.fillRect(o.x - TILE * 0.5, o.y - TILE * 0.5, TILE, TILE); }
     // squads
     for (const s of world.squads) {
       if (s.dead) continue;

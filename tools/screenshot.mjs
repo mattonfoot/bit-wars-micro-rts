@@ -32,8 +32,8 @@ try {
     const g = window.game, w = g.world;
     const hq = w.byId(w.players[0].hqId);
     w.cmdTrain(hq, 'darts'); w.cmdTrain(hq, 'needles');
-    const o = w.ore.find((o) => Math.hypot(o.tx - hq.tx, o.ty - hq.ty) < 12);
-    console.log('build', JSON.stringify(w.cmdBuild(0, 'lode', o.tx, o.ty)));
+    const o = w.ore.slice().sort((a, b) => Math.hypot(a.x - hq.x, a.y - hq.y) - Math.hypot(b.x - hq.x, b.y - hq.y))[0];
+    console.log('build', JSON.stringify(w.cmdBuild(0, 'lode', o.cell)));
   });
   await page.waitForTimeout(seconds * 1000 * 0.5);
   await page.screenshot({ path: `${out}/03-mid.png` });
@@ -41,7 +41,7 @@ try {
   await page.evaluate(() => {
     const g = window.game, w = g.world;
     g.selectAllArmy();
-    const cx = (w.w * 32) / 2, cy = (w.h * 32) / 2;
+    const cx = w.grid.cx, cy = w.grid.cy;
     w.cmdAttackMove(g.selectedSquads(), cx, cy);
     g.camera.zoomAt(0.6, 422, 195);
   });

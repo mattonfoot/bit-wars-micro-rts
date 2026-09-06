@@ -68,8 +68,9 @@ export class Renderer {
     camera.apply(ctx);
     const vr = camera.visibleRect();
     // terrain (clipped to visible area)
-    const sx = clamp(Math.floor(vr.x0), 0, world.w * TILE), sy = clamp(Math.floor(vr.y0), 0, world.h * TILE);
-    const ex = clamp(Math.ceil(vr.x1), 0, world.w * TILE), ey = clamp(Math.ceil(vr.y1), 0, world.h * TILE);
+    const WW = this.terrain.canvas.width, WH = this.terrain.canvas.height;
+    const sx = clamp(Math.floor(vr.x0), 0, WW), sy = clamp(Math.floor(vr.y0), 0, WH);
+    const ex = clamp(Math.ceil(vr.x1), 0, WW), ey = clamp(Math.ceil(vr.y1), 0, WH);
     if (ex > sx && ey > sy) ctx.drawImage(this.terrain.canvas, sx, sy, ex - sx, ey - sy, sx, sy, ex - sx, ey - sy);
     const inView = (x, y, m = 64) => x > vr.x0 - m && x < vr.x1 + m && y > vr.y0 - m && y < vr.y1 + m;
 
@@ -80,7 +81,8 @@ export class Renderer {
     this.drawEffects(dt, inView);
     if (this.showFog) {
       ctx.imageSmoothingEnabled = true;
-      ctx.drawImage(this.fog.canvas, 0, 0, world.w * TILE, world.h * TILE);
+      const fr = this.fog.rect;
+      ctx.drawImage(this.fog.canvas, fr.x, fr.y, fr.w, fr.h);
     }
     this.drawKnownGhosts(inView, state);
     if (state.buildGhost) this.drawBuildGhost(state.buildGhost);
@@ -129,22 +131,19 @@ export class Renderer {
       const own = b.owner === this.viewer;
       if (!own && !this.visibleAt(b.x, b.y)) continue;
       const col = this.colors(b.faction, b.owner);
-      const W = b.w * TILE, H = b.h * TILE;
+      const W = b.radius * 2, H = b.radius * 2;
       const sel = state.selected.has(b.id);
-      // footprint
-      ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillRect(b.tx * TILE + 2, b.ty * TILE + 2, W - 4, H - 4);
-      if (sel) { ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.setLineDash([5, 4]); ctx.strokeRect(b.tx * TILE + 1, b.ty * TILE + 1, W - 2, H - 2); ctx.setLineDash([]); }
+      // footprint: the hex cells it occupies
+      ctx.fillStyle = 'rgba(255,255,255,0.06)'; ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = 1;
+      this.cellsPath(b.cells); ctx.fill(); ctx.stroke();
+      if (sel) { ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.setLineDash([5, 4]); ctx.beginPath(); ctx.arc(b.x, b.y, b.radius + 3, 0, TAU); ctx.stroke(); ctx.setLineDash([]); }
       ctx.globalAlpha = b.done ? 1 : 0.35 + 0.65 * b.progress;
       drawBuilding(ctx, b.faction, b.def, b.x, b.y, W, H, col, { facing: b.facing, time: this.time });
       ctx.globalAlpha = 1;
-      // construction progress
-      if (!b.done) { ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(b.x, b.y, Math.min(W, H) * 0.3, -Math.PI / 2, -Math.PI / 2 + TAU * b.progress); ctx.stroke(); }
-      // training progress
-      if (b.queue.length) { ctx.strokeStyle = col.light; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(b.x, b.y, Math.min(W, H) * 0.42, -Math.PI / 2, -Math.PI / 2 + TAU * b.queueProgress); ctx.stroke(); }
-      // shield ring
-      if (b.maxShield && b.shield > 0) { ctx.strokeStyle = 'rgba(160,255,220,0.65)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(b.x, b.y, Math.max(W, H) * 0.55, 0, TAU * (b.shield / b.maxShield)); ctx.stroke(); }
-      // hp bar
-      if (b.hp < b.maxHp || sel || !b.done) this.bar(b.x, b.ty * TILE - 6, W - 6, 5, b.hp / b.maxHp, own ? '#5cff7a' : '#ff5c5c');
+      if (!b.done) { ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(b.x, b.y, W * 0.3, -Math.PI / 2, -Math.PI / 2 + TAU * b.progress); ctx.stroke(); }
+      if (b.queue.length) { ctx.strokeStyle = col.light; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(b.x, b.y, W * 0.42, -Math.PI / 2, -Math.PI / 2 + TAU * b.queueProgress); ctx.stroke(); }
+      if (b.maxShield && b.shield > 0) { ctx.strokeStyle = 'rgba(160,255,220,0.65)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(b.x, b.y, W * 0.55, 0, TAU * (b.shield / b.maxShield)); ctx.stroke(); }
+      if (b.hp < b.maxHp || sel || !b.done) this.bar(b.x, b.y - b.radius - 8, W - 6, 5, b.hp / b.maxHp, own ? '#5cff7a' : '#ff5c5c');
     }
   }
 
@@ -281,6 +280,11 @@ export class Renderer {
     this.effects = keep;
   }
 
+  cellsPath(cells) {
+    const { ctx } = this, g = this.world.grid;
+    ctx.beginPath();
+    for (const i of cells) { const o = i * 12; for (let k = 0; k < 6; k++) { const x = g.corner[o + k * 2], y = g.corner[o + k * 2 + 1]; if (k) ctx.lineTo(x, y); else ctx.moveTo(x, y); } ctx.closePath(); }
+  }
   drawKnownGhosts(inView, state) {
     const { ctx, world } = this;
     const p = world.players[this.viewer];
@@ -290,7 +294,7 @@ export class Renderer {
       const col = this.colors(k.faction, k.owner);
       const def = FACTIONS[k.faction].buildings[k.key];
       ctx.globalAlpha = 0.45;
-      drawBuilding(ctx, k.faction, def, k.x, k.y, k.w * TILE, k.h * TILE, { ...col, fill: col.fill, stroke: '#000' }, {});
+      drawBuilding(ctx, k.faction, def, k.x, k.y, k.radius * 2, k.radius * 2, { ...col, fill: col.fill, stroke: '#000' }, {});
       ctx.globalAlpha = 1;
     }
   }
@@ -307,15 +311,17 @@ export class Renderer {
     }
     ctx.setLineDash([]);
     if (!def) return; // no structure chosen yet: radius hints only
-    if (def.onOre) { ctx.strokeStyle = '#ffe680'; ctx.lineWidth = 2; for (const o of world.ore) if (!o.building && world.explored(this.viewer, o.tx, o.ty)) { ctx.beginPath(); ctx.arc(o.x, o.y, TILE * 0.7 + Math.sin(this.time * 6) * 2, 0, TAU); ctx.stroke(); } }
+    if (def.onOre) { ctx.strokeStyle = '#ffe680'; ctx.lineWidth = 2; for (const o of world.ore) if (!o.building && world.explored(this.viewer, o.cell)) { ctx.beginPath(); ctx.arc(o.x, o.y, TILE * 0.7 + Math.sin(this.time * 6) * 2, 0, TAU); ctx.stroke(); } }
     if (def.onPoint) { ctx.strokeStyle = '#ffe680'; ctx.lineWidth = 2; for (const p of world.points) if (p.owner === this.viewer && !p.outpost) { ctx.beginPath(); ctx.arc(p.x, p.y, TILE * 1.1 + Math.sin(this.time * 6) * 2, 0, TAU); ctx.stroke(); } }
-    if (g.tx === undefined) return;
-    const W = def.w * TILE, H = def.h * TILE;
+    if (g.cell === undefined || g.cell < 0) return;
+    const cells = world.footprint(def, g.cell);
+    const [gx, gy] = world.grid.center(g.cell);
+    const R = (def.w >= 2 ? world.grid.R * 2.3 : world.grid.R * 0.95) * 2;
     ctx.fillStyle = g.ok ? 'rgba(90,255,140,0.3)' : 'rgba(255,80,80,0.35)';
-    ctx.fillRect(g.tx * TILE, g.ty * TILE, W, H);
-    ctx.strokeStyle = g.ok ? '#7CFC9A' : '#ff5f5f'; ctx.lineWidth = 2; ctx.strokeRect(g.tx * TILE, g.ty * TILE, W, H);
+    ctx.strokeStyle = g.ok ? '#7CFC9A' : '#ff5f5f'; ctx.lineWidth = 2;
+    this.cellsPath(cells); ctx.fill(); ctx.stroke();
     ctx.globalAlpha = 0.7;
-    drawBuilding(ctx, this.viewerFaction, def, g.tx * TILE + W / 2, g.ty * TILE + H / 2, W, H, this.colors(this.viewerFaction, this.viewer), {});
+    drawBuilding(ctx, this.viewerFaction, def, gx, gy, R, R, this.colors(this.viewerFaction, this.viewer), {});
     ctx.globalAlpha = 1;
   }
   drawRally(b) {

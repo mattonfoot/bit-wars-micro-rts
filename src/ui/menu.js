@@ -4,6 +4,8 @@ import { THEMES, THEME_KEYS } from '../map/themes.js';
 import { unitIconSVG, buildingIconSVG } from '../render/shapes.js';
 import { CAMPAIGNS, LORE } from '../game/campaigns.js';
 import { loadProgress } from '../game/campaign.js';
+import { CODEX } from '../game/codex.js';
+import { DMG_LABEL, ARMOR_LABEL } from '../game/data.js';
 
 const DEFAULTS = { faction: 'blue', theme: 'verdant', difficulty: 'normal', size: 64, seed: '' };
 
@@ -30,6 +32,7 @@ export class Menu {
     switch (this.screen) {
       case 'faction': this.renderFaction(); break;
       case 'campaign': this.renderCampaign(); break;
+      case 'codex': this.renderCodex(); break;
       case 'skirmish': this.renderSkirmish(); break;
       case 'help': this.renderHelp(); break;
       default: this.renderTitle();
@@ -75,10 +78,11 @@ export class Menu {
           <div class="fdetails">
             <div class="fhead">${unitIconSVG(k, units[0].shape, f.color, 44)}<div><div class="fname">${f.name}</div><div class="ftag">${f.tagline}</div></div></div>
             <ul class="fplay">${f.playstyle.map((p) => `<li>${p}</li>`).join('')}</ul>
-            <div class="roster">${units.map((u) => `<span title="${u.name}: ${u.role}">${unitIconSVG(k, u.shape, f.color, 22)}</span>`).join('')}<span class="sep"></span>${buildings.map((b) => `<span title="${b.name}">${buildingIconSVG(k, b, f.color, 22)}</span>`).join('')}</div>
+            <div class="roster">${units.map((u) => `<span class="ric" data-k="${u.key}" title="${u.name}: ${u.role}">${unitIconSVG(k, u.shape, f.color, 22)}</span>`).join('')}<span class="sep"></span>${buildings.map((b) => `<span class="ric" data-k="${b.key}" title="${b.name}">${buildingIconSVG(k, b, f.color, 22)}</span>`).join('')}</div>
             <div class="fbtns">
               <button class="big" id="btnCampaign">CAMPAIGN <span class="dim">${doneN}/${camp.chapters.length}</span></button>
               <button class="big secondary" id="btnSkirmish">SKIRMISH</button>
+              <button class="big secondary" id="btnCodex">CODEX</button>
             </div>
           </div>
           <div class="fhistory">
@@ -99,6 +103,8 @@ export class Menu {
     for (const d of r.querySelectorAll('.dots i')) d.onclick = () => { this.settings.faction = d.dataset.f; this.save(); this.renderFaction(); };
     r.querySelector('#btnCampaign').onclick = () => this.go('campaign');
     r.querySelector('#btnSkirmish').onclick = () => this.go('skirmish');
+    r.querySelector('#btnCodex').onclick = () => { this.codexKey = null; this.go('codex'); };
+    for (const ic of r.querySelectorAll('.ric')) ic.onclick = (e) => { e.stopPropagation(); this.codexKey = ic.dataset.k; this.go('codex'); };
     // swipe
     const body = r.querySelector('#fbody');
     let sx = null, sy = null;
@@ -127,6 +133,53 @@ export class Menu {
   }
 
   // ---------- skirmish setup
+  renderCodex() {
+    const k = this.settings.faction, f = FACTIONS[k];
+    const units = Object.values(f.units), buildings = Object.values(f.buildings);
+    const entries = [...units.map((u) => ({ kind: 'unit', d: u })), ...buildings.map((b) => ({ kind: 'building', d: b }))];
+    if (!this.codexKey || !entries.some((e) => e.d.key === this.codexKey)) this.codexKey = entries[0].d.key;
+    const cur = entries.find((e) => e.d.key === this.codexKey);
+    const icon = (e, size) => e.kind === 'unit' ? unitIconSVG(k, e.d.shape, f.color, size) : buildingIconSVG(k, e.d, f.color, size);
+    const stat = (label, val) => val === undefined || val === null || val === '' ? '' : `<div class="st"><span>${label}</span><b>${val}</b></div>`;
+    const d = cur.d, c = CODEX[d.key] || { story: [], strengths: [], weaknesses: [], tactics: [] };
+    let stats;
+    if (cur.kind === 'unit') {
+      const w = d.weapon;
+      stats = stat('Cost', `${d.cost.ore} ore${d.cost.flux ? ` · ${d.cost.flux} flux` : ''}`) + stat('Population', d.pop) + stat('Squad', d.size > 1 ? `${d.size} members` : d.hero ? 'Hero (one only)' : 'Single') +
+        stat('Health', `${d.hp}${d.size > 1 ? ' each' : ''}${d.shield ? ` + ${d.shield} shield` : ''}`) + stat('Armour', ARMOR_LABEL[d.armor]) + stat('Speed', d.speed) + stat('Sight', `${d.sight} tiles`) +
+        stat('Weapon', `${DMG_LABEL[w.type]}${w.melee ? ' (melee)' : ''}`) + stat('Damage', `${w.dmg} × ${w.rof}/s`) + stat('Range', w.minRange ? `${w.minRange}–${w.range}` : w.range) + stat('Suppression', w.supp) +
+        stat('Splash', w.splash ? `${w.splash} tiles` : undefined) + stat('Set-up', w.setup ? `${w.setup}s` : undefined) + stat('Flies', d.flying ? 'Yes' : undefined) + stat('Captures', d.canCapture ? `Yes (×${d.capRate})` : 'No') +
+        stat('Aura', d.aura ? Object.entries(d.aura).filter(([a]) => a !== 'radius').map(([a, v]) => ({ speed: `+${Math.round((v - 1) * 100)}% speed`, moraleRegen: 'morale regen', armor: `-${Math.round((1 - v) * 100)}% damage taken`, repair: `repairs ${v}/s`, shieldRegen: `shield regen ×${v}`, sightBonus: `+${v} sight` })[a] || `${a} ${v}`).join(', ') + ` (${d.aura.radius} tiles)` : undefined) + stat('Trained at', f.buildings[d.building]?.name) + stat('Requires', d.requires ? f.buildings[d.requires].name : undefined);
+    } else {
+      stats = stat('Cost', d.hq ? 'Starting structure' : `${d.cost.ore} ore${d.cost.flux ? ` · ${d.cost.flux} flux` : ''}`) + stat('Build time', d.hq ? undefined : `${d.buildTime}s`) + stat('Health', `${d.hp}${d.shield ? ` + ${d.shield} shield` : ''}`) + stat('Footprint', d.w >= 2 ? '7 cells' : '1 cell') + stat('Sight', `${d.sight} tiles`) +
+        stat('Trains', d.trains ? d.trains.map((u) => f.units[u].name).join(', ') : undefined) + stat('Income', d.ore ? `+${(d.ore * 60).toFixed(0)} ore/min` : d.pointFlux ? `+${(d.pointFlux * 60).toFixed(0)} flux/min` : d.flux ? `+${(d.flux * 60).toFixed(0)} flux/min` : undefined) +
+        stat('Weapon', d.weapon ? `${DMG_LABEL[d.weapon.type]} ${d.weapon.dmg} × ${d.weapon.rof}/s, range ${d.weapon.range}` : undefined) + stat('Placement', d.onOre ? 'On an ore vein' : d.onPoint ? 'On a captured strategic point' : 'Near your structures') + stat('Upgrade', d.upgrade ? (d.upgrade.hp ? `+${Math.round((d.upgrade.hp - 1) * 100)}% squad health` : `+${Math.round((d.upgrade.shield - 1) * 100)}% squad shields`) : undefined);
+    }
+    const list = (title, items, cls) => items.length ? `<div class="cx-sec ${cls}"><div class="cx-h">${title}</div><ul>${items.map((x) => `<li>${x}</li>`).join('')}</ul></div>` : '';
+    this.root.innerHTML = `
+      <div class="screen" style="--fc:${f.color}">
+        <div class="bar"><button class="nav" id="cxBack">‹ ${f.name}</button><div class="bartitle">Codex <span class="dim">· ${f.name}</span></div><span></span></div>
+        <div class="codex">
+          <div class="cx-list">
+            <div class="cx-lh">Units</div>
+            ${units.map((u) => `<button class="cx-item ${u.key === d.key ? 'sel' : ''}" data-k="${u.key}">${unitIconSVG(k, u.shape, f.color, 22)}<span>${u.name}</span></button>`).join('')}
+            <div class="cx-lh">Structures</div>
+            ${buildings.map((b) => `<button class="cx-item ${b.key === d.key ? 'sel' : ''}" data-k="${b.key}">${buildingIconSVG(k, b, f.color, 22)}<span>${b.name}</span></button>`).join('')}
+          </div>
+          <div class="cx-detail">
+            <div class="cx-top">${icon(cur, 48)}<div><div class="cx-name" style="color:${f.color}">${d.name}</div><div class="cx-role">${d.role || (d.hq ? 'Headquarters' : d.turret ? 'Static defence' : d.onOre ? 'Extractor' : d.onPoint ? 'Outpost' : d.trains ? 'Production' : 'Upgrade')}</div></div></div>
+            <div class="cx-desc">${d.desc}</div>
+            <div class="cx-stats">${stats}</div>
+            <div class="cx-sec story">${c.story.map((p) => `<p>${p}</p>`).join('')}</div>
+            <div class="cx-cols">${list('Strengths', c.strengths, 'good')}${list('Weaknesses', c.weaknesses, 'bad')}</div>
+            ${list('Tactics', c.tactics, 'tac')}
+          </div>
+        </div>
+      </div>`;
+    this.root.querySelector('#cxBack').onclick = () => this.go('faction');
+    for (const b of this.root.querySelectorAll('.cx-item')) b.onclick = () => { this.codexKey = b.dataset.k; this.renderCodex(); const el = this.root.querySelector('.cx-detail'); if (el) el.scrollTop = 0; };
+    const selItem = this.root.querySelector('.cx-item.sel'); if (selItem) selItem.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }
   renderSkirmish() {
     const r = this.root, s = this.settings, f = FACTIONS[s.faction];
     r.innerHTML = `

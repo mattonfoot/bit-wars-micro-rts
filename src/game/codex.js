@@ -1,0 +1,223 @@
+// Codex: background, strengths, weaknesses and tactics for every unit and structure.
+// Stats are read live from data.js; this file holds only the words.
+export const CODEX = {
+  // ---------------- Vector Swarm
+  darts: {
+    story: ['A Dart is the smallest thing the Hive can think. Eight of them share one thought at a time, and the thought is usually "closer". They are grown in seconds, shed like scales, and never counted.', 'Foundry soldiers call them "the weather". You do not fight the weather; you get under cover and wait for it to pass.'],
+    strengths: ['Cheapest squad in the war and the largest: eight members soak fire that would wipe a smaller unit', 'Melee damage ignores cover, so dug-in infantry gets no protection', 'Fast enough to catch artillery crews and gun teams before they turn'],
+    weaknesses: ['Blast weapons and splash kill several members per shell', 'Suppression breaks them quickly: eight low-morale bodies is a lot of morale to lose', 'Nearly useless against vehicles and structures'],
+    tactics: ['Charge in groups of two or three squads at once; a single swarm trickling in dies to a Bolt Squad', 'Send them around the side: melee from behind a squad gets the flank bonus and breaks morale fast', 'Reinforce constantly. A Dart member costs almost nothing; a fresh squad costs time', 'Use them to grab strategic points early while the enemy is still teching'],
+  },
+  needles: {
+    story: ['When the first Crusher Tank rolled into the basin and Darts bounced off it, the Hive grew something longer. A Needle is a hollow triangle a metre long, thrown hard enough to pass through plating and keep going.', 'Needle Squads fight standing off, five throwers loosing in rhythm. They have never learned to like being touched.'],
+    strengths: ['Anti-armour damage: 1.5× against vehicles and full damage against heavy infantry', 'Solid range lets them fire over a Dart screen', 'Cheap for what they kill'],
+    weaknesses: ['Poor against light infantry and terrible in melee', 'Slow rate of fire: they need time on target', 'Suppression pins them like anything else'],
+    tactics: ['Keep them one step behind the Darts and let the Darts absorb the charge', 'Focus every Needle Squad on one vehicle; spreading fire lets shields and repair undo the damage', 'Put them in cover when facing Bolt Squads; the range advantage is small', 'Two Needle Squads kill a Crusher Tank before it reloads twice'],
+  },
+  wedges: {
+    story: ['Wedges are what happens when the Hive is angry and in a hurry. Four chevrons, each a blade folded twice, that cover ground faster than anything else in the Lattice.', 'The Foundry has a rule about Wedges: if you can see them, they are not where the attack is coming from.'],
+    strengths: ['Fastest unit in the game and the fastest capturer (1.6× capture rate)', 'Flank bonus is doubled: attacks from behind deal huge damage and shatter morale', 'Perfect for killing Hammer Teams, Mortars and Lens Teams that cannot turn in time'],
+    weaknesses: ['Only four members with modest health', 'Loses a straight fight to heavy infantry and turrets', 'Expensive to lose because of the Nest tech behind it'],
+    tactics: ['Never attack from the front. Path them wide, around brush or over the ice, and hit the rear', 'Pair a Wedge raid with a frontal Dart charge so the enemy faces the wrong way', 'Send one squad to capture undefended points while the main army fights', 'Retreat them the moment the target breaks; broken squads are someone else\'s job'],
+  },
+  kites: {
+    story: ['A Kite is a triangle that decided the ground was optional. Three hover-frames from the Spire, they cross lava, walls and rivers as if drawn on the map with a ruler.', 'They rarely win battles. They win wars, by making sure the enemy never quite has enough ore to fight one.'],
+    strengths: ['Flying: ignores terrain, walls and water entirely', 'Fast, with high suppression that pins infantry in place', 'Ideal for burning extractors and outposts behind enemy lines'],
+    weaknesses: ['Counts as a vehicle: anti-armour and energy weapons hurt badly', 'No cover bonus and no capture ability', 'Turrets outrange and outgun them'],
+    tactics: ['Raid the economy: two Kites kill a Drill Rig in seconds and leave before the response arrives', 'Pin an enemy squad with suppression while Darts close in', 'Fly over water or mountains the enemy cannot path across, and retreat the same way', 'Avoid Needle-type units and turrets; hit what cannot hit back'],
+  },
+  obelisk: {
+    story: ['The Obelisk is the Hive\'s final argument: a walking pyramid the size of a Foundry, hollow, humming, lobbing shards of itself across canyons. It regrows what it throws.', 'The Apex grew the first one in the Ashfall while the Foundry\'s bunkers watched, out of range, and understood they would stay out of range.'],
+    strengths: ['Longest-ranged blue weapon with blast splash; wrecks structures and clumped infantry', 'Shells flatten cover and leave craters', 'Very high health for a Swarm unit'],
+    weaknesses: ['Slow, expensive, and 8 population', 'Minimum range: helpless if enemies get close', 'Anti-armour fire and flanking take it apart'],
+    tactics: ['Screen it with Darts in front and Needles beside it, and move as one blob', 'Target bunkers and turrets first: nothing else out-ranges them', 'Fire on defended chokepoints to destroy the cover before the swarm goes in', 'One Obelisk plus a full pop of infantry ends most games'],
+  },
+  apex: {
+    story: ['The Apex is not a leader. It is the point at which the Swarm is sharpest, a single mind that all the Darts around it borrow for a moment. Where it stands, hesitation stops.', 'It has died many times. The Hive grows another. The Apex does not remember the deaths, but it remembers the lessons.'],
+    strengths: ['Aura: nearby squads move 20% faster and lose morale far more slowly', 'Tough for a hero and hits hard at short range', 'Attaches to any squad to make it the tip of the spear'],
+    weaknesses: ['Only one may exist; losing it costs 200 ore and a long retrain', 'Weak alone against focused fire', 'Its aura only helps units that stay near it'],
+    tactics: ['Attach it to the biggest Dart Swarm and lead with that squad', 'Keep the whole army inside the aura ring shown when it is selected', 'Retreat it before it dies; the aura is worth more than a few extra kills', 'Use its speed bonus to catch retreating squads'],
+  },
+  hive: {
+    story: ['The Hive is the Swarm\'s first shape and its only permanent one: a folded pyramid over the ore hum, dividing triangles in the dark.', 'Every Dart, Needle and Apex begins here. If the Hive is broken, the Swarm does not retreat. It simply stops.'],
+    strengths: ['Spawns tier-one squads and the Apex', 'Has a spine launcher to shred small raids', 'Provides the widest build radius'],
+    weaknesses: ['Losing it loses the game', 'Blast and anti-armour weapons crack it faster than light fire', 'Cannot be rebuilt'],
+    tactics: ['Keep at least one squad at home; the Hive\'s gun handles harassment but not an army', 'Set its rally point toward your forward position', 'Build a Thorn or two beside it before teching to the Spire'],
+  },
+  lode: {
+    story: ['A Lode Burrow is a triangle that fell into an ore vein and kept eating. It never comes out again.', 'The Hive can taste the ore through it from across the map.'],
+    strengths: ['Cheapest extractor in the war', 'Fast to grow'],
+    weaknesses: ['Low health; Kite-style raids kill it quickly', 'Only useful on an ore vein'],
+    tactics: ['Claim both base veins before anything else', 'Push a Burrow onto contested veins once a point nearby is yours', 'Rebuild immediately when one dies: it pays for itself in under a minute'],
+  },
+  nest: {
+    story: ['The Nest is where the Hive keeps the Wedges it is not yet ready to use. It is warm, dark, and constantly moving.'],
+    strengths: ['Unlocks Wedge Raiders and, with the Spire, the Obelisk', 'Fairly tough for its cost'],
+    weaknesses: ['Needed for the late game, so its loss delays everything'],
+    tactics: ['Build it by the end of the third minute', 'Place it behind the Hive so raiders must pass your guns'],
+  },
+  spire: {
+    story: ['A Spire is the Hive reaching for the sky, a thin tower that grows Kites at its tip and, at its base, the seeds of Obelisks.'],
+    strengths: ['Produces Kites and Obelisks', 'Good sight radius'],
+    weaknesses: ['Expensive and slow to grow', 'Fragile compared with Foundry structures'],
+    tactics: ['Build after your economy has four extractors', 'Queue Kites first for raiding, then one Obelisk when Flux allows'],
+  },
+  thorn: {
+    story: ['A Thorn is a hollow spike that fires smaller spikes. It does not think. It does not need to.'],
+    strengths: ['Cheap, rapid-fire, high suppression', 'Excellent against light infantry raids'],
+    weaknesses: ['Low health and light damage; vehicles ignore it', 'Short build radius'],
+    tactics: ['Place one beside each extractor cluster', 'Use several together: a single Thorn just delays'],
+  },
+  claim: {
+    story: ['A Claim Spike is driven into a captured point like a flag the Hive can feel. Enemies must pull it out before the point can change hands.'],
+    strengths: ['Adds Flux income and blocks recapture until destroyed', 'Extends build radius for forward Thorns'],
+    weaknesses: ['Modest health; Breachers eat it in seconds'],
+    tactics: ['Spike the points nearest your base first; those are the ones you keep', 'Put a Thorn beside forward Spikes'],
+  },
+  // ---------------- Iron Foundry
+  bolts: {
+    story: ['Four riveted squares with rifles longer than they are tall. Bolt Squads are the Foundry\'s line: they do not run, they do not flank, they hold the ground under their feet until told otherwise.', 'A Bolt sergeant\'s entire tactical vocabulary is "here" and "not yet".'],
+    strengths: ['Heavy armour: light weapons do only 65% damage', 'Good range and steady damage against infantry', 'Cheap enough to field in numbers'],
+    weaknesses: ['Slow', 'Anti-armour and blast weapons cut through the plating', 'Loses to Dart swarms in the open'],
+    tactics: ['Order Hold in cover facing the approach; behind rubble a Bolt Squad is worth two', 'Screen Hammer Teams and Mortars; nothing should reach them', 'Reinforce between engagements rather than training new squads', 'Do not chase: let the enemy come to you'],
+  },
+  hammers: {
+    story: ['A Hammer Team is two squares and a gun that weighs more than both of them. Setting it up takes a moment. Once it is set, whatever is in front of it is in a very small world.', 'The Swarm learned to fear the pause before the first burst.'],
+    strengths: ['Highest suppression in the game: pins and breaks any infantry', 'Long range with a huge rate of fire', 'A set-up Hammer Team holds a whole approach on its own'],
+    weaknesses: ['Must stand still to set up; useless while moving', 'Narrow arc and only two members: flanked, it dies', 'Weak against vehicles'],
+    tactics: ['Place it where the enemy must come to you: a ford, a road, a gap in the walls', 'Keep a Bolt Squad on each side to stop flankers', 'Let it break a squad, then send Bolts or Breachers to finish the broken enemy', 'Move it early, before a push; a Hammer Team caught relocating is a dead Hammer Team'],
+  },
+  breachers: {
+    story: ['Breachers carry the Foundry\'s two favourite tools: a door-sized shield and a hammer for making doors. A wall is a temporary condition.', 'They were the first Foundry unit to walk into the Ruined City and the first to walk through it.'],
+    strengths: ['Blast melee damage: smashes walls, rocks and structures', 'Heavy armour and high health per member', 'Destroys the cover an enemy is hiding behind while hitting them'],
+    weaknesses: ['Melee only; gets kited by anything faster', 'Slow', 'Small squad'],
+    tactics: ['Point them at a wall with an enemy behind it and let the wall fall', 'Send them in once a Hammer Team has broken the defenders', 'Use them to demolish Claim Spikes and Beacons before capturing', 'Never send them alone across open ground'],
+  },
+  crusher: {
+    story: ['The Crusher Tank is a rolling block of iron with a cannon that fires other, smaller blocks of iron. It was designed by someone who had been shot at a great deal and did not enjoy it.', 'Its treads have never met terrain they respected.'],
+    strengths: ['Blast splash wrecks clumped infantry and structures', 'Shells flatten cover and dig craters', 'Very high health'],
+    weaknesses: ['Slow and expensive; 7 population', 'Anti-armour and energy fire is its natural predator', 'Shells travel: fast units can dodge'],
+    tactics: ['Lead a push with the tank in front and Bolts beside it; the tank absorbs fire', 'Target the biggest clump of enemies, not the closest', 'Keep the Foreman nearby: the repair aura makes it nearly unkillable', 'Pull it back at half health rather than losing 260 ore'],
+  },
+  mortar: {
+    story: ['A Mortar Block is a square that fires upward and hopes. The hope is well founded: its shells fall further than any Foundry gun can see, and where they land the ground is no longer the same shape.', 'Its crews are the only Foundry soldiers who never see the enemy.'],
+    strengths: ['Longest range in the Foundry; outranges every turret', 'High suppression per shell, and craters on impact', 'Cheap for artillery'],
+    weaknesses: ['Minimum range and a set-up time', 'Only two members with little health', 'Hits where the enemy was, not where it is'],
+    tactics: ['Shell static targets first: turrets, outposts, dug-in gun teams', 'Keep it behind a Bolt line and inside the Foreman\'s aura', 'Use its craters as forward cover for your own advance', 'Retreat it the instant a fast squad heads its way'],
+  },
+  foreman: {
+    story: ['The Foreman is the Foundry itself, walking. Where he goes, iron mends: dented plate straightens, bunkers reseal, tanks keep rolling. He is also carrying a very large gun.', 'He has never lost a war. He has lost a great many battles, and repaired every one of them.'],
+    strengths: ['Aura: nearby squads take 20% less damage; vehicles and structures self-repair', 'Very tough, with a splash weapon', 'Attaches to any squad'],
+    weaknesses: ['Slow', 'One only; retraining takes time', 'The repair aura is wasted on infantry'],
+    tactics: ['Keep him with the armour: a Crusher inside his aura is a fortress', 'Attach him to the squad that will take the most fire', 'Park him among the bunkers when defending', 'Never send him first; he is the reason the rest survive'],
+  },
+  foundry: {
+    story: ['The Foundry is a forge built inside a wall built inside a bunker. It makes Bolts, Hammers and Foremen, and it does not fall quickly.', 'It is the toughest headquarters in the Lattice, and its gun suppresses anything that tries to prove otherwise.'],
+    strengths: ['Highest health of any headquarters', 'Its gun suppresses light raids', 'Trains tier-one infantry and the Foreman'],
+    weaknesses: ['Losing it loses the game', 'Blast weapons and Obelisks outrange it'],
+    tactics: ['Ring it with Bunkers on the approaches', 'Keep a Hammer Team set up at the gate', 'Rally new squads to the nearest point, not the front'],
+  },
+  drill: {
+    story: ['A Drill Rig is a square that goes down. It never comes back up, but ore does.'],
+    strengths: ['Tough for an extractor', 'Reliable income'],
+    weaknesses: ['Kites and Wedges will find it', 'Only useful on an ore vein'],
+    tactics: ['Claim both base veins in the first minute', 'Put a Bunker between forward rigs and the enemy'],
+  },
+  works: {
+    story: ['The Iron Works is where the Foundry keeps its heavy ideas: Breachers, Crushers and Mortars roll out of it in that order.'],
+    strengths: ['Produces all Foundry heavy units', 'Very high health'],
+    weaknesses: ['Expensive and slow to build', 'Every late-game plan depends on it'],
+    tactics: ['Build it around the two-minute mark', 'Queue a Crusher and a Mortar together for the first push'],
+  },
+  bunker: {
+    story: ['A Bunker is a Hammer Team that decided to stay. Armoured, patient, and suppressing everything in front of it.'],
+    strengths: ['Very high health and high suppression', 'Long range for a turret'],
+    weaknesses: ['Light damage; vehicles roll past it', 'Mortars and Novas outrange it'],
+    tactics: ['Build on the approaches, not in the base', 'Pair with a Drill Rig or a Watch Post it can protect', 'Keep the Foreman nearby: he repairs it'],
+  },
+  armory: {
+    story: ['The Armoury does not make anything. It makes everything the Foundry already has thicker.'],
+    strengths: ['+15% health for every Foundry squad, existing and future'],
+    weaknesses: ['No production; pure investment'],
+    tactics: ['Build once your army is at half population', 'It pays off most for Bolt-heavy armies'],
+  },
+  post: {
+    story: ['A Watch Post is a square on a stick with a very good view. Once it is up, a point stays Foundry until someone knocks it down.'],
+    strengths: ['Flux income and blocks recapture until destroyed', 'Good sight radius'],
+    weaknesses: ['Modest health; Obelisks and Novas flatten it'],
+    tactics: ['Post the points on your side of the map first', 'A Bunker beside a Watch Post holds a point against most raids'],
+  },
+  // ---------------- Aegis Collective
+  wardens: {
+    story: ['A Warden Cell is three spheres inside three shields. Wardens do not charge, and they do not hold; they persist. Damage flows over the shield and, given a moment, the shield returns.', 'They are the Collective\'s answer to everything, which is why the Collective has so few other answers.'],
+    strengths: ['Shields absorb damage and recharge when out of combat', 'Energy weapon: strong against vehicles and heavy infantry', 'Good range and capture speed'],
+    weaknesses: ['Expensive and only three members', 'Blast damage burns through shields', 'Dart swarms can overwhelm them if they are caught alone'],
+    tactics: ['Fight, pull back before the shields fail, recharge, return', 'Rotate two Cells: one fights while the other recovers', 'Stand beside a Halo and they almost never need to leave', 'Keep range: at 5.5 they outrange most infantry'],
+  },
+  lenses: {
+    story: ['A Lens Team is two spheres that bend light until it cuts. From beyond the range of any rifle they open tanks like fruit.', 'They see further than anyone in the Lattice, and are the first to know when they are about to die.'],
+    strengths: ['Extreme range and sight', 'Very high energy damage per shot: kills vehicles and heroes', 'Good scouts'],
+    weaknesses: ['Only two members with little health', 'Slow rate of fire', 'Helpless in melee or when flanked'],
+    tactics: ['Keep them at the very back, behind Wardens or Pulse Rings', 'Target vehicles and heroes; ignore infantry unless nothing else is in range', 'Use their sight to see attacks coming and reposition early', 'Retreat them the moment fast units appear'],
+  },
+  pulsers: {
+    story: ['Pulse Rings are hollow spheres that ring. The tone is not loud, exactly, but a soldier inside it stops believing in the plan.', 'They were grown to answer the Swarm, and the Swarm has not found a reply.'],
+    strengths: ['High suppression with splash: breaks infantry squads quickly', 'Four members, shielded, fairly fast', 'Excellent against Dart swarms and Bolt lines'],
+    weaknesses: ['Short range', 'Light damage does little to vehicles', 'Weak to blast'],
+    tactics: ['Put them in front, in cover, with Wardens beside them', 'Break the enemy, then let Wardens and Lenses finish the broken squads', 'Chase broken squads: they deal little damage but keep the morale down', 'Never send them against tanks'],
+  },
+  halo: {
+    story: ['The Halo is a hovering ring that hums at exactly the frequency of a healing shield. It does not need to be told to protect; it cannot do anything else.', 'A Collective army with a Halo is not an army. It is a slowly advancing fact.'],
+    strengths: ['Aura: nearby shields recharge even under fire', 'Flying with a strong energy weapon', 'Shielded vehicle with good health'],
+    weaknesses: ['Counts as a vehicle: anti-armour fire hurts', 'Expensive; 6 population', 'Its value is the aura, so it must stay close to the fight'],
+    tactics: ['Keep it just behind the front line so every squad is inside its ring', 'Rotate damaged squads back to it rather than home', 'Protect it from Needles and Lenses at all costs', 'One Halo lets a small army win a war of attrition'],
+  },
+  nova: {
+    story: ['The Nova Sphere is a Collective star, grown small and kept in a shield. It rolls slowly to where it is needed and blossoms.', 'The Sanctum must be built before one can be grown; the Collective does not release a Nova without first learning to contain it.'],
+    strengths: ['Longest range in the game with huge blast splash', 'Craters everything it lands on', 'Shielded and reasonably tough'],
+    weaknesses: ['Very slow and 8 population', 'Minimum range: helpless up close', 'Anti-armour focus fire kills it'],
+    tactics: ['Screen it with Pulse Rings against swarms and Wardens against everything else', 'Shell turrets, outposts and dug-in gun teams first', 'Use its craters as cover for the advance', 'Keep the Halo beside it so its shield never stays down'],
+  },
+  oracle: {
+    story: ['The Oracle reads the fracture. It sees further than anything alive, through fog and wall and lie, and shields near it recharge under fire because it already knows where the shots will land.', 'It does not fight wars. It ends them, usually before the other side notices they have begun.'],
+    strengths: ['Enormous sight radius and an aura that recharges nearby shields even in combat', 'Shielded and hits hard at range', 'Attaches to any squad'],
+    weaknesses: ['One only; expensive to replace', 'Weak health under the shield', 'Its vision is wasted if you never look at the minimap'],
+    tactics: ['Attach it to the squad leading the advance so the whole army sees the enemy first', 'Use it to scout hidden extractors and raids', 'Keep it beside Wardens: its aura makes them almost immortal', 'Retreat it when the shield is gone, not when the health is'],
+  },
+  core: {
+    story: ['The Core is a shielded sphere the size of a hill. Wardens, Lenses and the Oracle grow within it. It has never been cracked, which is why the Collective has never had to learn what happens next.'],
+    strengths: ['A large shield on top of its health', 'Long-range beam emplacement', 'Widest build radius'],
+    weaknesses: ['Losing it loses the game', 'Sustained blast fire burns through the shield'],
+    tactics: ['Two Bastions cover the approaches better than a squad', 'Rally new squads to a Halo, not to the front', 'Let the shield recharge: pull raiders away rather than fighting beside the Core'],
+  },
+  siphon: {
+    story: ['A Siphon is a shielded sphere that drinks ore through the crystal. It is quiet, patient, and worth more than it looks.'],
+    strengths: ['Shielded extractor: shrugs off small raids'],
+    weaknesses: ['Low health under the shield', 'Only useful on an ore vein'],
+    tactics: ['Claim both base veins first', 'Rebuild forward Siphons behind a Beacon'],
+  },
+  array: {
+    story: ['The Array is a shielded dome full of resonance. Pulse Rings, Halos and, with a Sanctum, Nova Spheres grow inside.'],
+    strengths: ['Produces all Collective mid and late units', 'Shielded'],
+    weaknesses: ['Expensive and slow', 'The whole late game depends on it'],
+    tactics: ['Build it before the third minute', 'Queue two Pulse Rings, then a Halo'],
+  },
+  bastion: {
+    story: ['A Bastion is a Lens Team that stopped moving and grew a shield the size of a house.'],
+    strengths: ['Longest-ranged turret in the game with energy damage', 'Thick shield'],
+    weaknesses: ['Slow rate of fire; swarms can rush it', 'Mortars and Obelisks outrange it'],
+    tactics: ['Cover approaches, not the Core itself', 'Pair with a Pulse Ring to handle swarms'],
+  },
+  sanctum: {
+    story: ['The Sanctum harmonises every shield in the Collective. It is also the only place a Nova can be grown safely.'],
+    strengths: ['+30% shields for every squad', 'Unlocks the Nova Sphere'],
+    weaknesses: ['No production; pure investment'],
+    tactics: ['Build when your army is at half population', 'The shield bonus makes Wardens almost self-sufficient'],
+  },
+  beacon: {
+    story: ['A Beacon is a shielded sphere planted on a point. It sees a long way, pays a small tithe of Flux, and must be destroyed before the point can be taken.'],
+    strengths: ['Flux income, blocks recapture, excellent sight radius'],
+    weaknesses: ['Modest health; blast weapons crack it'],
+    tactics: ['Beacon the points nearest your Core first', 'Use its sight to see raids coming'],
+  },
+};

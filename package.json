@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "npx http-server . -p 8080 -c-1",
-    "test": "node test/gen.test.mjs && node test/save.test.mjs && node test/sim.test.mjs",
+    "test": "node test/gen.test.mjs && node test/save.test.mjs && node test/campaign.test.mjs && node test/sim.test.mjs",
     "test:map": "node test/gen.test.mjs",
     "test:sim": "node test/sim.test.mjs",
     "sim": "node tools/sim-one.mjs",
@@ -15,7 +15,8 @@
     "ios:sync": "npm run build && npx cap sync ios",
     "ios:open": "npm run ios:sync && npx cap open ios",
     "ios:run": "npm run ios:sync && npx cap run ios",
-    "test:save": "node test/save.test.mjs"
+    "test:save": "node test/save.test.mjs",
+    "test:campaign": "node test/campaign.test.mjs"
   },
   "license": "MIT",
   "devDependencies": {

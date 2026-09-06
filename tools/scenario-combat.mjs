@@ -20,7 +20,7 @@ try {
     page.on('pageerror', (e) => { errors.push(String(e)); console.log('[pageerror]', e); });
     await page.goto(`http://localhost:${port}/index.html`, { waitUntil: 'load' });
     await page.evaluate(() => { const s = window.game.menu.settings; s.faction = 'red'; s.theme = 'urban'; s.seed = 'combat'; s.difficulty = 'normal'; });
-    await page.click('#btnStart');
+    await page.click('.tab[data-tab="skirmish"]'); await page.click('#btnStart');
     await page.waitForTimeout(500);
     // Stage a fight near the player's HQ: our squads vs enemy squads, with walls between.
     await page.evaluate(() => {

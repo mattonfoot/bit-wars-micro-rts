@@ -9,7 +9,8 @@ export class HUD {
   constructor(game) {
     this.g = game;
     this.root = $('hud');
-    this.el = { ore: $('oreVal'), oreInc: $('oreInc'), flux: $('fluxVal'), fluxInc: $('fluxInc'), pop: $('popVal'), pts: $('ptsVal'), timer: $('timer'), squadbar: $('squadbar'), info: $('info'), cmd: $('cmd'), toasts: $('toasts'), mode: $('modeBanner') };
+    this.el = { ore: $('oreVal'), oreInc: $('oreInc'), flux: $('fluxVal'), fluxInc: $('fluxInc'), pop: $('popVal'), pts: $('ptsVal'), timer: $('timer'), squadbar: $('squadbar'), info: $('info'), cmd: $('cmd'), toasts: $('toasts'), mode: $('modeBanner'), obj: $('objectives') };
+    this.el.obj.onclick = () => this.el.obj.classList.toggle('collapsed');
     this.minimapCanvas = $('minimap');
     this.acc = 0; this.squadKey = ''; this.cmdKey = '';
     $('btnMenu').onclick = () => game.openPause();
@@ -21,14 +22,29 @@ export class HUD {
   hide() { this.root.classList.add('hidden'); }
   clearToasts() { this.el.toasts.innerHTML = ''; this.lastToast.clear(); }
   setMode(label) { this.el.mode.textContent = label || ''; this.el.mode.classList.toggle('show', !!label); }
-  toast(text, kind = '', onClick = null, throttleMs = 0) {
+  toast(text, kind = '', onClick = null, throttleMs = 0, durationMs = 3000) {
     if (throttleMs) { const t = performance.now(); if ((this.lastToast.get(text) || 0) + throttleMs > t) return; this.lastToast.set(text, t); }
     const d = document.createElement('div');
     d.className = 'toast ' + kind; d.textContent = text;
+    d.style.animationDuration = durationMs + 'ms';
     if (onClick) { d.style.pointerEvents = 'auto'; d.onclick = onClick; }
     this.el.toasts.appendChild(d);
     while (this.el.toasts.children.length > 4) this.el.toasts.firstChild.remove();
-    setTimeout(() => d.remove(), 3000);
+    setTimeout(() => d.remove(), durationMs);
+  }
+  /** Campaign objectives panel. Pass null to hide. */
+  setObjectives(list, title = '', stage = 0, stages = 1) {
+    const el = this.el.obj;
+    if (!list) { el.classList.add('hidden'); el.innerHTML = ''; this.objKey = ''; return; }
+    el.classList.remove('hidden');
+    const key = JSON.stringify([title, stage, list.map((o) => [o.id, o.cur, o.done, o.holding])]);
+    if (key === this.objKey) return;
+    this.objKey = key;
+    el.innerHTML = `<div class="objhead">${title} · ${stage + 1}/${stages}</div>` + list.map((o) => {
+      const prog = o.target > 1 ? ` <span class="prog">${o.cur}/${o.target}</span>` : '';
+      const cls = (o.done ? 'done' : '') + (o.optional ? ' opt' : '') + (o.constraint && !o.done ? ' fail' : '') + (o.holding === false && o.target > 1 && !o.done ? ' warn' : '');
+      return `<div class="obj ${cls}" title="${o.hint || ''}">${o.done ? '✓' : o.constraint ? '⚑' : '○'} ${o.text}${prog}</div>`;
+    }).join('');
   }
   update(dt) {
     this.acc += dt;
@@ -155,7 +171,7 @@ export class HUD {
     if (mode === 'build') {
       const gh = g.buildGhost;
       for (const b of Object.values(f.buildings)) {
-        if (b.hq) continue;
+        if (b.hq || !w.allowed(g.viewer, 'building', b.key)) continue;
         const ok = can(b.cost);
         const el = this.btn(`${buildingIconSVG(p.faction, b, f.color, 22)}<span>${b.name}</span>${costHtml(b.cost, ok)}`, () => g.startBuild(b.key), (gh?.key === b.key ? 'on ' : '') + (ok ? '' : 'dis'), b.desc);
         cmd.appendChild(el);
@@ -184,6 +200,7 @@ export class HUD {
       const b = bl[0];
       if (b.def.trains && b.done) {
         for (const k of b.def.trains) {
+          if (!w.allowed(g.viewer, 'unit', k)) continue;
           const u = f.units[k];
           const ok = can(u.cost) && (!u.hero || (!p.heroAlive && !p.heroQueued));
           const qn = b.queue.filter((x) => x === k).length;

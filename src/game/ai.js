@@ -11,8 +11,8 @@ const DIFF = {
 };
 
 export class AI {
-  constructor(world, pid, difficulty = 'normal') {
-    this.w = world; this.pid = pid;
+  constructor(world, pid, difficulty = 'normal', opts = {}) {
+    this.w = world; this.pid = pid; this.passive = !!opts.passive;
     this.d = DIFF[difficulty] || DIFF.normal;
     world.players[pid].incomeMult = this.d.income;
     this.fac = FACTIONS[world.players[pid].faction];
@@ -218,7 +218,7 @@ export class AI {
       }
       const idle = army.filter((s) => s.order.type === 'idle' && dist(s.x, s.y, this.rally.x, this.rally.y) > 6 * TILE);
       if (idle.length) w.cmdAttackMove(idle, this.rally.x, this.rally.y);
-      if (popReady && myValue > enemyValue * 0.8 && this.modeTimer > 10) {
+      if (!this.passive && popReady && myValue > enemyValue * 0.8 && this.modeTimer > 10) {
         this.mode = 'attack'; this.modeTimer = 0;
         this.attackTarget = this.pickAttackTarget(hq);
         if (this.attackTarget) w.cmdAttackMove(army, this.attackTarget.x, this.attackTarget.y);

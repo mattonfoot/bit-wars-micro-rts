@@ -11,6 +11,8 @@ import { Renderer } from './render/renderer.js';
 import { Minimap } from './ui/minimap.js';
 import { HUD } from './ui/hud.js';
 import { Menu } from './ui/menu.js';
+import { Campaign, markComplete } from './game/campaign.js';
+import { chapterByKey } from './game/campaigns.js';
 import { dist, clamp } from './engine/math.js';
 
 const MODE_LABELS = { move: 'MOVE: tap a destination', amove: 'ATTACK-MOVE: tap a destination', build: 'BUILD: choose a structure', rally: 'RALLY: tap a point', attach: 'ATTACH: tap a squad', box: 'BOX SELECT: drag over units' };
@@ -28,7 +30,8 @@ class Game {
     this.box = null;
     this.paused = false; this.running = false;
     this.lastAlert = null; this.lastAlertTime = -99;
-    this.menu = new Menu(document.getElementById('menu'), document.getElementById('pause'), document.getElementById('gameover'), (s) => { this.clearSave(); this.start(s); }, (save) => this.resume(save));
+    this.menu = new Menu(document.getElementById('menu'), document.getElementById('pause'), document.getElementById('gameover'), (s) => { this.clearSave(); this.start(s); }, (save) => this.resume(save), (key) => { this.clearSave(); this.startChapter(key); });
+    this.campaign = null;
     window.addEventListener('pagehide', () => this.save());
     this.hud = new HUD(this);
     this.input = new Input(this.canvas, {
@@ -75,7 +78,8 @@ class Game {
     const enemyFaction = FACTION_KEYS[Math.floor(Math.random() * 3)];
     const map = generateMap({ size: +settings.size || 64, theme: settings.theme, seed: settings.seed });
     const world = new World(map, [{ faction: settings.faction, name: 'You' }, { faction: enemyFaction, ai: settings.difficulty, name: 'Enemy' }], { seed: settings.seed + ':' + Date.now() });
-    this.begin(world, settings);
+    this.campaign = null;
+    this.begin(world, { ...settings, mode: 'skirmish' });
     const hq = this.world.byId(this.world.players[0].hqId);
     this.camera.zoom = window.innerWidth < 700 ? 1.0 : 1.2;
     this.camera.centerOn(hq.x + 60, hq.y + 60);
@@ -84,17 +88,43 @@ class Game {
     setTimeout(() => this.hud.toast('Capture strategic points to earn Flux. Build an extractor on an ore vein.', 'good'), 2500);
     if (window.innerHeight > window.innerWidth) setTimeout(() => this.hud.toast('Tip: rotate to landscape for a wider view', ''), 5000);
   }
+  startChapter(key) {
+    const found = chapterByKey(key);
+    if (!found) return;
+    const { chapter, index } = found;
+    const camp = Campaign.build(chapter);
+    this.campaign = camp;
+    this.begin(camp.world, { mode: 'campaign', chapter: key, faction: chapter.player.faction, difficulty: chapter.enemy.ai && chapter.enemy.ai !== 'passive' ? chapter.enemy.ai : 'normal', seed: chapter.seed }, this.makeChapterAI(chapter, camp.world));
+    const hq = this.world.byId(this.world.players[0].hqId);
+    const focus = hq || this.world.playerSquads(0)[0];
+    this.camera.zoom = window.innerWidth < 700 ? 1.0 : 1.2;
+    if (focus) { this.camera.centerOn(focus.x + 40, focus.y + 40); this.select([focus.id]); }
+    this.hud.toast(`Chapter ${index + 1}: ${chapter.title}`, 'good', null, 0, 5000);
+  }
+  makeChapterAI(chapter, world) {
+    if (!chapter.enemy.ai) return null;
+    const passive = chapter.enemy.ai === 'passive';
+    return new AI(world, 1, passive ? 'normal' : chapter.enemy.ai, { passive });
+  }
   resume(save) {
     let world;
     try { world = World.fromSave(save.world); } catch (e) { console.error('save corrupt', e); this.clearSave(); this.menu.render(); return; }
-    this.begin(world, save.settings);
+    let ai;
+    if (save.settings.mode === 'campaign' && save.campaign) {
+      const found = chapterByKey(save.campaign.chapter);
+      if (!found) { this.clearSave(); this.menu.render(); return; }
+      this.campaign = Campaign.restore(found.chapter, world, save.campaign);
+      ai = this.makeChapterAI(found.chapter, world);
+    } else this.campaign = null;
+    this.begin(world, save.settings, ai);
     if (save.camera) { this.camera.zoom = save.camera.zoom; this.camera.centerOn(save.camera.x, save.camera.y); }
     this.hud.toast('Battle resumed', 'good');
   }
-  begin(world, settings) {
+  begin(world, settings, ai) {
     this.settings = settings;
     this.world = world; this.map = world.map;
-    this.ai = new AI(this.world, 1, settings.difficulty);
+    this.ai = ai !== undefined ? ai : new AI(this.world, 1, settings.difficulty);
+    if (this.campaign) this.hud.setObjectives(this.campaign.list(), this.campaign.def.title, this.campaign.stage, this.campaign.def.stages.length); else this.hud.setObjectives(null);
     this.renderer = new Renderer(this.canvas, this.world, this.camera, this.viewer);
     this.minimap = new Minimap(this.hud.minimapCanvas, this.world, this.renderer, this.viewer);
     this.camera.setWorld(this.map.w * TILE, this.map.h * TILE);
@@ -108,11 +138,11 @@ class Game {
   save() {
     if (!this.running || !this.world || this.world.gameOver) return;
     try {
-      localStorage.setItem('bw_save', JSON.stringify({ settings: this.settings, savedAt: Date.now(), world: this.world.serialize(), camera: { x: this.camera.x, y: this.camera.y, zoom: this.camera.zoom } }));
+      localStorage.setItem('bw_save', JSON.stringify({ settings: this.settings, savedAt: Date.now(), world: this.world.serialize(), campaign: this.campaign ? this.campaign.serialize() : null, camera: { x: this.camera.x, y: this.camera.y, zoom: this.camera.zoom } }));
     } catch (e) { /* storage full or unavailable */ }
   }
   clearSave() { try { localStorage.removeItem('bw_save'); } catch (e) { /* ignore */ } }
-  quit() { this.save(); this.running = false; this.hud.hide(); this.menu.render(); this.menu.show(); }
+  quit() { this.save(); this.running = false; this.hud.hide(); this.hud.setObjectives(null); this.menu.render(); this.menu.show(); }
   openPause() {
     if (!this.running || this.paused) return;
     this.paused = true; this.save();
@@ -120,7 +150,7 @@ class Game {
       muted: this.audio.muted,
       resume: () => { this.paused = false; this.last = performance.now(); },
       toggleSound: () => this.toggleSound(),
-      restart: () => { this.paused = false; this.clearSave(); this.start(this.settings); },
+      restart: () => { this.paused = false; this.clearSave(); if (this.campaign) this.startChapter(this.campaign.def.key); else this.start(this.settings); },
       quit: () => { this.paused = false; this.quit(); },
     });
   }
@@ -135,7 +165,8 @@ class Game {
       this.acc += dtReal;
       let steps = 0;
       while (this.acc >= TICK && steps < 6) {
-        this.world.tick(TICK); this.ai.update(TICK);
+        this.world.tick(TICK); this.ai?.update(TICK);
+        if (this.campaign) { this.campaign.onEvents(this.world.events); this.campaign.update(TICK); }
         this.acc -= TICK; steps++;
       }
       if (steps === 6) this.acc = 0;
@@ -143,6 +174,7 @@ class Game {
       // keep effects animating; sim frozen
     }
     this.handleEvents();
+    this.updateCampaign(dtReal);
     this.keyboardPan(dtReal);
     if (!this.paused && !this.world.gameOver) { this.saveTimer = (this.saveTimer || 0) + dtReal; if (this.saveTimer > 8) { this.saveTimer = 0; this.save(); } }
     // dirty terrain
@@ -157,7 +189,17 @@ class Game {
       this.overShown = true; this.clearSave();
       const won = this.world.winner === this.viewer;
       this.audio.play(won ? 'victory' : 'defeat');
-      setTimeout(() => this.menu.showGameOver({ won, time: this.world.time, me: this.world.players[0].stats, enemy: this.world.players[1].stats, handlers: { restart: () => this.start(this.settings), quit: () => this.quit() } }), 1800);
+      if (this.campaign) {
+        const found = chapterByKey(this.campaign.def.key);
+        if (won) markComplete(found.campaign.faction, found.index);
+        const next = found.campaign.chapters[found.index + 1];
+        setTimeout(() => this.menu.showChapterEnd({
+          won, reason: this.campaign.reason, campaign: found.campaign, chapter: found.chapter, index: found.index, time: this.world.time, me: this.world.players[0].stats, enemy: this.world.players[1].stats, objectives: this.campaign.list(),
+          handlers: { next: next ? () => this.startChapter(next.key) : null, replay: () => this.startChapter(found.chapter.key), quit: () => this.quit() },
+        }), 1800);
+      } else {
+        setTimeout(() => this.menu.showGameOver({ won, time: this.world.time, me: this.world.players[0].stats, enemy: this.world.players[1].stats, handlers: { restart: () => this.start(this.settings), quit: () => this.quit() } }), 1800);
+      }
     }
   }
   handleEvents() {
@@ -195,6 +237,19 @@ class Game {
       }
     }
     ev.length = 0;
+  }
+  updateCampaign(dt) {
+    const c = this.campaign; if (!c) return;
+    for (const m of c.messages) {
+      if (m.kind === 'objective') { this.audio.play('captured'); this.hud.toast(m.text, 'good', null, 0, 4000); }
+      else if (m.kind === 'stage') { this.hud.toast(m.text, 'hint', null, 0, 9000); }
+      else if (m.kind === 'wave') { this.audio.play('alarm'); this.hud.toast(m.text, 'bad', null, 0, 5000); }
+      else this.hud.toast(m.text, 'hint', null, 0, 9000);
+    }
+    c.messages.length = 0;
+    this.objTimer = (this.objTimer || 0) + dt;
+    if (this.objTimer > 0.4) { this.objTimer = 0; this.hud.setObjectives(c.list(), c.def.title, c.stage, c.def.stages.length); }
+    if (c.status !== 'playing' && !this.world.gameOver) { this.world.gameOver = true; this.world.winner = c.status === 'won' ? 0 : 1; }
   }
   onScreen(x, y) { const r = this.camera.visibleRect(); return x > r.x0 - 100 && x < r.x1 + 100 && y > r.y0 - 100 && y < r.y1 + 100; }
   keyboardPan(dt) {

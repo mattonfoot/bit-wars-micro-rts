@@ -48,6 +48,7 @@ export class World {
     this.blocked = new Uint8Array(map.w * map.h); // building occupancy (building id + 1)
     this.winner = NONE;
     this.gameOver = false;
+    this.restrict = {}; // owner -> { units: Set|null, buildings: Set|null } (campaign chapters)
     this.points = map.points.map((p, i) => ({ i, tx: p.tx, ty: p.ty, x: (p.tx + 0.5) * TILE, y: (p.ty + 0.5) * TILE, owner: NONE, progress: 0, capturer: NONE, outpost: 0, contested: false }));
     this.ore = map.ore.map((o, i) => ({ i, tx: o.tx, ty: o.ty, x: (o.tx + 0.5) * TILE, y: (o.ty + 0.5) * TILE, building: 0 }));
     this.players = players.map((p, i) => ({
@@ -74,6 +75,7 @@ export class World {
     const m = this.map;
     return {
       v: 1, time: this.time, ticks: this.ticks, nextId: this.nextId, rng: this.rng.s, winner: this.winner, gameOver: this.gameOver,
+      restrict: Object.fromEntries(Object.entries(this.restrict).map(([k, r]) => [k, { units: r.units ? [...r.units] : null, buildings: r.buildings ? [...r.buildings] : null }])),
       map: { w: m.w, h: m.h, theme: m.theme, seed: m.seed, name: m.name, starts: m.starts, ore: m.ore, points: m.points, tiles: Array.from(m.tiles), hp: Array.from(m.hp) },
       players: this.players.map((p) => ({
         id: p.id, name: p.name, faction: p.faction, isAI: p.isAI, difficulty: p.difficulty, ore: p.ore, flux: p.flux, pop: p.pop, alive: p.alive, hqId: p.hqId,
@@ -117,6 +119,7 @@ export class World {
     d.points.forEach((p, i) => Object.assign(w.points[i], { owner: p.owner, progress: p.progress, capturer: p.capturer, contested: p.contested }));
     w.projectiles = d.projectiles.map((p) => ({ ...p }));
     w.rebuildIndex();
+    if (d.restrict) for (const [k, r] of Object.entries(d.restrict)) w.restrict[k] = { units: r.units ? new Set(r.units) : null, buildings: r.buildings ? new Set(r.buildings) : null };
     w.rng.s = d.rng; // last: spawning consumed random numbers
     return w;
   }
@@ -143,6 +146,7 @@ export class World {
     return isPassable(this.map.tiles[ty * this.w + tx]) && !this.blocked[ty * this.w + tx];
   }
   faction(pid) { return FACTIONS[this.players[pid].faction]; }
+  allowed(owner, kind, key) { const r = this.restrict[owner]; if (!r) return true; const set = kind === 'unit' ? r.units : r.buildings; return !set || set.has(key); }
   emit(e) { this.events.push(e); }
   visible(pid, x, y) {
     const tx = Math.floor(x / TILE), ty = Math.floor(y / TILE);
@@ -217,6 +221,7 @@ export class World {
   canPlace(owner, key, tx, ty) {
     const def = this.faction(owner).buildings[key];
     if (!def || def.hq) return { ok: false, reason: 'Cannot build that' };
+    if (!this.allowed(owner, 'building', key)) return { ok: false, reason: 'Not available in this chapter' };
     const p = this.players[owner];
     if (p.ore < def.cost.ore || p.flux < def.cost.flux) return { ok: false, reason: 'Not enough resources' };
     if (def.onOre) {
@@ -271,6 +276,7 @@ export class World {
     if (b.dead || !b.done) return { ok: false, reason: 'Not ready' };
     const def = this.faction(b.owner).units[key];
     if (!def || !b.def.trains.includes(key)) return { ok: false, reason: 'Cannot train here' };
+    if (!this.allowed(b.owner, 'unit', key)) return { ok: false, reason: 'Not available in this chapter' };
     const p = this.players[b.owner];
     if (def.requires && !this.buildings.some((x) => x.owner === b.owner && !x.dead && x.done && x.key === def.requires)) return { ok: false, reason: `Requires ${this.faction(b.owner).buildings[def.requires].name}` };
     if (def.hero && (p.heroAlive || p.heroQueued)) return { ok: false, reason: 'Hero already fielded' };
@@ -323,7 +329,7 @@ export class World {
       s.targetId = 0; s.setup = 0;
       this.setPath(s, targets[i][0], targets[i][1]);
     });
-    this.emit({ type: 'order', x, y, kind: type });
+    this.emit({ type: 'order', x, y, kind: type, owner: squads[0]?.owner });
   }
   cmdAttackMove(squads, x, y) { this.cmdMove(squads, x, y, 'amove'); }
   cmdAttack(squads, target) {
@@ -332,7 +338,7 @@ export class World {
       s.order = { type: 'attack', targetId: target.id, x: target.x, y: target.y };
       s.targetId = target.id; s.repathTimer = 0;
     }
-    this.emit({ type: 'order', x: target.x, y: target.y, kind: 'attack' });
+    this.emit({ type: 'order', x: target.x, y: target.y, kind: 'attack', owner: squads[0]?.owner });
   }
   cmdHold(squads) { for (const s of squads) { s.order = { type: 'hold', x: s.x, y: s.y }; s.path = null; s.targetId = 0; } }
   cmdStop(squads) { for (const s of squads) { s.order = { type: 'idle', x: s.x, y: s.y }; s.homeX = s.x; s.homeY = s.y; s.path = null; s.targetId = 0; } }
@@ -344,7 +350,7 @@ export class World {
       s.targetId = 0; s.setup = 0;
       this.setPath(s, home.x, home.y);
     }
-    this.emit({ type: 'order', x: squads[0]?.x, y: squads[0]?.y, kind: 'retreat' });
+    this.emit({ type: 'order', x: squads[0]?.x, y: squads[0]?.y, kind: 'retreat', owner: squads[0]?.owner });
   }
   retreatPoint(owner, x, y) {
     let best = null, bd = Infinity;
@@ -837,7 +843,7 @@ export class World {
     }
     if (shots) this.emit({ type: 'sound', name: weapon.melee ? 'melee' : weapon.type, x: src.x, y: src.y, faction: src.faction });
     // Demolition weapons (e.g. Breachers) smash cover around whatever they hit.
-    if (shots && weapon.terrain && target.kind === 'squad') this.damageTerrain(target.x, target.y, TILE * 1.1, weapon.terrain * shots * 0.5);
+    if (shots && weapon.terrain && target.kind === 'squad') this.damageTerrain(target.x, target.y, TILE * 1.1, weapon.terrain * shots * 0.5, src.owner);
   }
 
   damageSquad(target, member, dmg, type, supp, attacker, sx, sy, opts = {}) {
@@ -849,8 +855,9 @@ export class World {
       mult *= COVER_DMG[cover]; suppMult *= COVER_SUPP[cover];
     }
     target.cover = cover;
+    if (cover > 0) this.emit({ type: 'coverHit', owner: target.owner, level: cover, id: target.id });
     const flank = isFlank(target, sx, sy);
-    if (flank) { mult *= 1.25 * (opts.flankMult || 1); suppMult *= 1.5; }
+    if (flank) { mult *= 1.25 * (opts.flankMult || 1); suppMult *= 1.5; if (attacker) this.emit({ type: 'flank', owner: attacker.owner, targetOwner: target.owner }); }
     if (target.broken) mult *= 1.5;
     mult *= target.buff.armor;
     let remaining = dmg * mult;
@@ -957,9 +964,9 @@ export class World {
       if (b.dead || b.owner === pr.owner) continue;
       if (this.entityDist({ x: pr.tx, y: pr.ty }, b) <= R) this.damageBuilding(b, pr.dmg, pr.type, attacker);
     }
-    if (pr.terrain) this.damageTerrain(pr.tx, pr.ty, R, pr.terrain);
+    if (pr.terrain) this.damageTerrain(pr.tx, pr.ty, R, pr.terrain, pr.owner);
   }
-  damageTerrain(x, y, R, amount) {
+  damageTerrain(x, y, R, amount, byOwner = NONE) {
     const tx0 = Math.floor((x - R) / TILE), ty0 = Math.floor((y - R) / TILE), tx1 = Math.floor((x + R) / TILE), ty1 = Math.floor((y + R) / TILE);
     for (let ty = ty0; ty <= ty1; ty++) for (let tx = tx0; tx <= tx1; tx++) {
       if (tx < 1 || ty < 1 || tx >= this.w - 1 || ty >= this.h - 1) continue;
@@ -973,7 +980,7 @@ export class World {
         if (this.map.hp[i] <= 0) {
           this.map.tiles[i] = t === T.BRUSH ? T.GROUND : T.RUBBLE; this.map.hp[i] = 0;
           this.dirtyTiles.push(i);
-          this.emit({ type: 'terrainDestroyed', x: cx, y: cy, tile: t });
+          this.emit({ type: 'terrainDestroyed', x: cx, y: cy, tile: t, owner: byOwner });
         }
       } else if (t === T.GROUND && d < TILE * 0.7 && this.rng.chance(0.6) && !this.blocked[i]) {
         this.map.tiles[i] = T.CRATER; this.dirtyTiles.push(i);

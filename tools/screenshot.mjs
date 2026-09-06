@@ -24,7 +24,7 @@ try {
   await page.waitForTimeout(600);
   await page.screenshot({ path: `${out}/01-menu.png` });
   await page.evaluate(() => { const s = window.game.menu.settings; s.faction = 'blue'; s.theme = 'verdant'; s.seed = 'shot1'; });
-  await page.click('#btnStart');
+  await page.click('.tab[data-tab="skirmish"]'); await page.click('#btnStart');
   await page.waitForTimeout(800);
   await page.screenshot({ path: `${out}/02-start.png` });
   // queue units + build an extractor via API, then let the game run

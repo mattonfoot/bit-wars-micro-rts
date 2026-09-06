@@ -23,6 +23,12 @@ Battles autosave every few seconds and on backgrounding, and the menu offers **R
 
 Two commanders, one procedurally generated battleground, one objective: reduce the enemy headquarters to rubble.
 
+### Campaigns
+
+Each faction has a six-chapter campaign that teaches its mechanics in order, with a story that carries from chapter to chapter: **Shear** (Vector Swarm: mass, counters, flanking, air raids, the Apex, siege), **Doctrine** (Iron Foundry: cover, suppression, demolition, armour and artillery, the Foreman, siege) and **Protocol** (Aegis Collective: shields, range, morale warfare, sustain, vision, orbital artillery). Early chapters are scripted garrisons and waves with limited rosters; the final two chapters of each campaign are full wars against a living opponent. Progress is saved per campaign, and a chapter in progress can be resumed.
+
+Chapter definitions live in `src/game/campaigns.js` (story, setup, staged objectives, waves, hints, epilogue); the runtime that builds worlds and tracks objectives is `src/game/campaign.js`.
+
 ### Three factions, nothing shared
 
 | | Vector Swarm (blue, triangles) | Iron Foundry (red, squares) | Aegis Collective (green, circles) |
@@ -66,6 +72,7 @@ Mouse: left-click/drag selects, right-click commands, wheel zooms, middle-drag p
 npm start          # serve on http://localhost:8080
 npm run test:map   # map generation: 90 maps, connectivity checks
 npm run test:sim   # headless AI vs AI across all faction matchups
+npm run test:campaign  # every chapter builds, runs, round-trips; chapter 1 scripted playthrough
 npm run sim -- blue red verdant seed 20   # one headless game, per-minute summary
 npm run screenshots                        # Playwright smoke test at iPhone viewport
 npm run icons                              # regenerate PNG/App Store icons and splash from SVG

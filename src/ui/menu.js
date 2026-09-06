@@ -2,13 +2,15 @@
 import { FACTIONS, FACTION_KEYS, POP_CAP } from '../game/data.js';
 import { THEMES, THEME_KEYS } from '../map/themes.js';
 import { unitIconSVG, buildingIconSVG } from '../render/shapes.js';
+import { CAMPAIGNS, LORE } from '../game/campaigns.js';
+import { loadProgress } from '../game/campaign.js';
 
 const DEFAULTS = { faction: 'blue', theme: 'verdant', difficulty: 'normal', size: 64, seed: '' };
 
 export class Menu {
-  constructor(root, pauseRoot, overRoot, onStart, onResume) {
-    this.root = root; this.pauseRoot = pauseRoot; this.overRoot = overRoot; this.onStart = onStart; this.onResume = onResume;
-    this.settings = { ...DEFAULTS };
+  constructor(root, pauseRoot, overRoot, onStart, onResume, onStartChapter) {
+    this.root = root; this.pauseRoot = pauseRoot; this.overRoot = overRoot; this.onStart = onStart; this.onResume = onResume; this.onStartChapter = onStartChapter;
+    this.settings = { ...DEFAULTS, tab: 'campaign', campFaction: 'blue' };
     try { Object.assign(this.settings, JSON.parse(localStorage.getItem('bw_settings') || '{}')); } catch (e) { /* ignore */ }
     this.render();
   }
@@ -24,6 +26,13 @@ export class Menu {
       <div class="panel">
         <h1><span class="b">BIT</span> <span class="r">WARS</span> <span class="g">◉</span></h1>
         <div class="sub">Micro RTS · squads, cover, morale and frontline economics. Hold the points. Break the line. Burn the base.</div>
+        <div class="tabs"><button class="tab ${s.tab === 'campaign' ? 'sel' : ''}" data-tab="campaign">Campaign</button><button class="tab ${s.tab === 'skirmish' ? 'sel' : ''}" data-tab="skirmish">Skirmish</button></div>
+        <div id="campaignView" class="${s.tab === 'campaign' ? '' : 'hidden'}">
+          <div class="help" style="margin-bottom:8px">${LORE.world}</div>
+          <div class="factions" id="campCards"></div>
+          <div id="chapters"></div>
+        </div>
+        <div id="skirmishView" class="${s.tab === 'skirmish' ? '' : 'hidden'}">
         <h2>Faction</h2>
         <div class="factions" id="fcards"></div>
         <h2>Battleground</h2>
@@ -35,8 +44,9 @@ export class Menu {
         </div>
         <h2>Enemy</h2>
         <div class="chips" id="diffChips"></div>
-        <div id="resumeWrap"></div>
         <button class="big" id="btnStart">BATTLE</button>
+        </div>
+        <div id="resumeWrap"></div>
         <div class="install" id="installHint">On iPhone: open in Safari, tap Share, then <b>Add to Home Screen</b> to install as an app.</div>
         <details style="margin-top:14px"><summary class="help" style="cursor:pointer"><b>How to play</b> — controls, systems, rosters</summary>
           <div class="help" style="margin-top:8px">
@@ -57,6 +67,8 @@ export class Menu {
           </div>
         </details>
       </div>`;
+    for (const t of r.querySelectorAll('.tab')) t.onclick = () => { s.tab = t.dataset.tab; this.save(); this.render(); };
+    this.renderCampaign();
     const fc = r.querySelector('#fcards');
     for (const k of FACTION_KEYS) {
       const f = FACTIONS[k];
@@ -88,11 +100,10 @@ export class Menu {
       const t = Math.floor(save.world.time), mins = Math.floor(t / 60), secs = String(t % 60).padStart(2, '0');
       const f = FACTIONS[save.settings.faction], ef = FACTIONS[save.world.players[1].faction];
       const b = document.createElement('button'); b.className = 'big'; b.id = 'btnResume';
-      b.innerHTML = `RESUME BATTLE <span style="font-weight:500;font-size:13px;opacity:.75">· ${save.world.map.name} · ${f.name} vs ${ef.name} · ${mins}:${secs}</span>`;
+      const what = save.settings.mode === 'campaign' ? `Campaign · ${save.settings.chapter}` : save.world.map.name;
+      b.innerHTML = `RESUME BATTLE <span style="font-weight:500;font-size:13px;opacity:.75">· ${what} · ${f.name} vs ${ef.name} · ${mins}:${secs}</span>`;
       b.onclick = () => this.onResume(save);
       r.querySelector('#resumeWrap').appendChild(b);
-      r.querySelector('#btnStart').textContent = 'NEW BATTLE';
-      r.querySelector('#btnStart').classList.add('secondary');
     }
     r.querySelector('#btnStart').onclick = () => {
       s.seed = r.querySelector('#seedInput').value.trim();
@@ -123,6 +134,67 @@ export class Menu {
     const native = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
     if (native) r.querySelector('#installHint').remove();
     else if (window.matchMedia('(display-mode: standalone)').matches || navigator.standalone) r.querySelector('#installHint').textContent = 'Installed. Tip: play in landscape.';
+  }
+  renderCampaign() {
+    const r = this.root, s = this.settings;
+    const progress = loadProgress();
+    const cards = r.querySelector('#campCards'); cards.innerHTML = '';
+    for (const k of FACTION_KEYS) {
+      const f = FACTIONS[k], camp = CAMPAIGNS[k], doneN = progress[k] || 0;
+      const el = document.createElement('div');
+      el.className = 'fcard camp' + (s.campFaction === k ? ' sel' : '');
+      el.style.setProperty('--fc', f.color);
+      el.innerHTML = `${unitIconSVG(k, Object.values(f.units)[0].shape, f.color, 42)}<div class="fname">${camp.title} <span class="ftag">· ${f.name}</span></div><div class="ftag">${camp.tagline}</div><div class="ftag" style="margin-top:4px">${doneN}/${camp.chapters.length} chapters complete</div>`;
+      el.onclick = () => { s.campFaction = k; this.save(); this.renderCampaign(); };
+      cards.appendChild(el);
+    }
+    const camp = CAMPAIGNS[s.campFaction], doneN = progress[s.campFaction] || 0;
+    const list = r.querySelector('#chapters');
+    list.innerHTML = `<div class="help" style="margin:10px 0 8px">${camp.intro}</div>`;
+    camp.chapters.forEach((ch, i) => {
+      const state = i < doneN ? 'done' : i === doneN ? 'next' : 'locked';
+      const row = document.createElement('button');
+      row.className = 'chapter ' + state;
+      row.innerHTML = `<span class="num">${i + 1}</span><span class="body"><b>${ch.title}</b><span class="brief">${ch.briefing}</span></span><span class="state">${state === 'done' ? '✓' : state === 'next' ? '▶' : '🔒'}</span>`;
+      row.onclick = () => { if (state !== 'locked') this.showBriefing(camp, ch, i); };
+      list.appendChild(row);
+    });
+  }
+  showBriefing(camp, ch, i) {
+    const r = this.overRoot, f = FACTIONS[camp.faction], ef = FACTIONS[ch.enemy.faction];
+    const stages = ch.stages.map((st, k) => `<div class="stagebox"><div class="stagehead">${k === 0 ? 'Objectives' : `Then`}</div>${st.intro ? `<div class="help" style="margin-bottom:4px">${st.intro}</div>` : ''}<ul>${st.objectives.map((o) => `<li class="${o.optional ? 'opt' : ''}">${o.text}${o.optional ? ' <em>(optional)</em>' : ''}</li>`).join('')}</ul></div>`).join('');
+    r.innerHTML = `<div class="panel">
+      <div class="sub" style="margin-bottom:2px;color:${f.color}">${camp.title} · Chapter ${i + 1}</div>
+      <h1 style="font-size:28px">${ch.title}</h1>
+      <div class="sub">${THEMES[ch.theme].name} · vs ${ef.name}${ch.enemy.ai ? ' (active)' : ' (garrison)'}</div>
+      <div class="story">${ch.story.map((p) => `<p>${p}</p>`).join('')}</div>
+      <div class="briefline"><b>Briefing.</b> ${ch.briefing}</div>
+      ${stages}
+      <button class="big" id="chBegin">BEGIN CHAPTER</button>
+      <button class="big secondary" id="chBack">Back</button>
+    </div>`;
+    r.classList.remove('hidden');
+    r.querySelector('#chBegin').onclick = () => { r.classList.add('hidden'); this.onStartChapter(ch.key); };
+    r.querySelector('#chBack').onclick = () => r.classList.add('hidden');
+  }
+  showChapterEnd({ won, reason, campaign, chapter, index, time, me, enemy, objectives, handlers }) {
+    const r = this.overRoot, f = FACTIONS[campaign.faction];
+    const fmt = (t) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
+    const last = index === campaign.chapters.length - 1;
+    r.innerHTML = `<div class="panel">
+      <div class="sub" style="margin-bottom:2px;color:${f.color}">${campaign.title} · Chapter ${index + 1}: ${chapter.title}</div>
+      <h1 style="color:${won ? '#7CFC9A' : '#ff5f5f'}">${won ? (last ? 'CAMPAIGN COMPLETE' : 'CHAPTER COMPLETE') : 'CHAPTER FAILED'}</h1>
+      <div class="sub">${won ? '' : reason + ' · '}${fmt(time)}</div>
+      ${won ? `<div class="story">${chapter.epilogue.map((p) => `<p>${p}</p>`).join('')}</div>` : `<ul class="objlist">${objectives.map((o) => `<li class="${o.done ? 'done' : ''}">${o.done ? '✓' : '○'} ${o.text}${o.target > 1 ? ` (${o.cur}/${o.target})` : ''}</li>`).join('')}</ul>`}
+      <div class="stats"><span>Squads killed</span><span>${me.kills} vs ${enemy.kills}</span><span>Squads lost</span><span>${me.losses}</span><span>Structures destroyed</span><span>${me.destroyed}</span></div>
+      ${won && handlers.next ? '<button class="big" id="ceNext">NEXT CHAPTER</button>' : ''}
+      <button class="big ${won && handlers.next ? 'secondary' : ''}" id="ceReplay">${won ? 'Replay chapter' : 'RETRY'}</button>
+      <button class="big secondary" id="ceMenu">Campaign menu</button>
+    </div>`;
+    r.classList.remove('hidden');
+    if (handlers.next) { const b = r.querySelector('#ceNext'); if (b) b.onclick = () => { r.classList.add('hidden'); handlers.next(); }; }
+    r.querySelector('#ceReplay').onclick = () => { r.classList.add('hidden'); handlers.replay(); };
+    r.querySelector('#ceMenu').onclick = () => { r.classList.add('hidden'); this.settings.tab = 'campaign'; this.save(); handlers.quit(); };
   }
   updateBlurb() {
     const t = this.settings.theme;

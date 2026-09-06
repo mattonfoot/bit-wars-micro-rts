@@ -297,7 +297,7 @@ export class Renderer {
 
   drawBuildGhost(g) {
     const { ctx, world } = this;
-    const def = FACTIONS[this.viewerFaction].buildings[g.key];
+    const def = g.key ? FACTIONS[this.viewerFaction].buildings[g.key] : null;
     // build radius hints
     ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.setLineDash([6, 6]); ctx.lineWidth = 1.5;
     for (const b of world.buildings) {
@@ -306,6 +306,7 @@ export class Renderer {
       ctx.beginPath(); ctx.arc(b.x, b.y, r, 0, TAU); ctx.stroke();
     }
     ctx.setLineDash([]);
+    if (!def) return; // no structure chosen yet: radius hints only
     if (def.onOre) { ctx.strokeStyle = '#ffe680'; ctx.lineWidth = 2; for (const o of world.ore) if (!o.building && world.explored(this.viewer, o.tx, o.ty)) { ctx.beginPath(); ctx.arc(o.x, o.y, TILE * 0.7 + Math.sin(this.time * 6) * 2, 0, TAU); ctx.stroke(); } }
     if (def.onPoint) { ctx.strokeStyle = '#ffe680'; ctx.lineWidth = 2; for (const p of world.points) if (p.owner === this.viewer && !p.outpost) { ctx.beginPath(); ctx.arc(p.x, p.y, TILE * 1.1 + Math.sin(this.time * 6) * 2, 0, TAU); ctx.stroke(); } }
     if (g.tx === undefined) return;

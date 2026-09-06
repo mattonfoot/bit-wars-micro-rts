@@ -182,6 +182,7 @@ export class HUD {
       return;
     }
     if (sq.length) {
+      cmd.appendChild(this.btn('<span class="k">✕</span>Deselect', () => g.select([]), '', 'Clear the selection'));
       cmd.appendChild(this.btn('<span class="k">➜</span>Move', () => g.setMode(mode === 'move' ? 'normal' : 'move'), mode === 'move' ? 'on' : '', 'Next tap: move'));
       cmd.appendChild(this.btn('<span class="k">⚔</span>Attack', () => g.setMode(mode === 'amove' ? 'normal' : 'amove'), mode === 'amove' ? 'on' : '', 'Next tap: attack-move (or long-press the map)'));
       cmd.appendChild(this.btn('<span class="k">✋</span>Hold', () => g.doHold(), '', 'Hold position'));
@@ -212,9 +213,11 @@ export class HUD {
         cmd.appendChild(this.btn('<span class="k">⚑</span>Rally', () => g.setMode(mode === 'rally' ? 'normal' : 'rally'), mode === 'rally' ? 'on' : '', 'Next tap: set rally point'));
       }
       cmd.appendChild(this.btn(b.done ? 'Demolish' : 'Cancel build', () => g.doCancelBuilding(b), 'danger'));
+      cmd.appendChild(this.btn('<span class="k">✕</span>Deselect', () => g.select([]), '', 'Clear the selection'));
       return;
     }
-    if (bl.length > 1) { cmd.appendChild(this.btn('Select one structure to manage it', () => {}, 'wide dis')); return; }
+    if (bl.length > 1) { cmd.appendChild(this.btn('Select one structure to manage it', () => {}, 'wide dis')); cmd.appendChild(this.btn('<span class="k">✕</span>Deselect', () => g.select([]), 'wide')); return; }
+    if (g.selectedEnemy()) { cmd.appendChild(this.btn('<span class="k">✕</span>Deselect', () => g.select([]), 'wide')); return; }
     cmd.appendChild(this.btn('<span class="k">🏗</span>Build', () => g.setMode('build'), ''));
     cmd.appendChild(this.btn('<span class="k">⬚</span>Box', () => g.setMode(mode === 'box' ? 'normal' : 'box'), mode === 'box' ? 'on' : '', 'Drag to box-select'));
     cmd.appendChild(this.btn('<span class="k">⚑</span>Army', () => g.selectAllArmy(), '', 'Select every squad'));

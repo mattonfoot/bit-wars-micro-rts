@@ -47,7 +47,15 @@ try {
   });
   await page.waitForTimeout(seconds * 1000 * 0.5);
   await page.screenshot({ path: `${out}/04-army.png` });
-  await page.evaluate(() => { window.game.setMode('build'); window.game.startBuild('nest'); const hq = window.game.world.byId(window.game.world.players[0].hqId); window.game.placeGhost(hq.x + 140, hq.y + 40, false); });
+  // press the real Build button (nothing selected) and check the structure list renders
+  await page.evaluate(() => window.game.select([]));
+  await page.waitForTimeout(250);
+  const buildBtn = await page.$('#cmd button:has-text("Build")');
+  if (!buildBtn) throw new Error('Build button missing');
+  await buildBtn.tap(); await page.waitForTimeout(300);
+  const nBuild = await page.evaluate(() => document.querySelectorAll('#cmd button').length);
+  if (nBuild < 3) throw new Error('build list did not render: ' + nBuild);
+  await page.evaluate(() => { window.game.startBuild('nest'); const hq = window.game.world.byId(window.game.world.players[0].hqId); window.game.placeGhost(hq.x + 140, hq.y + 40, false); });
   await page.waitForTimeout(300);
   await page.screenshot({ path: `${out}/05-build.png` });
   const state = await page.evaluate(() => { const w = window.game.world; return { time: w.time, squads: w.squads.length, buildings: w.buildings.length, ore: w.players[0].ore | 0, pop: w.players.map((p) => p.pop) }; });

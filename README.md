@@ -44,6 +44,7 @@ Every unit has a damage type (light, anti-armour, energy, blast, melee) and an a
 - **Fog of war.** Vision comes from units and structures; enemy structures you have seen are remembered on the minimap.
 - **Meaningful losses.** Squads die permanently, structures leave rubble, lose the HQ and the war is over.
 - **Five themes.** Verdant Basin, Ashfall, Frostbite, Ruined City, Crystal Dunes. Maps are point-symmetric so both sides get identical terrain; seeds are shareable.
+- **Vector-map look.** Black ground with thin outlines: white contour lines for mountains, blue coastlines around water, grey edges along paths, brown outlines for walls and ruins, green outlines for vegetation. Units are solid coloured shapes so they always stand out from the terrain.
 
 ### Controls (touch)
 

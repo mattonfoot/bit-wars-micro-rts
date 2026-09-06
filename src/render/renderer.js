@@ -63,7 +63,7 @@ export class Renderer {
     const { ctx, camera, world } = this;
     const dpr = camera.dpr;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.fillStyle = this.theme.colors.fog;
+    ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
     camera.apply(ctx);
     const vr = camera.visibleRect();

@@ -146,7 +146,8 @@ class Game {
     this.keyboardPan(dtReal);
     if (!this.paused && !this.world.gameOver) { this.saveTimer = (this.saveTimer || 0) + dtReal; if (this.saveTimer > 8) { this.saveTimer = 0; this.save(); } }
     // dirty terrain
-    if (this.world.dirtyTiles.length) { for (const i of this.world.dirtyTiles) this.renderer.terrain.redrawTile(i); this.world.dirtyTiles.length = 0; this.minimap.dirty = true; }
+    if (this.world.dirtyTiles.length) { this.renderer.terrain.redrawTile(); this.world.dirtyTiles.length = 0; }
+    if (this.renderer.terrain.update(t)) this.minimap.dirty = true;
     this.renderer.fog.update(this.world.players[this.viewer].vision, Math.floor(this.world.ticks / 6));
     this.pruneSelection();
     this.renderer.draw({ selected: this.selection, buildGhost: this.mode === 'build' ? this.buildGhost : null, box: this.box, rallyFor: this.selectedBuildings()[0] }, dtReal);

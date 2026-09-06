@@ -27,8 +27,8 @@ export class Minimap {
     const scale = (size * dpr) / (world.w * TILE);
     if (this.dirty) {
       const tc = this.terrainCache.getContext('2d');
-      tc.imageSmoothingEnabled = true;
-      tc.drawImage(this.renderer.terrain.canvas, 0, 0, this.terrainCache.width, this.terrainCache.height);
+      tc.imageSmoothingEnabled = false;
+      tc.drawImage(this.renderer.terrain.mini, 0, 0, this.terrainCache.width, this.terrainCache.height);
       this.dirty = false;
     }
     ctx.setTransform(1, 0, 0, 1, 0, 0);

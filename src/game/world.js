@@ -878,8 +878,8 @@ export class World {
       if (attacker && attacker.kind === 'squad') attacker.killCount++;
       if (!target.members.length) this.killSquad(target, attacker);
       else if (target.def.size > 1) {
-        target.morale -= 14 * (target.buff.moraleRegen > 0 ? 0.5 : 1);
-        if (target.morale <= 0 && !target.broken) { target.morale = 0; target.broken = true; this.emit({ type: 'broken', x: target.x, y: target.y, owner: target.owner, id: target.id }); }
+        target.morale = Math.max(0, target.morale - 14 * (target.buff.moraleRegen > 0 ? 0.5 : 1));
+        if (target.morale <= 0 && !target.broken) { target.broken = true; this.emit({ type: 'broken', x: target.x, y: target.y, owner: target.owner, id: target.id }); }
       }
     }
     // retaliate: idle squads turn on their attacker

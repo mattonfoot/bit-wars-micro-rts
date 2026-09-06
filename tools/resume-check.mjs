@@ -16,7 +16,7 @@ try {
   page.on('pageerror', (e) => { errors.push(String(e)); console.log('[pageerror]', e); });
   page.on('console', (m) => { if (m.type() === 'error') { errors.push(m.text()); console.log('[console]', m.text()); } });
   await page.goto(`http://localhost:${port}/index.html`, { waitUntil: 'load' });
-  await page.click('.tab[data-tab="skirmish"]'); await page.click('#btnStart');
+  await page.click('.fpick[data-f="blue"]'); await page.click('#btnSkirmish'); await page.click('#btnStart');
   await page.evaluate(() => { const g = window.game, w = g.world; const hq = w.byId(w.players[0].hqId); w.cmdTrain(hq, Object.keys(w.faction(0).units)[0]); });
   await page.waitForTimeout(9000); // > autosave interval
   const before = await page.evaluate(() => ({ time: window.game.world.time, seed: window.game.map.seed, squads: window.game.world.squads.length, saved: !!localStorage.getItem('bw_save') }));

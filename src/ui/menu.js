@@ -1,5 +1,5 @@
-// Main menu, pause and game-over overlays. Pure DOM.
-import { FACTIONS, FACTION_KEYS, POP_CAP } from '../game/data.js';
+// Menus: title -> faction carousel -> campaign chapters | skirmish setup. Plus briefing, pause and end screens.
+import { FACTIONS, FACTION_KEYS } from '../game/data.js';
 import { THEMES, THEME_KEYS } from '../map/themes.js';
 import { unitIconSVG, buildingIconSVG } from '../render/shapes.js';
 import { CAMPAIGNS, LORE } from '../game/campaigns.js';
@@ -9,148 +9,113 @@ const DEFAULTS = { faction: 'blue', theme: 'verdant', difficulty: 'normal', size
 
 export class Menu {
   constructor(root, pauseRoot, overRoot, onStart, onResume, onStartChapter) {
-    this.root = root; this.pauseRoot = pauseRoot; this.overRoot = overRoot; this.onStart = onStart; this.onResume = onResume; this.onStartChapter = onStartChapter;
-    this.settings = { ...DEFAULTS, tab: 'campaign', campFaction: 'blue' };
+    this.root = root; this.pauseRoot = pauseRoot; this.overRoot = overRoot;
+    this.onStart = onStart; this.onResume = onResume; this.onStartChapter = onStartChapter;
+    this.settings = { ...DEFAULTS };
     try { Object.assign(this.settings, JSON.parse(localStorage.getItem('bw_settings') || '{}')); } catch (e) { /* ignore */ }
+    if (!FACTIONS[this.settings.faction]) this.settings.faction = 'blue';
+    this.screen = 'title';
     this.render();
   }
   save() { try { localStorage.setItem('bw_settings', JSON.stringify(this.settings)); } catch (e) { /* ignore */ } }
   show() { this.root.classList.remove('hidden'); }
   hide() { this.root.classList.add('hidden'); }
   randomSeed() { return Math.random().toString(36).slice(2, 8); }
+  go(screen) { this.screen = screen; this.render(); }
+  loadSave() { try { const s = JSON.parse(localStorage.getItem('bw_save') || 'null'); return s && s.world && !s.world.gameOver ? s : null; } catch (e) { return null; } }
 
   render() {
-    const s = this.settings;
     const r = this.root;
-    r.innerHTML = `
-      <div class="panel">
-        <h1><span class="b">BIT</span> <span class="r">WARS</span> <span class="g">◉</span></h1>
-        <div class="sub">Micro RTS · squads, cover, morale and frontline economics. Hold the points. Break the line. Burn the base.</div>
-        <div class="tabs"><button class="tab ${s.tab === 'campaign' ? 'sel' : ''}" data-tab="campaign">Campaign</button><button class="tab ${s.tab === 'skirmish' ? 'sel' : ''}" data-tab="skirmish">Skirmish</button></div>
-        <div id="campaignView" class="${s.tab === 'campaign' ? '' : 'hidden'}">
-          <div class="help" style="margin-bottom:8px">${LORE.world}</div>
-          <div class="factions" id="campCards"></div>
-          <div id="chapters"></div>
-        </div>
-        <div id="skirmishView" class="${s.tab === 'skirmish' ? '' : 'hidden'}">
-        <h2>Faction</h2>
-        <div class="factions" id="fcards"></div>
-        <h2>Battleground</h2>
-        <div class="chips" id="themeChips"></div>
-        <div class="row" style="margin-top:8px">
-          <span class="chips" id="sizeChips"></span>
-          <input id="seedInput" placeholder="seed (random)" value="${s.seed || ''}" autocomplete="off" />
-          <button class="chip" id="seedRnd">🎲</button>
-        </div>
-        <h2>Enemy</h2>
-        <div class="chips" id="diffChips"></div>
-        <button class="big" id="btnStart">BATTLE</button>
-        </div>
-        <div id="resumeWrap"></div>
-        <div class="install" id="installHint">On iPhone: open in Safari, tap Share, then <b>Add to Home Screen</b> to install as an app.</div>
-        <details style="margin-top:14px"><summary class="help" style="cursor:pointer"><b>How to play</b> — controls, systems, rosters</summary>
-          <div class="help" style="margin-top:8px">
-            <table>
-              <tr><td>Tap unit</td><td>Select squad. Tap a squad icon in the top bar to select it; tap again to jump the camera there. Double-tap a unit to select all of that type on screen.</td></tr>
-              <tr><td>Tap ground</td><td>Move selected squads. Tap an enemy to attack it. Use <b>Deselect</b> (✕) in the command card to clear the selection.</td></tr>
-              <tr><td>Long-press</td><td>Attack-move: advance and engage everything on the way.</td></tr>
-              <tr><td>Drag / pinch</td><td>Pan and zoom. Tap the minimap to jump. Use <b>Box</b> to drag-select.</td></tr>
-              <tr><td>Mouse</td><td>Left-click/drag selects, right-click commands, wheel zooms, middle-drag pans. Keys: A attack-move, H hold, S stop, R retreat, B build, Esc cancel, Space jump to last alert.</td></tr>
-            </table>
-            <p><b>Economy.</b> <span style="color:#ffe680">Ore</span> comes from extractors built on ore veins. <span style="color:#7fd3ff">Flux</span> comes from <b>strategic points</b>: stand infantry on a point to capture it, fortify it with an outpost to earn more and make it harder to take back. Your economy only grows if you hold territory.</p>
-            <p><b>Squads.</b> You command squads, not soldiers. <b>Reinforce</b> a bled squad in the field, or <b>attach</b> your hero to it mid-fight. Losing a squad is permanent; losing your HQ is the end.</p>
-            <p><b>Cover.</b> Brush, craters and rubble give light cover. Standing behind rocks, walls and ruins gives heavy cover from that side. Blast weapons flatten cover and leave craters. Vehicles ignore cover.</p>
-            <p><b>Morale.</b> Sustained fire and casualties drain morale. A <b>broken</b> squad fights at a third of its strength and takes 50% more damage. Hitting a squad from behind (<b>flanking</b>) does more damage and breaks it faster. Pull broken squads back with <b>Retreat</b>: they sprint home and recover.</p>
-            <p><b>Counters.</b> Light weapons shred infantry; anti-armour cracks vehicles; blast ruins clumps and structures; energy eats shields and armour. Every squad card shows what it is strong and weak against.</p>
-            <h2>Rosters</h2>
-            <div id="rosters"></div>
-          </div>
-        </details>
-      </div>`;
-    for (const t of r.querySelectorAll('.tab')) t.onclick = () => { s.tab = t.dataset.tab; this.save(); this.render(); };
-    this.renderCampaign();
-    const fc = r.querySelector('#fcards');
-    for (const k of FACTION_KEYS) {
-      const f = FACTIONS[k];
-      const el = document.createElement('div');
-      el.className = 'fcard' + (s.faction === k ? ' sel' : '');
-      el.style.setProperty('--fc', f.color);
-      el.innerHTML = `${unitIconSVG(k, Object.values(f.units)[0].shape, f.color, 42)}<div class="fname">${f.name}</div><div class="ftag">${f.tagline}</div><ul>${f.playstyle.map((p) => `<li>${p}</li>`).join('')}</ul>`;
-      el.onclick = () => { s.faction = k; fc.querySelectorAll('.fcard').forEach((c) => c.classList.remove('sel')); el.classList.add('sel'); this.save(); };
-      fc.appendChild(el);
+    r.className = 'overlay page';
+    switch (this.screen) {
+      case 'faction': this.renderFaction(); break;
+      case 'campaign': this.renderCampaign(); break;
+      case 'skirmish': this.renderSkirmish(); break;
+      case 'help': this.renderHelp(); break;
+      default: this.renderTitle();
     }
-    const chips = (id, items, key, fmt) => {
-      const wrap = r.querySelector(id);
-      for (const it of items) {
-        const b = document.createElement('button');
-        b.className = 'chip' + (String(s[key]) === String(it) ? ' sel' : '');
-        b.textContent = fmt(it);
-        b.onclick = () => { s[key] = it; wrap.querySelectorAll('.chip').forEach((c) => c.classList.remove('sel')); b.classList.add('sel'); this.save(); this.updateBlurb(); };
-        wrap.appendChild(b);
-      }
-    };
-    chips('#themeChips', [...THEME_KEYS, 'random'], 'theme', (k) => (k === 'random' ? '🎲 Random' : THEMES[k].name));
-    chips('#sizeChips', [48, 64, 80], 'size', (v) => (v === 48 ? 'Small' : v === 64 ? 'Medium' : 'Large'));
-    chips('#diffChips', ['easy', 'normal', 'hard'], 'difficulty', (v) => v[0].toUpperCase() + v.slice(1));
-    r.querySelector('#seedRnd').onclick = () => { r.querySelector('#seedInput').value = this.randomSeed(); };
-    // resume a saved battle
-    let save = null;
-    try { save = JSON.parse(localStorage.getItem('bw_save') || 'null'); } catch (e) { save = null; }
-    if (save && save.world && !save.world.gameOver) {
-      const t = Math.floor(save.world.time), mins = Math.floor(t / 60), secs = String(t % 60).padStart(2, '0');
-      const f = FACTIONS[save.settings.faction], ef = FACTIONS[save.world.players[1].faction];
-      const b = document.createElement('button'); b.className = 'big'; b.id = 'btnResume';
-      const what = save.settings.mode === 'campaign' ? `Campaign · ${save.settings.chapter}` : save.world.map.name;
-      b.innerHTML = `RESUME BATTLE <span style="font-weight:500;font-size:13px;opacity:.75">· ${what} · ${f.name} vs ${ef.name} · ${mins}:${secs}</span>`;
-      b.onclick = () => this.onResume(save);
-      r.querySelector('#resumeWrap').appendChild(b);
-    }
-    r.querySelector('#btnStart').onclick = () => {
-      s.seed = r.querySelector('#seedInput').value.trim();
-      this.save();
-      const theme = s.theme === 'random' ? THEME_KEYS[Math.floor(Math.random() * THEME_KEYS.length)] : s.theme;
-      this.onStart({ ...s, theme, seed: s.seed || this.randomSeed() });
-    };
-    // rosters
-    const ro = r.querySelector('#rosters');
-    for (const k of FACTION_KEYS) {
-      const f = FACTIONS[k];
-      const h = document.createElement('div');
-      h.innerHTML = `<div style="color:${f.color};font-weight:800;margin:8px 0 4px">${f.name}</div><div style="margin-bottom:6px">${f.lore}</div>`;
-      const ul = document.createElement('div'); ul.className = 'unitlist';
-      for (const u of Object.values(f.units)) {
-        const d = document.createElement('div'); d.className = 'u';
-        d.innerHTML = `${unitIconSVG(k, u.shape, f.color, 26)}<div><b>${u.name}</b> <span class="m">· ${u.size > 1 ? u.size + ' members' : 'single'} · ${u.cost.ore} ore${u.cost.flux ? ' ' + u.cost.flux + ' flux' : ''}</span><br>${u.desc}<br><span class="m">Strong vs ${u.strong}. Weak vs ${u.weak}.</span></div>`;
-        ul.appendChild(d);
-      }
-      for (const b of Object.values(f.buildings)) {
-        const d = document.createElement('div'); d.className = 'u';
-        d.innerHTML = `${buildingIconSVG(k, b, f.color, 26)}<div><b>${b.name}</b> <span class="m">· ${b.cost.ore ? b.cost.ore + ' ore' : 'HQ'}${b.cost.flux ? ' ' + b.cost.flux + ' flux' : ''}</span><br>${b.desc}</div>`;
-        ul.appendChild(d);
-      }
-      h.appendChild(ul); ro.appendChild(h);
-    }
-    this.updateBlurb();
-    const native = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
-    if (native) r.querySelector('#installHint').remove();
-    else if (window.matchMedia('(display-mode: standalone)').matches || navigator.standalone) r.querySelector('#installHint').textContent = 'Installed. Tip: play in landscape.';
   }
+
+  // ---------- title
+  renderTitle() {
+    const r = this.root, save = this.loadSave();
+    r.innerHTML = `
+      <div class="screen title">
+        <div class="titlehead">
+          <h1><span class="b">BIT</span> <span class="r">WARS</span> <span class="g">◉</span></h1>
+          <div class="sub">Micro RTS · squads, cover, morale and frontline economics</div>
+        </div>
+        <div class="setting">${LORE.world}</div>
+        <div class="fpicks">${FACTION_KEYS.map((k) => { const f = FACTIONS[k]; return `<button class="fpick" data-f="${k}" style="--fc:${f.color}">${unitIconSVG(k, Object.values(f.units)[0].shape, f.color, 40)}<span class="fname">${f.name}</span><span class="ftag">${f.tagline}</span></button>`; }).join('')}</div>
+        <div class="titlefoot">
+          ${save ? `<button class="big slim" id="btnResume">RESUME BATTLE <span class="dim">· ${save.settings.mode === 'campaign' ? 'Campaign' : save.world.map.name} · ${Math.floor(save.world.time / 60)}:${String(Math.floor(save.world.time % 60)).padStart(2, '0')}</span></button>` : ''}
+          <div class="links"><button class="link" id="btnHelp">How to play</button><span class="dim" id="installHint">On iPhone: Share → Add to Home Screen</span></div>
+        </div>
+      </div>`;
+    for (const b of r.querySelectorAll('.fpick')) b.onclick = () => { this.settings.faction = b.dataset.f; this.save(); this.go('faction'); };
+    r.querySelector('#btnHelp').onclick = () => this.go('help');
+    if (save) r.querySelector('#btnResume').onclick = () => this.onResume(save);
+    const native = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+    if (native || window.matchMedia('(display-mode: standalone)').matches || navigator.standalone) r.querySelector('#installHint').remove();
+  }
+
+  // ---------- faction carousel
+  renderFaction() {
+    const r = this.root, k = this.settings.faction, f = FACTIONS[k], camp = CAMPAIGNS[k];
+    const idx = FACTION_KEYS.indexOf(k), doneN = loadProgress()[k] || 0;
+    const units = Object.values(f.units), buildings = Object.values(f.buildings);
+    r.innerHTML = `
+      <div class="screen faction" style="--fc:${f.color}">
+        <div class="bar">
+          <button class="nav" id="btnHome">‹ Home</button>
+          <div class="dots">${FACTION_KEYS.map((x) => `<i class="${x === k ? 'on' : ''}" data-f="${x}" style="--fc:${FACTIONS[x].color}"></i>`).join('')}</div>
+          <div class="arrows"><button class="nav" id="btnPrev">‹</button><button class="nav" id="btnNext">›</button></div>
+        </div>
+        <div class="fbody" id="fbody">
+          <div class="fdetails">
+            <div class="fhead">${unitIconSVG(k, units[0].shape, f.color, 44)}<div><div class="fname">${f.name}</div><div class="ftag">${f.tagline}</div></div></div>
+            <ul class="fplay">${f.playstyle.map((p) => `<li>${p}</li>`).join('')}</ul>
+            <div class="roster">${units.map((u) => `<span title="${u.name}: ${u.role}">${unitIconSVG(k, u.shape, f.color, 22)}</span>`).join('')}<span class="sep"></span>${buildings.map((b) => `<span title="${b.name}">${buildingIconSVG(k, b, f.color, 22)}</span>`).join('')}</div>
+            <div class="fbtns">
+              <button class="big" id="btnCampaign">CAMPAIGN <span class="dim">${doneN}/${camp.chapters.length}</span></button>
+              <button class="big secondary" id="btnSkirmish">SKIRMISH</button>
+            </div>
+          </div>
+          <div class="fhistory">
+            <div class="hhead">History · ${camp.title}</div>
+            <div class="hscroll">
+              <p>${f.lore}</p>
+              <p>${camp.intro}</p>
+              <p class="dim">${LORE.world}</p>
+              <p class="dim">Roster: ${units.map((u) => u.name).join(', ')}. Structures: ${buildings.map((b) => b.name).join(', ')}.</p>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    const step = (d) => { this.settings.faction = FACTION_KEYS[(idx + d + 3) % 3]; this.save(); this.renderFaction(); };
+    r.querySelector('#btnHome').onclick = () => this.go('title');
+    r.querySelector('#btnPrev').onclick = () => step(-1);
+    r.querySelector('#btnNext').onclick = () => step(1);
+    for (const d of r.querySelectorAll('.dots i')) d.onclick = () => { this.settings.faction = d.dataset.f; this.save(); this.renderFaction(); };
+    r.querySelector('#btnCampaign').onclick = () => this.go('campaign');
+    r.querySelector('#btnSkirmish').onclick = () => this.go('skirmish');
+    // swipe
+    const body = r.querySelector('#fbody');
+    let sx = null, sy = null;
+    body.addEventListener('pointerdown', (e) => { sx = e.clientX; sy = e.clientY; });
+    body.addEventListener('pointerup', (e) => { if (sx === null) return; const dx = e.clientX - sx, dy = e.clientY - sy; sx = null; if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) step(dx < 0 ? 1 : -1); });
+  }
+
+  // ---------- campaign chapters
   renderCampaign() {
-    const r = this.root, s = this.settings;
-    const progress = loadProgress();
-    const cards = r.querySelector('#campCards'); cards.innerHTML = '';
-    for (const k of FACTION_KEYS) {
-      const f = FACTIONS[k], camp = CAMPAIGNS[k], doneN = progress[k] || 0;
-      const el = document.createElement('div');
-      el.className = 'fcard camp' + (s.campFaction === k ? ' sel' : '');
-      el.style.setProperty('--fc', f.color);
-      el.innerHTML = `${unitIconSVG(k, Object.values(f.units)[0].shape, f.color, 42)}<div class="fname">${camp.title} <span class="ftag">· ${f.name}</span></div><div class="ftag">${camp.tagline}</div><div class="ftag" style="margin-top:4px">${doneN}/${camp.chapters.length} chapters complete</div>`;
-      el.onclick = () => { s.campFaction = k; this.save(); this.renderCampaign(); };
-      cards.appendChild(el);
-    }
-    const camp = CAMPAIGNS[s.campFaction], doneN = progress[s.campFaction] || 0;
+    const r = this.root, k = this.settings.faction, f = FACTIONS[k], camp = CAMPAIGNS[k], doneN = loadProgress()[k] || 0;
+    r.innerHTML = `
+      <div class="screen" style="--fc:${f.color}">
+        <div class="bar"><button class="nav" id="btnBack">‹ ${f.name}</button><div class="bartitle">${camp.title} <span class="dim">· ${doneN}/${camp.chapters.length} complete</span></div><span></span></div>
+        <div class="chapters" id="chapters"></div>
+      </div>`;
+    r.querySelector('#btnBack').onclick = () => this.go('faction');
     const list = r.querySelector('#chapters');
-    list.innerHTML = `<div class="help" style="margin:10px 0 8px">${camp.intro}</div>`;
     camp.chapters.forEach((ch, i) => {
       const state = i < doneN ? 'done' : i === doneN ? 'next' : 'locked';
       const row = document.createElement('button');
@@ -160,18 +125,96 @@ export class Menu {
       list.appendChild(row);
     });
   }
+
+  // ---------- skirmish setup
+  renderSkirmish() {
+    const r = this.root, s = this.settings, f = FACTIONS[s.faction];
+    r.innerHTML = `
+      <div class="screen" style="--fc:${f.color}">
+        <div class="bar"><button class="nav" id="btnBack">‹ ${f.name}</button><div class="bartitle">Skirmish</div><span></span></div>
+        <div class="setup">
+          <div class="row"><span class="lbl">Map</span><span class="chips" id="themeChips"></span></div>
+          <div class="blurb dim" id="themeBlurb"></div>
+          <div class="row"><span class="lbl">Size</span><span class="chips" id="sizeChips"></span><span class="lbl">Enemy</span><span class="chips" id="diffChips"></span></div>
+          <div class="row"><span class="lbl">Seed</span><input id="seedInput" placeholder="random" value="${s.seed || ''}" autocomplete="off" /><button class="chip" id="seedRnd">🎲</button></div>
+          <button class="big" id="btnStart">BATTLE</button>
+        </div>
+      </div>`;
+    r.querySelector('#btnBack').onclick = () => this.go('faction');
+    const chips = (id, items, key, fmt, after) => {
+      const wrap = r.querySelector(id);
+      for (const it of items) {
+        const b = document.createElement('button');
+        b.className = 'chip' + (String(s[key]) === String(it) ? ' sel' : ''); b.textContent = fmt(it);
+        b.onclick = () => { s[key] = it; wrap.querySelectorAll('.chip').forEach((c) => c.classList.remove('sel')); b.classList.add('sel'); this.save(); after?.(); };
+        wrap.appendChild(b);
+      }
+    };
+    const blurb = () => { r.querySelector('#themeBlurb').textContent = s.theme === 'random' ? 'A random theme every battle.' : THEMES[s.theme].blurb; };
+    chips('#themeChips', [...THEME_KEYS, 'random'], 'theme', (k) => (k === 'random' ? '🎲 Random' : THEMES[k].name), blurb);
+    chips('#sizeChips', [48, 64, 80], 'size', (v) => (v === 48 ? 'Small' : v === 64 ? 'Medium' : 'Large'));
+    chips('#diffChips', ['easy', 'normal', 'hard'], 'difficulty', (v) => v[0].toUpperCase() + v.slice(1));
+    blurb();
+    r.querySelector('#seedRnd').onclick = () => { r.querySelector('#seedInput').value = this.randomSeed(); };
+    r.querySelector('#btnStart').onclick = () => {
+      s.seed = r.querySelector('#seedInput').value.trim(); this.save();
+      const theme = s.theme === 'random' ? THEME_KEYS[Math.floor(Math.random() * THEME_KEYS.length)] : s.theme;
+      this.onStart({ ...s, theme, seed: s.seed || this.randomSeed() });
+    };
+  }
+
+  // ---------- help
+  renderHelp() {
+    const r = this.root;
+    r.innerHTML = `
+      <div class="screen">
+        <div class="bar"><button class="nav" id="btnBack">‹ Home</button><div class="bartitle">How to play</div><span></span></div>
+        <div class="hscroll help pad">
+          <table>
+            <tr><td>Tap unit</td><td>Select squad. Tap a squad icon in the top bar to select it; tap again to jump the camera there. Double-tap a unit to select all of that type on screen.</td></tr>
+            <tr><td>Tap ground</td><td>Move selected squads. Tap an enemy to attack it. ✕ deselects.</td></tr>
+            <tr><td>Long-press</td><td>Attack-move: advance and engage everything on the way.</td></tr>
+            <tr><td>Drag / pinch</td><td>Pan and zoom. Tap the minimap to jump. Use <b>Box</b> to drag-select.</td></tr>
+            <tr><td>Mouse</td><td>Left-click/drag selects, right-click commands, wheel zooms. Keys: A attack-move, H hold, S stop, R retreat, B build, Esc cancel, Space jump to last alert.</td></tr>
+          </table>
+          <p><b>Economy.</b> <span style="color:#ffe680">Ore</span> comes from extractors built on ore veins. <span style="color:#7fd3ff">Flux</span> comes from <b>strategic points</b>: stand infantry on a point to capture it, fortify it with an outpost to earn more and make it harder to take back.</p>
+          <p><b>Squads.</b> You command squads, not soldiers. <b>Reinforce</b> a bled squad in the field, or <b>attach</b> your hero to it mid-fight. Losing a squad is permanent; losing your HQ is the end.</p>
+          <p><b>Cover.</b> Brush, craters and rubble give light cover. Standing behind rocks, walls and ruins gives heavy cover from that side. Blast weapons flatten cover and leave craters. Vehicles ignore cover.</p>
+          <p><b>Morale.</b> Sustained fire and casualties drain morale. A <b>broken</b> squad fights at a third of its strength and takes 50% more damage. Flanking does more damage and breaks squads faster. <b>Retreat</b> sprints a squad home to recover.</p>
+          <p><b>Counters.</b> Light weapons shred infantry; anti-armour cracks vehicles; blast ruins clumps and structures; energy eats shields and armour. Every squad card shows what it is strong and weak against.</p>
+          <div id="rosters"></div>
+        </div>
+      </div>`;
+    r.querySelector('#btnBack').onclick = () => this.go('title');
+    const ro = r.querySelector('#rosters');
+    for (const k of FACTION_KEYS) {
+      const f = FACTIONS[k];
+      const h = document.createElement('div');
+      h.innerHTML = `<div style="color:${f.color};font-weight:800;margin:10px 0 4px">${f.name}</div>`;
+      const ul = document.createElement('div'); ul.className = 'unitlist';
+      for (const u of Object.values(f.units)) { const d = document.createElement('div'); d.className = 'u'; d.innerHTML = `${unitIconSVG(k, u.shape, f.color, 26)}<div><b>${u.name}</b> <span class="m">· ${u.size > 1 ? u.size + ' members' : 'single'} · ${u.cost.ore} ore${u.cost.flux ? ' ' + u.cost.flux + ' flux' : ''}</span><br>${u.desc}<br><span class="m">Strong vs ${u.strong}. Weak vs ${u.weak}.</span></div>`; ul.appendChild(d); }
+      for (const b of Object.values(f.buildings)) { const d = document.createElement('div'); d.className = 'u'; d.innerHTML = `${buildingIconSVG(k, b, f.color, 26)}<div><b>${b.name}</b> <span class="m">· ${b.cost.ore ? b.cost.ore + ' ore' : 'HQ'}${b.cost.flux ? ' ' + b.cost.flux + ' flux' : ''}</span><br>${b.desc}</div>`; ul.appendChild(d); }
+      h.appendChild(ul); ro.appendChild(h);
+    }
+  }
+
+  // ---------- briefing / chapter end / pause / game over (overlays on top of whatever is showing)
   showBriefing(camp, ch, i) {
     const r = this.overRoot, f = FACTIONS[camp.faction], ef = FACTIONS[ch.enemy.faction];
-    const stages = ch.stages.map((st, k) => `<div class="stagebox"><div class="stagehead">${k === 0 ? 'Objectives' : `Then`}</div>${st.intro ? `<div class="help" style="margin-bottom:4px">${st.intro}</div>` : ''}<ul>${st.objectives.map((o) => `<li class="${o.optional ? 'opt' : ''}">${o.text}${o.optional ? ' <em>(optional)</em>' : ''}</li>`).join('')}</ul></div>`).join('');
-    r.innerHTML = `<div class="panel">
-      <div class="sub" style="margin-bottom:2px;color:${f.color}">${camp.title} · Chapter ${i + 1}</div>
-      <h1 style="font-size:28px">${ch.title}</h1>
-      <div class="sub">${THEMES[ch.theme].name} · vs ${ef.name}${ch.enemy.ai ? ' (active)' : ' (garrison)'}</div>
-      <div class="story">${ch.story.map((p) => `<p>${p}</p>`).join('')}</div>
-      <div class="briefline"><b>Briefing.</b> ${ch.briefing}</div>
-      ${stages}
-      <button class="big" id="chBegin">BEGIN CHAPTER</button>
-      <button class="big secondary" id="chBack">Back</button>
+    const stages = ch.stages.map((st, k) => `<div class="stagebox"><div class="stagehead">${k === 0 ? 'Objectives' : 'Then'}</div>${st.intro ? `<div class="help" style="margin-bottom:4px">${st.intro}</div>` : ''}<ul>${st.objectives.map((o) => `<li class="${o.optional ? 'opt' : ''}">${o.text}${o.optional ? ' <em>(optional)</em>' : ''}</li>`).join('')}</ul></div>`).join('');
+    r.className = 'overlay page';
+    r.innerHTML = `<div class="screen" style="--fc:${f.color}">
+      <div class="bar"><button class="nav" id="chBack">‹ Chapters</button><div class="bartitle">${camp.title} · Chapter ${i + 1}</div><span></span></div>
+      <div class="brief2">
+        <div class="hscroll pad">
+          <h1 style="font-size:24px;margin:0">${ch.title}</h1>
+          <div class="sub">${THEMES[ch.theme].name} · vs ${ef.name}${ch.enemy.ai ? ' (active)' : ' (garrison)'}</div>
+          <div class="story">${ch.story.map((p) => `<p>${p}</p>`).join('')}</div>
+          <div class="briefline"><b>Briefing.</b> ${ch.briefing}</div>
+          ${stages}
+        </div>
+        <div class="briefside"><button class="big" id="chBegin">BEGIN CHAPTER</button></div>
+      </div>
     </div>`;
     r.classList.remove('hidden');
     r.querySelector('#chBegin').onclick = () => { r.classList.add('hidden'); this.onStartChapter(ch.key); };
@@ -181,40 +224,36 @@ export class Menu {
     const r = this.overRoot, f = FACTIONS[campaign.faction];
     const fmt = (t) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
     const last = index === campaign.chapters.length - 1;
-    r.innerHTML = `<div class="panel">
-      <div class="sub" style="margin-bottom:2px;color:${f.color}">${campaign.title} · Chapter ${index + 1}: ${chapter.title}</div>
-      <h1 style="color:${won ? '#7CFC9A' : '#ff5f5f'}">${won ? (last ? 'CAMPAIGN COMPLETE' : 'CHAPTER COMPLETE') : 'CHAPTER FAILED'}</h1>
-      <div class="sub">${won ? '' : reason + ' · '}${fmt(time)}</div>
-      ${won ? `<div class="story">${chapter.epilogue.map((p) => `<p>${p}</p>`).join('')}</div>` : `<ul class="objlist">${objectives.map((o) => `<li class="${o.done ? 'done' : ''}">${o.done ? '✓' : '○'} ${o.text}${o.target > 1 ? ` (${o.cur}/${o.target})` : ''}</li>`).join('')}</ul>`}
-      <div class="stats"><span>Squads killed</span><span>${me.kills} vs ${enemy.kills}</span><span>Squads lost</span><span>${me.losses}</span><span>Structures destroyed</span><span>${me.destroyed}</span></div>
-      ${won && handlers.next ? '<button class="big" id="ceNext">NEXT CHAPTER</button>' : ''}
-      <button class="big ${won && handlers.next ? 'secondary' : ''}" id="ceReplay">${won ? 'Replay chapter' : 'RETRY'}</button>
-      <button class="big secondary" id="ceMenu">Campaign menu</button>
+    r.className = 'overlay page';
+    r.innerHTML = `<div class="screen" style="--fc:${f.color}">
+      <div class="bar"><span class="dim">${campaign.title} · Chapter ${index + 1}: ${chapter.title}</span><div class="bartitle" style="color:${won ? '#7CFC9A' : '#ff5f5f'}">${won ? (last ? 'CAMPAIGN COMPLETE' : 'CHAPTER COMPLETE') : 'CHAPTER FAILED'}</div><span class="dim">${fmt(time)}</span></div>
+      <div class="brief2">
+        <div class="hscroll pad">
+          ${won ? `<div class="story">${chapter.epilogue.map((p) => `<p>${p}</p>`).join('')}</div>` : `<div class="sub">${reason}</div><ul class="objlist">${objectives.map((o) => `<li class="${o.done ? 'done' : ''}">${o.done ? '✓' : '○'} ${o.text}${o.target > 1 ? ` (${o.cur}/${o.target})` : ''}</li>`).join('')}</ul>`}
+          <div class="stats"><span>Squads killed</span><span>${me.kills} vs ${enemy.kills}</span><span>Squads lost</span><span>${me.losses}</span><span>Structures destroyed</span><span>${me.destroyed}</span></div>
+        </div>
+        <div class="briefside">
+          ${won && handlers.next ? '<button class="big" id="ceNext">NEXT CHAPTER</button>' : ''}
+          <button class="big ${won && handlers.next ? 'secondary' : ''}" id="ceReplay">${won ? 'Replay chapter' : 'RETRY'}</button>
+          <button class="big secondary" id="ceMenu">Chapters</button>
+        </div>
+      </div>
     </div>`;
     r.classList.remove('hidden');
     if (handlers.next) { const b = r.querySelector('#ceNext'); if (b) b.onclick = () => { r.classList.add('hidden'); handlers.next(); }; }
     r.querySelector('#ceReplay').onclick = () => { r.classList.add('hidden'); handlers.replay(); };
-    r.querySelector('#ceMenu').onclick = () => { r.classList.add('hidden'); this.settings.tab = 'campaign'; this.save(); handlers.quit(); };
+    r.querySelector('#ceMenu').onclick = () => { r.classList.add('hidden'); this.screen = 'campaign'; handlers.quit(); };
   }
-  updateBlurb() {
-    const t = this.settings.theme;
-    const el = this.root.querySelector('#themeChips');
-    let b = el.nextElementSibling;
-    if (!b || !b.classList.contains('sub')) { b = document.createElement('div'); b.className = 'sub'; b.style.marginTop = '6px'; el.after(b); }
-    b.textContent = t === 'random' ? 'A random theme every battle.' : THEMES[t].blurb;
-  }
-
   showPause(handlers) {
     const r = this.pauseRoot;
+    r.className = 'overlay';
     r.innerHTML = `<div class="panel" style="max-width:360px;text-align:center">
       <h1 style="font-size:24px">PAUSED</h1>
       <button class="big" id="pResume">RESUME</button>
       <button class="big secondary" id="pSound">${handlers.muted ? '🔇 Sound off' : '🔊 Sound on'}</button>
       <button class="big secondary" id="pRestart">Restart battle</button>
       <button class="big secondary" id="pQuit">Quit to menu</button>
-      <div class="help" style="margin-top:14px;text-align:left">
-        <b>Quick reference</b><br>Tap = select / move · Tap enemy = attack · Long-press = attack-move · Pinch = zoom · Squad icons (top) select squads · <b>Retreat</b> sprints a squad home to recover morale · <b>Reinforce</b> refills a squad anywhere.
-      </div></div>`;
+      <div class="help" style="margin-top:14px;text-align:left">Tap = select / move · Tap enemy = attack · Long-press = attack-move · Pinch = zoom · ✕ deselects · <b>Retreat</b> sprints a squad home · <b>Reinforce</b> refills a squad.</div></div>`;
     r.classList.remove('hidden');
     r.querySelector('#pResume').onclick = () => { r.classList.add('hidden'); handlers.resume(); };
     r.querySelector('#pSound').onclick = (e) => { const m = handlers.toggleSound(); e.target.textContent = m ? '🔇 Sound off' : '🔊 Sound on'; };
@@ -222,24 +261,19 @@ export class Menu {
     r.querySelector('#pQuit').onclick = () => { r.classList.add('hidden'); handlers.quit(); };
   }
   hidePause() { this.pauseRoot.classList.add('hidden'); }
-
   showGameOver({ won, time, me, enemy, handlers }) {
     const r = this.overRoot;
     const fmt = (t) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
-    r.innerHTML = `<div class="panel">
-      <h1 style="color:${won ? '#7CFC9A' : '#ff5f5f'}">${won ? 'VICTORY' : 'DEFEAT'}</h1>
+    r.className = 'overlay';
+    r.innerHTML = `<div class="panel" style="text-align:center">
+      <h1 style="color:${won ? '#7CFC9A' : '#ff5f5f'};font-size:36px">${won ? 'VICTORY' : 'DEFEAT'}</h1>
       <div class="sub">${won ? 'The enemy headquarters is rubble.' : 'Your headquarters has fallen.'} · ${fmt(time)}</div>
-      <div class="stats">
-        <span>Squads killed</span><span>${me.kills} vs ${enemy.kills}</span>
-        <span>Squads lost</span><span>${me.losses} vs ${enemy.losses}</span>
-        <span>Structures destroyed</span><span>${me.destroyed} vs ${enemy.destroyed}</span>
-        <span>Points captured</span><span>${me.captured} vs ${enemy.captured}</span>
-      </div>
+      <div class="stats"><span>Squads killed</span><span>${me.kills} vs ${enemy.kills}</span><span>Squads lost</span><span>${me.losses} vs ${enemy.losses}</span><span>Structures destroyed</span><span>${me.destroyed} vs ${enemy.destroyed}</span><span>Points captured</span><span>${me.captured} vs ${enemy.captured}</span></div>
       <button class="big" id="goAgain">BATTLE AGAIN</button>
       <button class="big secondary" id="goMenu">Main menu</button>
     </div>`;
     r.classList.remove('hidden');
     r.querySelector('#goAgain').onclick = () => { r.classList.add('hidden'); handlers.restart(); };
-    r.querySelector('#goMenu').onclick = () => { r.classList.add('hidden'); handlers.quit(); };
+    r.querySelector('#goMenu').onclick = () => { r.classList.add('hidden'); this.screen = 'title'; handlers.quit(); };
   }
 }

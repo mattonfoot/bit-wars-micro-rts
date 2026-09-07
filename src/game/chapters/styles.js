@@ -336,6 +336,12 @@ export const STYLES = {
       stages: [stage([obj('hold', 'hold', `Hold 3 points for ${minutes} minutes`, { n: 3, seconds: minutes * 60 }), obj('loss', 'loseMax', 'Lose no more than 5 squads', { n: 5, optional: true })])],
     };
   },
+  /** Campaign finale: a three-way war that ends with the faction's own goal once both rivals are broken. */
+  finale({ f, r1, r2, tier, goal, goalIntro, size = 80 }) {
+    const built = STYLES.threeWay({ f, r1, r2, tier, size });
+    built.stages.push(stage(goal, goalIntro));
+    return built;
+  },
   /** Three-way war. */
   threeWay({ f, r1, r2, tier, size = 80 }) {
     const r = R[f];

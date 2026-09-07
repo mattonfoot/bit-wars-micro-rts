@@ -21,17 +21,21 @@ try {
   await page.evaluate(() => { localStorage.clear(); localStorage.setItem('bw_campaign', JSON.stringify({ blue: 25, red: 15, green: 36 })); });
   await page.reload({ waitUntil: 'load' });
   await page.tap('.fpick[data-f="blue"]'); await page.waitForTimeout(200);
+  const goal = await page.evaluate(() => document.querySelector('.hscroll p b')?.textContent);
+  console.log('faction page goal:', goal); ok = ok && goal === 'The Bloom.';
+  await page.screenshot({ path: `${out}/c40-faction.png` });
   await page.tap('#btnCampaign'); await page.waitForTimeout(300);
-  const counts = await page.evaluate(() => ({ chapters: document.querySelectorAll('.chapter').length, acts: [...document.querySelectorAll('.acthead')].map((a) => a.textContent), next: document.querySelector('.chapter.next b')?.textContent }));
+  const counts = await page.evaluate(() => ({ chapters: document.querySelectorAll('.chapter').length, acts: [...document.querySelectorAll('.acthead')].map((a) => a.textContent), next: document.querySelector('.chapter.next b')?.textContent, crossovers: document.querySelectorAll('.chapter .xo').length }));
   console.log('list', JSON.stringify(counts));
-  ok = ok && counts.chapters === 40 && counts.acts.length === 8;
+  ok = ok && counts.chapters === 40 && counts.acts.length === 8 && counts.crossovers === 12;
   await page.screenshot({ path: `${out}/c40-list.png` });
   await page.evaluate(() => document.querySelector('.chapter.next').scrollIntoView({ block: 'center' })); await page.waitForTimeout(200);
   await page.screenshot({ path: `${out}/c40-list-mid.png` });
   await page.tap('.chapter.next'); await page.waitForTimeout(300);
   await page.screenshot({ path: `${out}/c40-briefing.png` });
-  const brief = await page.evaluate(() => document.querySelector('#briefing, .briefing')?.textContent.slice(0, 200));
-  console.log('briefing', brief);
+  const brief = await page.evaluate(() => document.querySelector('.xoline')?.textContent);
+  console.log('briefing crossover line:', brief);
+  ok = ok && /Doctrine chapter 26 and Protocol chapter 26/.test(brief || '');
   await page.tap('#chBegin'); await page.waitForTimeout(2500);
   let st = await page.evaluate(() => { const g = window.game; return { key: g.campaign.def.key, style: g.campaign.def.style, players: g.world.players.map((p) => `${p.name}:${p.faction}:t${p.team}${p.neutral ? ':N' : ''}`), ais: g.ais.length, objectives: g.campaign.list().map((o) => `${o.text}:${o.cur}/${o.target}`) }; });
   console.log('playing', JSON.stringify(st));
@@ -40,7 +44,7 @@ try {
   await page.waitForTimeout(6000);
   await page.screenshot({ path: `${out}/c40-allied.png` });
   // jump straight into a scavenge chapter (grey neutrals) and a migrate chapter (doom warning)
-  for (const [key, shot, secs] of [['blue-22', 'c40-scavenge', 4000], ['green-37', 'c40-migrate', 3000], ['red-29', 'c40-betrayal', 3000]]) {
+  for (const [key, shot, secs] of [['blue-22', 'c40-scavenge', 4000], ['green-37', 'c40-migrate', 3000], ['red-29', 'c40-betrayal', 3000], ['red-40', 'c40-finale', 3000]]) {
     await page.evaluate((k) => { window.game.clearSave(); window.game.startChapter(k); }, key);
     await page.waitForTimeout(500);
     await page.evaluate(() => { const g = window.game; g.camera.zoomAt(0.6, 422, 195); });
@@ -51,7 +55,7 @@ try {
     await page.screenshot({ path: `${out}/${shot}.png` });
   }
   // pause + resume through a save on a chapter with neutrals and allies
-  await page.evaluate(() => { window.game.clearSave(); window.game.startChapter('green-22'); });
+  await page.evaluate(() => { window.game.clearSave(); window.game.startChapter('green-21'); });
   await page.waitForTimeout(1500);
   await page.evaluate(() => window.game.save());
   const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('bw_save')).world.players.map((p) => `${p.faction}:t${p.team}${p.neutral ? ':N' : ''}`));
@@ -61,7 +65,7 @@ try {
   if (hasResume) { await page.tap('#btnResume'); await page.waitForTimeout(1500); }
   const res = await page.evaluate(() => { const g = window.game; return { key: g.campaign?.def.key, players: g.world?.players.map((p) => `${p.faction}:t${p.team}${p.neutral ? ':N' : ''}`), ais: g.ais?.length, neutralIds: g.campaign?.neutralIds }; });
   console.log('resumed', JSON.stringify(res));
-  ok = ok && res.key === 'green-22' && !!res.neutralIds && Object.keys(res.neutralIds).length === 1;
+  ok = ok && res.key === 'green-21' && !!res.neutralIds && Object.keys(res.neutralIds).length === 1;
   await page.screenshot({ path: `${out}/c40-resumed.png` });
 } finally { await browser.close(); server.kill(); }
 console.log(ok && !errors.length ? 'Chapter UI OK' : 'Chapter UI FAILED');

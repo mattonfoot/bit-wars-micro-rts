@@ -233,6 +233,7 @@ export class Campaign {
       case 'protect': { const e = this.tagged(o.tag); return [e && !e.dead ? 1 : 0, 1]; } // constraint: must stay alive
       case 'escort': { const e = this.tagged(o.tag); if (!e || e.dead) return [0, 1]; const p = this.worldOf(o.at); return [dist(e.x, e.y, p.x, p.y) <= (o.radius || 3) * TILE ? 1 : 0, 1]; }
       case 'killTag': { const e = this.tagged(o.tag); return [!e || e.dead ? 1 : 0, 1]; }
+      case 'heroAt': { const p = this.worldOf(o.at); const r = (o.radius || 4) * TILE; const h = w.squads.find((s) => s.owner === 0 && !s.dead && s.def.hero); return [h && dist(h.x, h.y, p.x, p.y) <= r ? 1 : 0, 1]; }
       case 'ore': return [Math.min(n, Math.floor(w.players[0].ore)), n];
       case 'flux': return [Math.min(n, Math.floor(w.players[0].flux)), n];
       case 'buildNear': { const p = this.worldOf(o.at); const have = w.buildings.filter((b) => b.owner === 0 && !b.dead && b.done && (!o.key || b.key === o.key) && dist(b.x, b.y, p.x, p.y) <= (o.radius || 8) * TILE).length; return [Math.min(n, have), n]; }

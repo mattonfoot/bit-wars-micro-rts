@@ -265,4 +265,6 @@ html.native, html.native body { -webkit-touch-callout: none; overscroll-behavior
   .cx-cols { grid-template-columns: 1fr; }
 }
 
+.xo { display: inline-block; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--fc); border: 1px solid var(--fc); border-radius: 4px; padding: 0 5px; margin-left: 6px; vertical-align: middle; opacity: .85; }
+.xoline { margin-top: 2px; }
 .acthead { grid-column: 1 / -1; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin: 6px 0 0 2px; }

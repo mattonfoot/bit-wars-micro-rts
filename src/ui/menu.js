@@ -89,6 +89,7 @@ export class Menu {
             <div class="hhead">History · ${camp.title}</div>
             <div class="hscroll">
               <p>${f.lore}</p>
+              <p><b>${camp.goal}.</b> ${camp.backstory}</p>
               <p>${camp.intro}</p>
               <p class="dim">${LORE.world}</p>
               <p class="dim">Roster: ${units.map((u) => u.name).join(', ')}. Structures: ${buildings.map((b) => b.name).join(', ')}.</p>
@@ -129,7 +130,7 @@ export class Menu {
       const state = i < doneN ? 'done' : i === doneN ? 'next' : 'locked';
       const row = document.createElement('button');
       row.className = 'chapter ' + state;
-      row.innerHTML = `<span class="num">${i + 1}</span><span class="body"><b>${ch.title}</b><span class="brief">${ch.briefing}</span></span><span class="state">${state === 'done' ? '✓' : state === 'next' ? '▶' : '🔒'}</span>`;
+      row.innerHTML = `<span class="num">${i + 1}</span><span class="body"><b>${ch.title}${ch.crossover ? ' <span class="xo">crossover</span>' : ''}</b><span class="brief">${ch.briefing}</span></span><span class="state">${state === 'done' ? '✓' : state === 'next' ? '▶' : '🔒'}</span>`;
       row.onclick = () => { if (state !== 'locked') this.showBriefing(camp, ch, i); };
       list.appendChild(row);
     });
@@ -258,7 +259,7 @@ export class Menu {
   showBriefing(camp, ch, i) {
     const r = this.overRoot, f = FACTIONS[camp.faction];
     const enemies = ch.enemies || [ch.enemy];
-    const vs = enemies.map((E) => `${FACTIONS[E.faction].name}${E.ai ? '' : ' (garrison)'}`).join(' and ');
+    const vs = enemies.map((E) => `${FACTIONS[E.faction].name}${E.ai ? '' : ' (garrison)'}`).join(' and ') + (ch.allies?.length ? ` · with ${ch.allies.map((A) => FACTIONS[A.faction].name).join(' and ')}` : '');
     const stages = ch.stages.map((st, k) => `<div class="stagebox"><div class="stagehead">${k === 0 ? 'Objectives' : 'Then'}</div>${st.intro ? `<div class="help" style="margin-bottom:4px">${st.intro}</div>` : ''}<ul>${st.objectives.map((o) => `<li class="${o.optional ? 'opt' : ''}">${o.text}${o.optional ? ' <em>(optional)</em>' : ''}</li>`).join('')}</ul></div>`).join('');
     r.className = 'overlay page';
     r.innerHTML = `<div class="screen" style="--fc:${f.color}">
@@ -267,6 +268,7 @@ export class Menu {
         <div class="hscroll pad">
           <h1 style="font-size:24px;margin:0">${ch.title}</h1>
           <div class="sub">${THEMES[ch.theme].name} · vs ${vs}</div>
+          ${ch.also?.length ? `<div class="sub xoline"><span class="xo">crossover</span> The same battle is fought in ${ch.also.map((a) => `${a.campaign} chapter ${a.index + 1}`).join(' and ')}.</div>` : ''}
           <div class="story">${ch.story.map((p) => `<p>${p}</p>`).join('')}</div>
           <div class="briefline"><b>Briefing.</b> ${ch.briefing}</div>
           ${stages}

@@ -157,12 +157,45 @@ check('commando: strike the target and escape', () => {
 });
 
 check('three-way finale: two hostile enemies, victory by team', () => {
-  const ch = CAMPAIGNS.green.chapters[39]; const { c, w, run } = start(ch, true);
-  assert.equal(ch.style, 'threeWay'); assert.deepEqual(c.enemyIds, [1, 2]);
+  const ch = CAMPAIGNS.green.chapters[38]; const { c, w, run } = start(ch, true);
+  assert.equal(ch.style, 'threeWay'); assert.equal(ch.crossover, 'threecorners'); assert.deepEqual(c.enemyIds, [1, 2]);
   assert.ok(w.hostile(1, 2), 'enemies fight each other');
   assert.equal(w.map.starts.length >= 3, true);
   run(10); assert.equal(c.status, 'playing');
   assert.deepEqual(c.progressOf(ch.stages[ch.stages.length - 1].objectives[0]).slice(1), [2]);
+});
+
+check('finales: each faction must break both rivals, then complete its own goal', () => {
+  for (const [f, hero] of [['blue', 'apex'], ['red', 'foreman'], ['green', 'oracle']]) {
+    const ch = CAMPAIGNS[f].chapters[39]; const { c, w, run } = start(ch);
+    assert.equal(ch.style, 'finale'); assert.equal(ch.stages.length, 3); assert.deepEqual(c.enemyIds, [1, 2]);
+    assert.ok(w.hostile(1, 2));
+    // stage 1: economy + hero
+    for (const p of w.points) { p.owner = 0; p.progress = 100; }
+    const centre = c.worldOf('center');
+    w.spawnSquad(0, hero, centre.x, centre.y); c.counters.hero = 1;
+    run(1); assert.equal(c.stage, 1, `${f} stage 1 done`);
+    // stage 2: both rivals broken
+    for (const id of [1, 2]) w.destroyBuilding(w.buildings.find((b) => b.owner === id && b.def.hq), 0);
+    run(1); assert.equal(c.stage, 2, `${f} both rivals broken`);
+    assert.equal(c.status, 'playing', `${f} not won until the goal is met`);
+    const goals = ch.stages[2].objectives;
+    if (f === 'blue') { for (let i = 0; i < 12; i++) w.spawnSquad(0, 'darts', centre.x + 40 * i, centre.y + 40); }
+    if (f === 'red') {
+      w.players[0].ore = 5000; w.players[0].flux = 2000; w.updateVision(true);
+      // as a player would: fortify the point nearest the Vein to extend the build radius, then build beside it
+      const near = [...w.points].sort((a, b) => Math.hypot(a.x - centre.x, a.y - centre.y) - Math.hypot(b.x - centre.x, b.y - centre.y))[0];
+      assert.ok(Math.hypot(near.x - centre.x, near.y - centre.y) <= 10 * TILE, 'a strategic point lies within reach of the Vein');
+      w.placeBuilding(0, 'post', near.cell, true); w.updateVision(true);
+      const cells = w.grid.cellsWithin(centre.x, centre.y, 14 * TILE);
+      let placed = null; for (const i of cells) { const r = w.cmdBuild(0, 'armory', i); if (r.ok) { placed = r; break; } }
+      assert.ok(placed, 'an Armory site exists within reach of the Vein');
+      const b = w.buildings.find((x) => x.owner === 0 && x.key === 'armory'); b.done = true; b.progress = 1;
+    }
+    for (const o of goals) if (o.type === 'hold') c.timers[o.id] = o.seconds;
+    run(2);
+    assert.equal(c.status, 'won', `${f} finale won (${JSON.stringify(c.list())})`);
+  }
 });
 
 console.log(`All ${passed} mechanic checks passed`);

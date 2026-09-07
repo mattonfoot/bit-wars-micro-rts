@@ -6,6 +6,7 @@ import { Campaign } from '../src/game/campaign.js';
 import { AI } from '../src/game/ai.js';
 import { TICK } from '../src/game/world.js';
 import { TILE } from '../src/map/terrain.js';
+import { nearestPassable } from '../src/game/pathfinding.js';
 import assert from 'node:assert/strict';
 
 const byStyle = (faction, style, nth = 0) => CAMPAIGNS[faction].chapters.filter((c) => c.style === style)[nth];
@@ -18,6 +19,8 @@ function start(ch, withAi = false) {
   return { c, w, run };
 }
 const alive = (w, owner) => w.squads.filter((s) => s.owner === owner && !s.dead);
+/** Spawn on the nearest passable cell to (x, y), as scripted placement does in the game. */
+const spawnNear = (w, owner, key, x, y) => { const g = w.grid; let i = g.cellAt(x, y); const np = i >= 0 ? nearestPassable(w.map, i, { blocked: w.blockedFn() }) : -1; if (np >= 0) [x, y] = g.center(np); return w.spawnSquad(owner, key, x, y); };
 let passed = 0;
 const check = (name, fn) => { fn(); passed++; console.log('ok', name); };
 
@@ -204,8 +207,8 @@ check('flank order circles behind a gun team and lands flanking hits', () => {
   const gun = w.squads.find((s) => s.owner === 1 && s.key === 'hammers'); assert.ok(gun);
   // the gun faces east at a pinning Dart Swarm; the Wedges start further out in front and are told to flank
   gun.facing = 0;
-  const pin = w.spawnSquad(0, 'darts', gun.x + 5 * TILE, gun.y); w.cmdHold([pin]);
-  const wedges = w.spawnSquad(0, 'wedges', gun.x + 9 * TILE, gun.y);
+  const pin = spawnNear(w, 0, 'darts', gun.x + 5 * TILE, gun.y); w.cmdHold([pin]);
+  const wedges = spawnNear(w, 0, 'wedges', gun.x + 9 * TILE, gun.y);
   w.cmdFlank([wedges], gun);
   assert.equal(wedges.order.type, 'flank');
   let sawRear = false;
@@ -219,7 +222,7 @@ check('set-up guns traverse slowly and cannot fire outside their arc', () => {
   const ch = CAMPAIGNS.blue.chapters[2]; const { w, run } = start(ch);
   const gun = w.squads.find((s) => s.owner === 1 && s.key === 'hammers'); assert.ok(gun.def.weapon.arc);
   gun.facing = 0; gun.setup = gun.def.weapon.setup;
-  const behind = w.spawnSquad(0, 'darts', gun.x - 4 * TILE, gun.y); w.cmdHold([behind]);
+  const behind = spawnNear(w, 0, 'darts', gun.x - 4 * TILE, gun.y); w.cmdHold([behind]);
   const shots = () => w.events.filter((e) => e.type === 'shot' || e.type === 'muzzle').length;
   let firedEarly = false, firedLater = false;
   let prevCd = gun.cooldown;

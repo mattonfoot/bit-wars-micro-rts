@@ -137,8 +137,20 @@ export function generateMap({ size = 64, theme = 'verdant', seed = 'alpha', thre
 
   // --- mirror bottom half from top half
   for (let i = 0; i < N / 2; i++) tiles[N - 1 - i] = tiles[i];
-  // --- border ring
-  for (let i = 0; i < N; i++) if (isBorder(i)) tiles[i] = T.MOUNTAIN;
+  // --- border: an irregular rim of impassable ground (sea on the verdant basin, massif elsewhere) instead of
+  // a straight wall, one to four cells deep and point-symmetric like the rest of the map. It thins near the bases.
+  const rimTile = th.key === 'verdant' ? T.WATER : T.MOUNTAIN;
+  const rimN = new Noise2D(rng);
+  for (let i = 0; i < N / 2; i++) {
+    const c = grid.col(i), r = grid.row(i);
+    const edge = Math.min(c, r, w - 1 - c, h - 1 - r);
+    if (edge > 4) continue;
+    const n = rimN.fbm(cx[i] / (HEX_W * 4.5), cy[i] / (HEX_W * 4.5), 2);
+    let depth = Math.max(0.5, Math.min(3.8, 0.4 + n * 3.6));
+    depth = Math.min(depth, Math.max(1, distToStart(i) - 5));
+    if (edge < depth) setSym(i, rimTile);
+  }
+  for (let i = 0; i < N; i++) if (isBorder(i)) tiles[i] = rimTile;
 
   // --- bases
   const clearCluster = (i, rad) => { for (const c of grid.cluster(i, rad)) { if (isBorder(c)) continue; set(c, T.GROUND); protectedCells[c] = 1; } };

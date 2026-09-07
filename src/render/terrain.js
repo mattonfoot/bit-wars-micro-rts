@@ -248,7 +248,8 @@ export class TerrainLayer {
     if (mtn.some((v) => v)) {
       const depth = new Float32Array(N);
       let frontier = [];
-      for (let i = 0; i < N; i++) { if (!mtn[i]) continue; let edge = false; for (let k = 0; k < 6; k++) { const n = g.nb[i * 6 + k]; if (n < 0 || !mtn[n]) { edge = true; break; } } if (edge) { depth[i] = 1; frontier.push(i); } }
+      for (let i = 0; i < N; i++) { if (!mtn[i]) continue; let edge = false; for (let k = 0; k < 6; k++) { const n = g.nb[i * 6 + k]; if (n >= 0 && !mtn[n]) { edge = true; break; } } /* off-map counts as more mountain: the rim rises out of frame */ if (edge) { depth[i] = 1; frontier.push(i); } }
+      if (!frontier.length) for (let i = 0; i < N; i++) if (mtn[i]) { depth[i] = 1; frontier.push(i); }
       while (frontier.length) { const next = []; for (const i of frontier) for (let k = 0; k < 6; k++) { const n = g.nb[i * 6 + k]; if (n >= 0 && mtn[n] && depth[n] === 0) { depth[n] = depth[i] + 1; next.push(n); } } frontier = next; }
       const base = this.smoothField(depth);
       const height = new Float32Array(base.length);
@@ -292,6 +293,17 @@ export class TerrainLayer {
           c.beginPath(); c.moveTo(X, Y - r); c.lineTo(X + r * 0.6, Y); c.lineTo(X, Y + r); c.lineTo(X - r * 0.6, Y); c.closePath(); c.stroke();
         }
       }
+    }
+    // fade the margin into black so the rim dissolves out of frame instead of ending at a straight edge
+    {
+      const W = this.canvas.width, H = this.canvas.height, F = 2.6 * HEX_R * 2;
+      c.globalCompositeOperation = 'destination-out';
+      for (const [x0, y0, x1, y1, rx, ry, rw, rh] of [[0, 0, F, 0, 0, 0, F, H], [W, 0, W - F, 0, W - F, 0, F, H], [0, 0, 0, F, 0, 0, W, F], [0, H, 0, H - F, 0, H - F, W, F]]) {
+        const grd = c.createLinearGradient(x0, y0, x1, y1);
+        grd.addColorStop(0, 'rgba(0,0,0,1)'); grd.addColorStop(0.45, 'rgba(0,0,0,0.75)'); grd.addColorStop(1, 'rgba(0,0,0,0)');
+        c.fillStyle = grd; c.fillRect(rx, ry, rw, rh);
+      }
+      c.globalCompositeOperation = 'source-over';
     }
     // minimap image: 2px per cell, odd rows shifted by 1px (approximates the hex stagger)
     const mc = this.mini.getContext('2d');

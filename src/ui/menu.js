@@ -2,7 +2,7 @@
 import { FACTIONS, FACTION_KEYS } from '../game/data.js';
 import { THEMES, THEME_KEYS } from '../map/themes.js';
 import { unitIconSVG, buildingIconSVG } from '../render/shapes.js';
-import { CAMPAIGNS, LORE } from '../game/campaigns.js';
+import { CAMPAIGNS, LORE, actOf } from '../game/campaigns.js';
 import { loadProgress } from '../game/campaign.js';
 import { CODEX } from '../game/codex.js';
 import { DMG_LABEL, ARMOR_LABEL } from '../game/data.js';
@@ -122,7 +122,10 @@ export class Menu {
       </div>`;
     r.querySelector('#btnBack').onclick = () => this.go('faction');
     const list = r.querySelector('#chapters');
+    let lastAct = null;
     camp.chapters.forEach((ch, i) => {
+      const act = actOf(camp, i);
+      if (act && act !== lastAct) { lastAct = act; const h = document.createElement('div'); h.className = 'acthead'; h.textContent = act.title; list.appendChild(h); }
       const state = i < doneN ? 'done' : i === doneN ? 'next' : 'locked';
       const row = document.createElement('button');
       row.className = 'chapter ' + state;
@@ -253,7 +256,9 @@ export class Menu {
 
   // ---------- briefing / chapter end / pause / game over (overlays on top of whatever is showing)
   showBriefing(camp, ch, i) {
-    const r = this.overRoot, f = FACTIONS[camp.faction], ef = FACTIONS[ch.enemy.faction];
+    const r = this.overRoot, f = FACTIONS[camp.faction];
+    const enemies = ch.enemies || [ch.enemy];
+    const vs = enemies.map((E) => `${FACTIONS[E.faction].name}${E.ai ? '' : ' (garrison)'}`).join(' and ');
     const stages = ch.stages.map((st, k) => `<div class="stagebox"><div class="stagehead">${k === 0 ? 'Objectives' : 'Then'}</div>${st.intro ? `<div class="help" style="margin-bottom:4px">${st.intro}</div>` : ''}<ul>${st.objectives.map((o) => `<li class="${o.optional ? 'opt' : ''}">${o.text}${o.optional ? ' <em>(optional)</em>' : ''}</li>`).join('')}</ul></div>`).join('');
     r.className = 'overlay page';
     r.innerHTML = `<div class="screen" style="--fc:${f.color}">
@@ -261,7 +266,7 @@ export class Menu {
       <div class="brief2">
         <div class="hscroll pad">
           <h1 style="font-size:24px;margin:0">${ch.title}</h1>
-          <div class="sub">${THEMES[ch.theme].name} · vs ${ef.name}${ch.enemy.ai ? ' (active)' : ' (garrison)'}</div>
+          <div class="sub">${THEMES[ch.theme].name} · vs ${vs}</div>
           <div class="story">${ch.story.map((p) => `<p>${p}</p>`).join('')}</div>
           <div class="briefline"><b>Briefing.</b> ${ch.briefing}</div>
           ${stages}

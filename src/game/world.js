@@ -898,7 +898,7 @@ export class World {
     if (s.def.hero) p.heroAlive = false;
     p.stats.losses++;
     if (attacker) this.players[attacker.owner].stats.kills++;
-    this.emit({ type: 'squadDied', x: s.x, y: s.y, owner: s.owner, key: s.key });
+    this.emit({ type: 'squadDied', x: s.x, y: s.y, owner: s.owner, key: s.key, by: attacker ? attacker.owner : NONE });
   }
   destroyBuilding(b, byOwner, silent = false) {
     if (b.dead) return;
@@ -913,7 +913,7 @@ export class World {
     for (const k of b.queue) if (this.faction(b.owner).units[k].hero) p.heroQueued = false;
     if (byOwner !== NONE && byOwner !== b.owner) this.players[byOwner].stats.destroyed++;
     for (const pl of this.players) pl.known.delete(b.id);
-    if (!silent) this.emit({ type: 'buildingDestroyed', x: b.x, y: b.y, r: b.radius, owner: b.owner, faction: b.faction, hq: !!b.def.hq, key: b.key });
+    if (!silent) this.emit({ type: 'buildingDestroyed', x: b.x, y: b.y, r: b.radius, owner: b.owner, faction: b.faction, hq: !!b.def.hq, key: b.key, by: byOwner });
     if (b.def.hq) { p.alive = false; }
   }
 

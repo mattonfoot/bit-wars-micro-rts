@@ -94,7 +94,8 @@ class Game {
     const { chapter, index } = found;
     const camp = Campaign.build(chapter);
     this.campaign = camp;
-    this.begin(camp.world, { mode: 'campaign', chapter: key, faction: chapter.player.faction, difficulty: chapter.enemy.ai && chapter.enemy.ai !== 'passive' ? chapter.enemy.ai : 'normal', seed: chapter.seed }, this.makeChapterAI(chapter, camp.world));
+    const e0 = Campaign.enemies(chapter)[0];
+    this.begin(camp.world, { mode: 'campaign', chapter: key, faction: chapter.player.faction, difficulty: e0.ai && e0.ai !== 'passive' ? e0.ai : 'normal', seed: chapter.seed }, this.makeChapterAI(chapter, camp.world));
     const hq = this.world.byId(this.world.players[0].hqId);
     const focus = hq || this.world.playerSquads(0)[0];
     this.camera.zoom = window.innerWidth < 700 ? 1.0 : 1.2;
@@ -102,9 +103,8 @@ class Game {
     this.hud.toast(`Chapter ${index + 1}: ${chapter.title}`, 'good', null, 0, 5000);
   }
   makeChapterAI(chapter, world) {
-    if (!chapter.enemy.ai) return null;
-    const passive = chapter.enemy.ai === 'passive';
-    return new AI(world, 1, passive ? 'normal' : chapter.enemy.ai, { passive });
+    const enemies = Campaign.enemies(chapter);
+    return enemies.map((E, k) => { if (!E.ai) return null; const passive = E.ai === 'passive'; return new AI(world, k + 1, passive ? 'normal' : E.ai, { passive }); }).filter(Boolean);
   }
   resume(save) {
     let world;
@@ -123,7 +123,7 @@ class Game {
   begin(world, settings, ai) {
     this.settings = settings;
     this.world = world; this.map = world.map;
-    this.ai = ai !== undefined ? ai : new AI(this.world, 1, settings.difficulty);
+    this.ais = ai === undefined ? [new AI(this.world, 1, settings.difficulty)] : Array.isArray(ai) ? ai : ai ? [ai] : [];
     if (this.campaign) this.hud.setObjectives(this.campaign.list(), this.campaign.def.title, this.campaign.stage, this.campaign.def.stages.length); else this.hud.setObjectives(null);
     this.renderer = new Renderer(this.canvas, this.world, this.camera, this.viewer);
     this.minimap = new Minimap(this.hud.minimapCanvas, this.world, this.renderer, this.viewer);
@@ -165,7 +165,7 @@ class Game {
       this.acc += dtReal;
       let steps = 0;
       while (this.acc >= TICK && steps < 6) {
-        this.world.tick(TICK); this.ai?.update(TICK);
+        this.world.tick(TICK); for (const ai of this.ais) ai.update(TICK);
         if (this.campaign) { this.campaign.onEvents(this.world.events); this.campaign.update(TICK); }
         this.acc -= TICK; steps++;
       }
@@ -194,7 +194,7 @@ class Game {
         if (won) markComplete(found.campaign.faction, found.index);
         const next = found.campaign.chapters[found.index + 1];
         setTimeout(() => this.menu.showChapterEnd({
-          won, reason: this.campaign.reason, campaign: found.campaign, chapter: found.chapter, index: found.index, time: this.world.time, me: this.world.players[0].stats, enemy: this.world.players[1].stats, objectives: this.campaign.list(),
+          won, reason: this.campaign.reason, campaign: found.campaign, chapter: found.chapter, index: found.index, time: this.world.time, me: this.world.players[0].stats, enemy: this.enemyStats(), objectives: this.campaign.list(),
           handlers: { next: next ? () => this.startChapter(next.key) : null, replay: () => this.startChapter(found.chapter.key), quit: () => this.quit() },
         }), 1800);
       } else {
@@ -238,6 +238,7 @@ class Game {
     }
     ev.length = 0;
   }
+  enemyStats() { const t = { kills: 0, losses: 0, destroyed: 0, captured: 0 }; for (const p of this.world.players) if (p.id > 0) for (const k in t) t[k] += p.stats[k]; return t; }
   updateCampaign(dt) {
     const c = this.campaign; if (!c) return;
     for (const m of c.messages) {

@@ -14,7 +14,7 @@ const FRACS = {
   crystal: { mountain: 0.17, lake: 0.0, brush: 0.06, rock: 0.02, crater: 0.008, ruin: 1 },
 };
 
-export function generateMap({ size = 64, theme = 'verdant', seed = 'alpha' } = {}) {
+export function generateMap({ size = 64, theme = 'verdant', seed = 'alpha', threeWay = false } = {}) {
   const w = size, h = size;
   const grid = new HexGrid(w, h, `${theme}:${seed}:${size}`);
   const N = grid.N;
@@ -27,10 +27,11 @@ export function generateMap({ size = 64, theme = 'verdant', seed = 'alpha' } = {
   const setSym = (i, t) => { set(i, t); set(grid.mirror(i), t); };
   const protectedCells = new Uint8Array(N);
   const startCells = [grid.index(7, 7), grid.index(w - 8, h - 8)];
+  if (threeWay) startCells.push(grid.index(w - 8, 7), grid.index(7, h - 8)); // a mirrored pair of extra bases
   const starts = startCells.map((i) => { const [x, y] = grid.center(i); return { i, x, y }; });
   const scale = (size * HEX_W) / 9; // noise feature size in world units
   const cx = grid.cxs, cy = grid.cys;
-  const distToStart = (i) => Math.min(Math.hypot(cx[i] - starts[0].x, cy[i] - starts[0].y), Math.hypot(cx[i] - starts[1].x, cy[i] - starts[1].y)) / HEX_W;
+  const distToStart = (i) => Math.min(...starts.map((s) => Math.hypot(cx[i] - s.x, cy[i] - s.y))) / HEX_W;
   const isBorder = (i) => { const c = grid.col(i), r = grid.row(i); return c === 0 || r === 0 || c === w - 1 || r === h - 1; };
 
   // --- fields
@@ -203,7 +204,7 @@ export function generateMap({ size = 64, theme = 'verdant', seed = 'alpha' } = {
   carve(starts[0].i, centreCell, T.ROAD);
 
   // --- connectivity guarantee
-  const keyLocs = [starts[1].i, ...points.map((p) => p.i), ...ore.map((o) => o.i)];
+  const keyLocs = [...starts.slice(1).map((s) => s.i), ...points.map((p) => p.i), ...ore.map((o) => o.i)];
   for (let pass = 0; pass < 3; pass++) {
     const reach = flood(map, starts[0].i);
     let fixed = false;
@@ -224,5 +225,5 @@ export function generateMap({ size = 64, theme = 'verdant', seed = 'alpha' } = {
 
   const hp = new Uint16Array(N);
   for (let i = 0; i < N; i++) hp[i] = TILE_HP[tiles[i]];
-  return { w, h, grid, tiles, hp, theme: th.key, seed, starts, ore, points, name: `${th.name} · ${seed}` };
+  return { w, h, grid, tiles, hp, theme: th.key, seed, threeWay, starts, ore, points, name: `${th.name} · ${seed}` };
 }

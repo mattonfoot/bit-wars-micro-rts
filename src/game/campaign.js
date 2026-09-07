@@ -18,26 +18,30 @@ export class Campaign {
   }
 
   // ---------- world construction
+  static enemies(def) { return def.enemies || [def.enemy]; }
   static build(def) {
-    const map = generateMap({ size: def.size || 64, theme: def.theme, seed: def.seed });
-    const enemyAi = def.enemy.ai && def.enemy.ai !== 'passive' ? def.enemy.ai : (def.enemy.ai === 'passive' ? 'normal' : null);
-    const world = new World(map, [{ faction: def.player.faction, name: 'You' }, { faction: def.enemy.faction, ai: enemyAi, name: 'Enemy' }], { seed: 'campaign:' + def.key, restore: true });
+    const enemies = Campaign.enemies(def);
+    const map = generateMap({ size: def.size || 64, theme: def.theme, seed: def.seed, threeWay: enemies.length > 1 });
+    const aiFor = (E) => (E.ai && E.ai !== 'passive' ? E.ai : E.ai === 'passive' ? 'normal' : null);
+    const world = new World(map, [{ faction: def.player.faction, name: 'You' }, ...enemies.map((E, k) => ({ faction: E.faction, ai: aiFor(E), name: enemies.length > 1 ? `Enemy ${k + 1}` : 'Enemy' }))], { seed: 'campaign:' + def.key, restore: true });
     const c = new Campaign(def);
     c.world = world;
     c.computeRanks();
-    const P = def.player, E = def.enemy;
-    // headquarters
+    const P = def.player;
     if (P.hq !== false) { const hq = world.placeBuilding(0, hqKey(P.faction), map.starts[0].i, true); world.players[0].hqId = hq.id; }
-    if (E.hq !== false) { const hq = world.placeBuilding(1, hqKey(E.faction), map.starts[1].i, true); world.players[1].hqId = hq.id; }
     world.players[0].ore = P.ore ?? START_ORE; world.players[0].flux = P.flux ?? START_FLUX;
-    world.players[1].ore = E.ore ?? START_ORE; world.players[1].flux = E.flux ?? START_FLUX;
-    if (E.incomeMult) world.players[1].incomeMult = E.incomeMult;
     world.restrict[0] = { units: P.units ? new Set(P.units) : null, buildings: P.buildings ? new Set(P.buildings) : null };
+    enemies.forEach((E, k) => {
+      const pid = k + 1;
+      if (E.hq !== false) { const hq = world.placeBuilding(pid, hqKey(E.faction), map.starts[pid].i, true); world.players[pid].hqId = hq.id; }
+      world.players[pid].ore = E.ore ?? START_ORE; world.players[pid].flux = E.flux ?? START_FLUX;
+      if (E.incomeMult) world.players[pid].incomeMult = E.incomeMult;
+      for (const b of E.structures || []) c.placeStructure(pid, b);
+      for (const s of E.squads || []) c.placeSquad(pid, s);
+      for (const kk of E.points || []) { const pt = c.pointByRank(kk); pt.owner = pid; pt.progress = 100; }
+    });
     for (const b of P.structures || []) c.placeStructure(0, b);
-    for (const b of E.structures || []) c.placeStructure(1, b);
     for (const s of P.squads || []) c.placeSquad(0, s);
-    for (const s of E.squads || []) c.placeSquad(1, s);
-    for (const k of E.points || []) { const pt = c.pointByRank(k); pt.owner = 1; pt.progress = 100; }
     for (const k of P.points || []) { const pt = c.pointByRank(k); pt.owner = 0; pt.progress = 100; }
     for (const p of world.players) p.stats = { kills: 0, losses: 0, built: 0, destroyed: 0, captured: 0 };
     world.updateVision(true);
@@ -57,6 +61,7 @@ export class Campaign {
     if (at === 'base') return st[owner].i;
     if (at === 'playerBase') return st[0].i;
     if (at === 'enemyBase') return st[1].i;
+    if (at === 'enemyBase2') return (st[2] || st[1]).i;
     if (at === 'center') return g.cellAt(g.cx, g.cy);
     if (typeof at === 'string' && at.startsWith('point:')) return this.pointByRank(+at.slice(6)).cell;
     if (typeof at === 'string' && at.startsWith('ore:')) return this.oreByRank(+at.slice(4)).cell;
@@ -78,7 +83,7 @@ export class Campaign {
       const s = w.spawnSquad(owner, spec.key, g.cxs[np], g.cys[np]);
       if (spec.hp) for (const m of s.members) m.hp *= spec.hp;
       if (spec.order === 'hold') w.cmdHold([s]);
-      if (spec.order === 'attackBase') w.cmdAttackMove([s], ...(() => { const p = this.worldOf('playerBase'); return [p.x, p.y]; })());
+      if (spec.order === 'attackBase') { const p = this.worldOf('playerBase'); w.cmdAttackMove([s], p.x, p.y); }
       s.homeX = s.x; s.homeY = s.y;
     }
   }
@@ -104,16 +109,16 @@ export class Campaign {
         case 'spawn': if (e.owner === 0) { inc('train'); inc('train:' + e.key); if (w.faction(0).units[e.key]?.hero) inc('hero'); } break;
         case 'built': if (e.owner === 0) { inc('build'); inc('build:' + e.key); } break;
         case 'squadDied':
-          if (e.owner === 1) { inc('kill'); inc('kill:' + e.key); const u = w.faction(1).units[e.key]; if (u) inc('killArmor:' + u.armor); }
+          if (e.owner > 0 && !(e.by > 0)) { inc('kill'); inc('kill:' + e.key); const u = w.faction(e.owner).units[e.key]; if (u) inc('killArmor:' + u.armor); }
           else if (e.owner === 0) inc('losses');
           break;
-        case 'buildingDestroyed': if (e.owner === 1) { inc('destroy'); inc('destroy:' + e.key); if (e.hq) inc('destroyHq'); } else if (e.owner === 0) inc('lostBuildings'); break;
+        case 'buildingDestroyed': if (e.owner > 0 && !(e.by > 0)) { inc('destroy'); inc('destroy:' + e.key); if (e.hq) inc('destroyHq'); } else if (e.owner === 0) inc('lostBuildings'); break;
         case 'reinforce': if (e.owner === 0) inc('reinforce'); break;
         case 'attach': if (e.owner === 0) inc('attach'); break;
         case 'order': if (e.owner === 0 && e.kind === 'retreat') inc('retreat'); break;
         case 'coverHit': if (e.owner === 0) inc('cover'); break;
         case 'flank': if (e.owner === 0) inc('flank'); break;
-        case 'broken': if (e.owner === 1) inc('broken'); break;
+        case 'broken': if (e.owner > 0) inc('broken'); break;
         case 'rally': if (e.owner === 0) inc('rally'); break;
         case 'terrainDestroyed': if (e.owner === 0) inc('terrain'); break;
         case 'captured': if (e.owner === 0) inc('captured'); break;
@@ -132,8 +137,8 @@ export class Campaign {
       case 'hero': return [Math.min(1, c.hero || 0), 1];
       case 'kill': return [Math.min(n, c[o.key ? 'kill:' + o.key : o.armor ? 'killArmor:' + o.armor : 'kill'] || 0), n];
       case 'destroy': return [Math.min(n, c[o.key ? 'destroy:' + o.key : 'destroy'] || 0), n];
-      case 'destroyHq': return [w.players[1].alive && w.buildings.some((b) => b.owner === 1 && b.def.hq) ? 0 : 1, 1];
-      case 'destroyAll': return [w.buildings.some((b) => b.owner === 1 && !b.dead) ? 0 : 1, 1];
+      case 'destroyHq': { const alive = w.players.filter((p) => p.id > 0 && p.alive && w.buildings.some((b) => b.owner === p.id && b.def.hq)).length; const total = w.players.length - 1; return [total - alive, o.all ? total : 1]; }
+      case 'destroyAll': return [w.buildings.some((b) => b.owner > 0 && !b.dead) ? 0 : 1, 1];
       case 'capture': {
         if (o.rank !== undefined) return [this.pointByRank(o.rank).owner === 0 ? 1 : 0, 1];
         return [Math.min(n, w.points.filter((p) => p.owner === 0).length), n];
@@ -195,12 +200,13 @@ export class Campaign {
     (def.waves || []).forEach((wv, i) => {
       if (this.wavesFired[i] || this.elapsed < wv.at) return;
       this.wavesFired[i] = true;
-      const from = this.worldOf(wv.from || 'enemyBase', 1), to = this.worldOf(wv.target || 'playerBase', 0);
+      const owner = wv.owner || 1;
+      const from = this.worldOf(wv.from || (owner === 2 ? 'enemyBase2' : 'enemyBase'), owner), to = this.worldOf(wv.target || 'playerBase', 0);
       for (const u of wv.units) for (let k = 0; k < (u.n || 1); k++) {
-        const udef = w.faction(1).units[u.key]; if (!udef) continue;
+        const udef = w.faction(owner).units[u.key]; if (!udef) continue;
         const g = w.grid, c = Math.min(w.w - 2, g.col(from.cell) + (k % 3) * 2), r = Math.min(w.h - 2, g.row(from.cell) + Math.floor(k / 3) * 2);
         let np = nearestPassable(w.map, g.index(c, r), { blocked: w.blockedFn(), flying: udef.flying }); if (np < 0) np = from.cell;
-        const s = w.spawnSquad(1, u.key, g.cxs[np], g.cys[np]);
+        const s = w.spawnSquad(owner, u.key, g.cxs[np], g.cys[np]);
         w.cmdAttackMove([s], to.x, to.y);
       }
       this.messages.push({ kind: 'wave', text: wv.text || 'Enemy wave incoming!' });

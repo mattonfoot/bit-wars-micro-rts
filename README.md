@@ -25,9 +25,9 @@ Two commanders, one procedurally generated battleground, one objective: reduce t
 
 ### Campaigns
 
-Each faction has a six-chapter campaign that teaches its mechanics in order, with a story that carries from chapter to chapter: **Shear** (Vector Swarm: mass, counters, flanking, air raids, the Apex, siege), **Doctrine** (Iron Foundry: cover, suppression, demolition, armour and artillery, the Foreman, siege) and **Protocol** (Aegis Collective: shields, range, morale warfare, sustain, vision, orbital artillery). Early chapters are scripted garrisons and waves with limited rosters; the final two chapters of each campaign are full wars against a living opponent. Progress is saved per campaign, and a chapter in progress can be resumed.
+Each faction has a twenty-chapter campaign in four acts, with a story that carries from chapter to chapter: **Shear** (Vector Swarm), **Doctrine** (Iron Foundry) and **Protocol** (Aegis Collective). Act I teaches the faction's mechanics one at a time against scripted garrisons and waves with limited rosters; Act II is a war against the first rival faction; Act III against the second; Act IV faces a coalition of both; and chapter 20 is an all-out three-way war on the largest map against two living, hard opponents who also fight each other. Progress is saved per campaign, and a chapter in progress can be resumed.
 
-Chapter definitions live in `src/game/campaigns.js` (story, setup, staged objectives, waves, hints, epilogue); the runtime that builds worlds and tracks objectives is `src/game/campaign.js`.
+Chapter definitions live in `src/game/chapters/{blue,red,green}.js` (story, setup, staged objectives, waves, hints, epilogue) with shared builders in `src/game/chapters/common.js`; the runtime that builds worlds, supports multiple enemies and tracks objectives is `src/game/campaign.js`.
 
 ### Three factions, nothing shared
 

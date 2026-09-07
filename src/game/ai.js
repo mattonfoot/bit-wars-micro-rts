@@ -187,7 +187,7 @@ export class AI {
 
     // 3. capturers: fastest infantry squads grab neutral/enemy points
     const capturers = squads.filter((s) => s.def.canCapture && !s.broken && s.order.type !== 'retreat').sort((a, b) => b.def.speed - a.def.speed);
-    const targetsPts = w.points.filter((p) => p.owner !== this.pid).sort((a, b) => dist(a.x, a.y, hq.x, hq.y) - dist(b.x, b.y, hq.x, hq.y));
+    const targetsPts = w.points.filter((p) => p.owner !== this.pid && !(p.owner >= 0 && w.allied(this.pid, p.owner))).sort((a, b) => dist(a.x, a.y, hq.x, hq.y) - dist(b.x, b.y, hq.x, hq.y));
     const nCap = Math.min(capturers.length, this.mode === 'attack' ? 1 : 2, targetsPts.length);
     const used = new Set();
     for (let i = 0; i < nCap; i++) {
@@ -242,7 +242,7 @@ export class AI {
     const w = this.w;
     const enemyIds = w.enemiesOf(this.pid);
     // nearest known enemy building (prefer economy and outposts before HQ), else enemy squad, else enemy point, else unexplored guess (enemy start)
-    const known = [...this.me.known.values()].filter((k) => enemyIds.includes(k.owner));
+    const known = [...this.me.known.values()].filter((k) => enemyIds.includes(k.owner) && w.byId(k.id));
     if (known.length) {
       known.sort((a, b) => (dist(a.x, a.y, hq.x, hq.y) - (a.hq ? -400 : 0)) - (dist(b.x, b.y, hq.x, hq.y) - (b.hq ? -400 : 0)));
       const k = known[0];

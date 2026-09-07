@@ -22,7 +22,8 @@ export class Renderer {
     this.theme = THEMES[world.map.theme];
     this.showFog = true;
   }
-  colors(faction, owner) { return factionColors(faction, owner, this.viewer, this.viewerFaction); }
+  rel(owner) { const w = this.world; if (owner === this.viewer) return 'own'; if (w.players[owner]?.neutral) return 'neutral'; return w.allied(this.viewer, owner) ? 'ally' : 'enemy'; }
+  colors(faction, owner) { return factionColors(faction, owner, this.viewer, this.viewerFaction, this.rel(owner)); }
   ownerColor(owner) { if (owner < 0) return '#9aa0a6'; return this.colors(this.world.players[owner].faction, owner).fill; }
 
   // ---- events -> effects
@@ -181,7 +182,7 @@ export class Renderer {
         }
       }
       // status bars (constant screen size)
-      const showBars = own || sel || world.squadHp(s) < world.squadMaxHp(s) * 0.999;
+      const showBars = own || sel || col.rel === 'ally' || world.squadHp(s) < world.squadMaxHp(s) * 0.999;
       if (showBars) {
         ctx.save();
         ctx.translate(s.x, s.y - fr - 10);

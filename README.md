@@ -25,9 +25,11 @@ Two commanders, one procedurally generated battleground, one objective: reduce t
 
 ### Campaigns
 
-Each faction has a twenty-chapter campaign in four acts, with a story that carries from chapter to chapter: **Shear** (Vector Swarm), **Doctrine** (Iron Foundry) and **Protocol** (Aegis Collective). Act I teaches the faction's mechanics one at a time against scripted garrisons and waves with limited rosters; Act II is a war against the first rival faction; Act III against the second; Act IV faces a coalition of both; and chapter 20 is an all-out three-way war on the largest map against two living, hard opponents who also fight each other. Progress is saved per campaign, and a chapter in progress can be resumed.
+Each faction has a forty-chapter campaign in eight acts: **Shear** (Vector Swarm), **Doctrine** (Iron Foundry) and **Protocol** (Aegis Collective). The first five chapters teach the faction's mechanics one at a time against scripted garrisons with limited rosters. Chapters 6 to 40 follow one shared timeline: every battle in it (Greywater Ford, the Bleed, the Glass Pact, the Betrayal, the Prime Vein, and so on) is fought by all three factions, each from its own side and in its own scenario style, so the three stories line up and the ending is decided by whose campaign you are playing. Chapter 39 and 40 are three-way wars on the largest maps against two living, hard opponents who also fight each other.
 
-Chapter definitions live in `src/game/chapters/{blue,red,green}.js` (story, setup, staged objectives, waves, hints, epilogue) with shared builders in `src/game/chapters/common.js`; the runtime that builds worlds, supports multiple enemies and tracks objectives is `src/game/campaign.js`.
+The chapters interweave many kinds of play: assault, hold the line, survive the countdown, chokepoint defence, protect the structure, protect the VIP, commando (no base), escort duty, scavenge and build (rescue grey neutral squads and claim abandoned structures), resource race, migrating base (a doom zone consumes the start position), supply-line interdiction (ambush convoys), multi-front split, tug-of-war (each outpost taken sends reinforcements), allied assault (an AI ally shares vision and must survive), betrayal (the ally turns mid-battle), raids, sieges, full wars and three-way wars. Progress is saved per campaign, and a chapter in progress can be resumed.
+
+Handwritten lesson chapters live in `src/game/chapters/{blue,red,green}-lessons.js`; the shared timeline is `src/game/chapters/events.js` (each event carries a scenario style, parameters, story, briefing and epilogue per faction) and the scenario style builders are `src/game/chapters/styles.js`, composed into campaigns by `src/game/campaigns.js`. The runtime that builds worlds (teams, allies, neutrals, tagged units, convoys, doom zones, rewards, scripted events) and tracks objectives is `src/game/campaign.js`.
 
 ### Three factions, nothing shared
 
@@ -73,7 +75,8 @@ Mouse: left-click/drag selects, right-click commands, wheel zooms, middle-drag p
 npm start          # serve on http://localhost:8080
 npm run test:map   # map generation: 90 maps, connectivity checks
 npm run test:sim   # headless AI vs AI across all faction matchups
-npm run test:campaign  # every chapter builds, runs, round-trips; chapter 1 scripted playthrough
+npm run test:campaign  # all 120 chapters build, run, round-trip; chapter 1 scripted playthrough
+npm run test:mechanics # scripted checks of rescue, doom, rewards, betrayal, escort, convoys, allies
 npm run sim -- blue red verdant seed 20   # one headless game, per-minute summary
 npm run screenshots                        # Playwright smoke test at iPhone viewport
 npm run icons                              # regenerate PNG/App Store icons and splash from SVG

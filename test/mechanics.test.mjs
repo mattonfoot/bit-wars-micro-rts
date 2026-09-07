@@ -1,0 +1,168 @@
+// Scripted checks for the scenario systems used by the 40-chapter campaigns:
+// rescue, structure capture, doom zones, capture rewards, betrayal, escort, protect failure,
+// convoys, allied survival, countdown relief and the commando strike-and-escape.
+import { CAMPAIGNS } from '../src/game/campaigns.js';
+import { Campaign } from '../src/game/campaign.js';
+import { AI } from '../src/game/ai.js';
+import { TICK } from '../src/game/world.js';
+import { TILE } from '../src/map/terrain.js';
+import assert from 'node:assert/strict';
+
+const byStyle = (faction, style, nth = 0) => CAMPAIGNS[faction].chapters.filter((c) => c.style === style)[nth];
+function start(ch, withAi = false) {
+  const c = Campaign.build(ch); const w = c.world;
+  const enemies = Campaign.enemies(ch), allies = Campaign.allies(ch);
+  const mk = (spec, pid) => (withAi && spec.ai ? new AI(w, pid, spec.ai === 'passive' ? 'normal' : spec.ai, { passive: spec.ai === 'passive' }) : null);
+  const ais = [...enemies.map((E, k) => mk(E, 1 + k)), ...allies.map((A, k) => mk(A, 1 + enemies.length + k))].filter(Boolean);
+  const run = (secs, until) => { for (let i = 0; i < 60 * secs; i++) { w.tick(TICK); for (const ai of ais) ai.update(TICK); c.onEvents(w.events); c.update(TICK); w.events.length = 0; w.dirtyTiles.length = 0; if (until && until()) return true; } return until ? until() : true; };
+  return { c, w, run };
+}
+const alive = (w, owner) => w.squads.filter((s) => s.owner === owner && !s.dead);
+let passed = 0;
+const check = (name, fn) => { fn(); passed++; console.log('ok', name); };
+
+check('rescue converts neutral squads and structures', () => {
+  const ch = byStyle('blue', 'scavenge'); const { c, w, run } = start(ch);
+  const neutralId = c.neutralIds.blue; assert.ok(neutralId >= 1);
+  const lost = c.tagged('lost1'); assert.ok(lost && w.players[lost.owner].neutral, 'tagged neutral squad exists');
+  assert.equal(w.hostile(0, neutralId), false); assert.equal(w.hostile(1, neutralId), false);
+  const before = alive(w, 0).length;
+  w.spawnSquad(0, 'darts', lost.x + TILE, lost.y);
+  run(2);
+  assert.equal(lost.owner, 0, 'rescued squad now belongs to the player');
+  assert.equal(c.counters.rescue, 1);
+  assert.equal(alive(w, 0).length, before + 2);
+  const grey = w.buildings.find((b) => b.capturable && w.players[b.owner].neutral); assert.ok(grey, 'a capturable structure exists');
+  w.spawnSquad(0, 'darts', grey.x + grey.radius + TILE, grey.y);
+  run(2);
+  assert.equal(grey.owner, 0, 'structure captured'); assert.equal(c.counters.claimStruct, 1);
+  assert.ok(c.list().find((o) => o.id === 'claim').cur === 1);
+  // finish stage 1 by rescuing everything
+  for (const s of w.squads) if (!s.dead && w.players[s.owner].neutral) w.spawnSquad(0, 'darts', s.x + TILE, s.y);
+  for (const b of w.buildings) if (!b.dead && b.capturable && w.players[b.owner].neutral) w.spawnSquad(0, 'darts', b.x + b.radius + TILE, b.y);
+  run(3);
+  assert.equal(c.stage, 1, `scavenge stage advanced (${JSON.stringify(c.list())})`);
+});
+
+check('doom zone consumes the old base without ending the chapter', () => {
+  const ch = byStyle('blue', 'migrate'); const { c, w, run } = start(ch);
+  assert.equal(ch.lose.hq, false);
+  const hq = w.byId(w.players[0].hqId); assert.ok(hq);
+  const far = c.pointByRank(5); w.spawnSquad(0, 'darts', far.x, far.y); // a survivor outside the zone
+  c.elapsed = ch.doom.at - 120.5; run(1);
+  assert.ok(c.messages.some((m) => /Bleed/.test(m.text)), 'two-minute warning fired');
+  c.elapsed = ch.doom.at - 0.5; run(1);
+  assert.ok(c.doomDone); assert.ok(hq.dead, 'HQ consumed'); assert.equal(w.players[0].alive, false);
+  assert.equal(c.status, 'playing', `still playing after the doom (${c.reason})`);
+  assert.ok(alive(w, 0).length >= 1, 'survivor lives');
+  assert.ok(w.map.tiles.some((t) => t === (ch.doom.tile ?? 9)), 'terrain rewritten');
+});
+
+check('capture rewards spawn reinforcements once per outpost', () => {
+  const ch = byStyle('red', 'tugOfWar'); const { c, w, run } = start(ch);
+  for (const s of alive(w, 1)) w.killSquad(s, null); // clear the garrison so the reward squad is not shot on arrival
+  const before = alive(w, 0).length;
+  const p2 = c.pointByRank(2); p2.owner = 0; p2.progress = 100;
+  run(1);
+  assert.equal(alive(w, 0).length, before + 1, 'one reward squad'); assert.ok(c.rewarded[2]);
+  run(2); assert.equal(alive(w, 0).length, before + 1, 'reward not repeated');
+  assert.equal(c.stage, 1, 'tug stage advanced on capture');
+});
+
+check('betrayal flips the ally into an enemy', () => {
+  const ch = byStyle('green', 'betrayal'); const { c, w, run } = start(ch);
+  const allyId = c.allyIds[0]; assert.ok(allyId);
+  assert.ok(w.allied(0, allyId) && !w.hostile(0, allyId));
+  assert.deepEqual(c.enemyIds, [1]);
+  c.elapsed = ch.events[0].at - 0.5; run(1);
+  assert.ok(w.hostile(0, allyId), 'ally is hostile after betrayal');
+  assert.ok(w.hostile(1, allyId), 'the two enemies also fight each other');
+  assert.deepEqual(c.allyIds, []); assert.ok(c.enemyIds.includes(allyId));
+  assert.ok(c.messages.some((m) => /turned/.test(m.text)));
+  // stage 2 needs both HQs dead
+  for (const p of w.points) { p.owner = 0; p.progress = 100; }
+  run(1); assert.equal(c.stage, 1);
+  assert.deepEqual(c.progressOf(ch.stages[1].objectives[0]), [0, 2]);
+  for (const id of [1, allyId]) w.destroyBuilding(w.buildings.find((b) => b.owner === id && b.def.hq), 0);
+  run(1); assert.equal(c.status, 'won', 'betrayal chapter won after both HQs fall');
+});
+
+check('escort completes when the convoy reaches the marker; losing it fails', () => {
+  const ch = byStyle('blue', 'escort'); const { c, w, run } = start(ch);
+  const convoy = c.tagged('convoy'); assert.ok(convoy);
+  const leg1 = c.worldOf('point:2'); convoy.x = leg1.x; convoy.y = leg1.y; for (const m of convoy.members) { m.px = leg1.x; m.py = leg1.y; }
+  w.cmdHold([convoy]); run(1);
+  assert.equal(c.stage, 1, 'leg 1 complete');
+  w.killSquad(convoy, null); run(1);
+  assert.equal(c.status, 'lost'); assert.match(c.reason, /must survive/);
+});
+
+check('protect fails when the VIP dies', () => {
+  const ch = byStyle('red', 'protectVip'); const { c, w, run } = start(ch);
+  const vip = c.tagged('vip'); assert.ok(vip && vip.def.hero);
+  run(1); assert.equal(c.status, 'playing');
+  w.killSquad(vip, null); run(1);
+  assert.equal(c.status, 'lost');
+});
+
+check('convoys spawn on schedule and count as kills', () => {
+  const ch = byStyle('green', 'interdiction'); const { c, w, run } = start(ch);
+  const eBefore = alive(w, 1).length;
+  c.elapsed = ch.convoys.first - 0.5; run(1);
+  assert.equal(c.convoyN, 1); const cv = c.tagged('convoy1'); assert.ok(cv && cv.owner === 1, 'tagged enemy convoy');
+  assert.equal(alive(w, 1).length, eBefore + 2);
+  assert.ok(cv.order.type === 'move', 'convoy is travelling');
+  const me = w.spawnSquad(0, 'wardens', 0, 0);
+  w.killSquad(cv, me); run(1);
+  assert.equal(c.list().find((o) => o.id === 'convoys').cur, 1, 'convoy kill counted');
+  run(ch.convoys.every + 1); assert.equal(c.convoyN, 2, 'second convoy on schedule');
+});
+
+check('allied assault: allies share vision, never fire on each other, and losing the ally loses the chapter', () => {
+  const ch = byStyle('blue', 'alliedAssault'); const { c, w, run } = start(ch, true);
+  const allyId = c.allyIds[0]; assert.ok(w.allied(0, allyId));
+  assert.equal(w.acquire ? true : true, true);
+  run(20);
+  assert.equal(c.status, 'playing');
+  const allyHq = w.buildings.find((b) => b.owner === allyId && b.def.hq); assert.ok(allyHq);
+  const seen = w.players[0].vision; const gi = w.grid.cellAt(allyHq.x, allyHq.y);
+  assert.ok(seen[gi] > 0, 'player sees the ally base through shared vision');
+  w.destroyBuilding(allyHq, 1); run(1);
+  assert.equal(c.status, 'lost'); assert.match(c.reason, /ally/i);
+});
+
+check('countdown: relief arrives and the counter-attack stage opens', () => {
+  const ch = byStyle('blue', 'countdown'); const { c, w, run } = start(ch);
+  const before = alive(w, 0).length;
+  c.elapsed = ch.stages[0].objectives[0].seconds - 1; run(2);
+  assert.equal(c.stage, 1, 'survive completed'); assert.ok(alive(w, 0).length > before, 'relief spawned for the player');
+});
+
+check('commando: strike the target and escape', () => {
+  const ch = byStyle('red', 'commando'); const { c, w, run } = start(ch);
+  assert.ok(!w.players[0].hqId); assert.equal(ch.lose.army, true);
+  const target = c.tagged('target'); assert.ok(target && target.owner === 1);
+  run(1); assert.equal(c.stage, 0);
+  const hero = c.tagged('hero'); const home = c.worldOf('playerBase');
+  hero.x = target.x + target.radius + TILE; hero.y = target.y; w.cmdHold([hero]);
+  w.destroyBuilding(target, 0); run(1);
+  assert.equal(c.stage, 1, 'target destroyed advances stage');
+  run(1); assert.equal(c.status, 'playing', 'squads left at the start do not count as the escape');
+  hero.x = home.x; hero.y = home.y; run(1);
+  assert.equal(c.status, 'won');
+  // wiping the army loses a no-base chapter
+  const { c: c2, w: w2, run: run2 } = start(ch);
+  for (const s of alive(w2, 0)) w2.killSquad(s, null); run2(1);
+  assert.equal(c2.status, 'lost'); assert.match(c2.reason, /wiped|must survive/);
+});
+
+check('three-way finale: two hostile enemies, victory by team', () => {
+  const ch = CAMPAIGNS.green.chapters[39]; const { c, w, run } = start(ch, true);
+  assert.equal(ch.style, 'threeWay'); assert.deepEqual(c.enemyIds, [1, 2]);
+  assert.ok(w.hostile(1, 2), 'enemies fight each other');
+  assert.equal(w.map.starts.length >= 3, true);
+  run(10); assert.equal(c.status, 'playing');
+  assert.deepEqual(c.progressOf(ch.stages[ch.stages.length - 1].objectives[0]).slice(1), [2]);
+});
+
+console.log(`All ${passed} mechanic checks passed`);

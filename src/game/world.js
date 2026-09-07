@@ -43,7 +43,7 @@ export class World {
     this.points = map.points.map((p, i) => ({ i, cell: p.i, x: p.x, y: p.y, owner: NONE, progress: 0, capturer: NONE, outpost: 0, contested: false }));
     this.ore = map.ore.map((o, i) => ({ i, cell: o.i, x: o.x, y: o.y, building: 0 }));
     this.players = players.map((p, i) => ({
-      id: i, name: p.name || (i === 0 ? 'You' : 'Enemy'), faction: p.faction, isAI: !!p.ai, difficulty: p.ai || null,
+      id: i, name: p.name || (i === 0 ? 'You' : 'Enemy'), faction: p.faction, isAI: !!p.ai, difficulty: p.ai || null, team: p.team ?? i, neutral: !!p.neutral,
       ore: START_ORE, flux: START_FLUX, pop: 0, alive: true, hqId: 0,
       vision: new Uint8Array(map.grid.N), heroAlive: false, heroQueued: false,
       incomeMult: p.incomeMult || 1, upgrades: { hp: 1, shield: 1 },
@@ -68,16 +68,16 @@ export class World {
       restrict: Object.fromEntries(Object.entries(this.restrict).map(([k, r]) => [k, { units: r.units ? [...r.units] : null, buildings: r.buildings ? [...r.buildings] : null }])),
       map: { w: m.w, h: m.h, theme: m.theme, seed: m.seed, name: m.name, starts: m.starts, ore: m.ore, points: m.points, tiles: Array.from(m.tiles), hp: Array.from(m.hp) },
       players: this.players.map((p) => ({
-        id: p.id, name: p.name, faction: p.faction, isAI: p.isAI, difficulty: p.difficulty, ore: p.ore, flux: p.flux, pop: p.pop, alive: p.alive, hqId: p.hqId,
+        id: p.id, name: p.name, faction: p.faction, isAI: p.isAI, difficulty: p.difficulty, team: p.team, neutral: p.neutral, ore: p.ore, flux: p.flux, pop: p.pop, alive: p.alive, hqId: p.hqId,
         vision: Array.from(p.vision), heroAlive: p.heroAlive, heroQueued: p.heroQueued, incomeMult: p.incomeMult, upgrades: { ...p.upgrades }, known: [...p.known.values()], stats: { ...p.stats },
       })),
       squads: this.squads.map((s) => ({
-        id: s.id, owner: s.owner, key: s.key, x: s.x, y: s.y, facing: s.facing, members: s.members.map((mm) => ({ hp: mm.hp, shield: mm.shield, slot: mm.slot, px: mm.px, py: mm.py, hero: mm.hero })),
+        id: s.id, owner: s.owner, faction: s.faction, key: s.key, x: s.x, y: s.y, facing: s.facing, members: s.members.map((mm) => ({ hp: mm.hp, shield: mm.shield, slot: mm.slot, px: mm.px, py: mm.py, hero: mm.hero })),
         morale: s.morale, broken: s.broken, lastHit: s.lastHit, order: s.order, path: s.path, pathIdx: s.pathIdx, targetId: s.targetId, cooldown: s.cooldown, setup: s.setup, moving: s.moving,
         reinforce: s.reinforce, reinforceTimer: s.reinforceTimer, hero: s.hero ? s.hero.key : null, homeX: s.homeX, homeY: s.homeY, repathTimer: s.repathTimer, acquireTimer: s.acquireTimer, cover: s.cover, spawnTime: s.spawnTime, killCount: s.killCount,
       })),
       buildings: this.buildings.map((b) => ({
-        id: b.id, owner: b.owner, key: b.key, cell: b.cell, hp: b.hp, shield: b.shield, progress: b.progress, done: b.done, queue: [...b.queue], queueProgress: b.queueProgress, rally: b.rally, cooldown: b.cooldown, targetId: b.targetId, lastHit: b.lastHit, facing: b.facing,
+        id: b.id, owner: b.owner, faction: b.faction, key: b.key, cell: b.cell, hp: b.hp, shield: b.shield, progress: b.progress, done: b.done, queue: [...b.queue], queueProgress: b.queueProgress, rally: b.rally, cooldown: b.cooldown, targetId: b.targetId, lastHit: b.lastHit, facing: b.facing,
       })),
       points: this.points.map((p) => ({ owner: p.owner, progress: p.progress, capturer: p.capturer, contested: p.contested })),
       projectiles: this.projectiles.map((p) => ({ ...p })),
@@ -86,18 +86,18 @@ export class World {
   static fromSave(d) {
     const map = { ...d.map, tiles: Uint8Array.from(d.map.tiles), hp: Uint16Array.from(d.map.hp) };
     map.grid = new HexGrid(map.w, map.h, `${map.theme}:${map.seed}:${map.w}`);
-    const w = new World(map, d.players.map((p) => ({ faction: p.faction, ai: p.isAI ? p.difficulty : null, name: p.name })), { seed: map.seed, restore: true });
+    const w = new World(map, d.players.map((p) => ({ faction: p.faction, ai: p.isAI ? p.difficulty : null, name: p.name, team: p.team, neutral: p.neutral })), { seed: map.seed, restore: true });
     w.time = d.time; w.ticks = d.ticks; w.winner = d.winner; w.gameOver = d.gameOver;
     for (const b of d.buildings) {
       w.nextId = b.id;
-      const nb = w.placeBuilding(b.owner, b.key, b.cell, b.done);
+      const nb = w.placeBuilding(b.owner, b.key, b.cell, b.done, b.faction);
       Object.assign(nb, { hp: b.hp, shield: b.shield, progress: b.progress, done: b.done, queue: [...b.queue], queueProgress: b.queueProgress, rally: b.rally, cooldown: b.cooldown, targetId: b.targetId, lastHit: b.lastHit, facing: b.facing });
     }
     for (const s of d.squads) {
       w.nextId = s.id;
-      const ns = w.spawnSquad(s.owner, s.key, s.x, s.y, { size: 0 });
+      const ns = w.spawnSquad(s.owner, s.key, s.x, s.y, { size: 0, faction: s.faction });
       ns.members = s.members.map((mm) => ({ ...mm }));
-      ns.hero = s.hero ? w.faction(s.owner).units[s.hero] : null;
+      ns.hero = s.hero ? FACTIONS[s.faction].units[s.hero] : null;
       Object.assign(ns, { facing: s.facing, morale: s.morale, broken: s.broken, lastHit: s.lastHit, order: s.order, path: s.path, pathIdx: s.pathIdx, targetId: s.targetId, cooldown: s.cooldown, setup: s.setup, moving: s.moving, reinforce: s.reinforce, reinforceTimer: s.reinforceTimer, homeX: s.homeX, homeY: s.homeY, repathTimer: s.repathTimer, acquireTimer: s.acquireTimer, cover: s.cover, spawnTime: s.spawnTime, killCount: s.killCount });
     }
     w.nextId = d.nextId;
@@ -138,7 +138,24 @@ export class World {
   emit(e) { this.events.push(e); }
   visible(pid, x, y) { const i = this.grid.cellAt(x, y); return i >= 0 && this.players[pid].vision[i] === 2; }
   explored(pid, i) { return i >= 0 && this.players[pid].vision[i] > 0; }
-  enemiesOf(pid) { return this.players.filter((p) => p.id !== pid && p.alive).map((p) => p.id); }
+  hostile(a, b) { if (a === b || a < 0 || b < 0) return false; const pa = this.players[a], pb = this.players[b]; return !pa.neutral && !pb.neutral && pa.team !== pb.team; }
+  allied(a, b) { if (a === b) return false; const pa = this.players[a], pb = this.players[b]; return !pa.neutral && !pb.neutral && pa.team === pb.team; }
+  enemiesOf(pid) { return this.players.filter((p) => p.alive && this.hostile(pid, p.id)).map((p) => p.id); }
+  /** Hand a squad to another player (rescues, defections). */
+  transferSquad(s, owner) {
+    const from = this.players[s.owner], to = this.players[owner];
+    const pop = s.def.pop + (s.hero ? s.hero.pop : 0);
+    from.pop -= pop; to.pop += pop;
+    if (s.def.hero) { from.heroAlive = false; to.heroAlive = true; }
+    s.owner = owner; s.targetId = 0; s.order = { type: 'idle', x: s.x, y: s.y }; s.homeX = s.x; s.homeY = s.y;
+    this.emit({ type: 'transfer', x: s.x, y: s.y, owner, kind: 'squad', id: s.id });
+  }
+  transferBuilding(b, owner) {
+    b.owner = owner; b.targetId = 0; b.queue = []; b.queueProgress = 0;
+    if (b.def.hq && !this.players[owner].hqId) this.players[owner].hqId = b.id;
+    for (const pl of this.players) pl.known.delete(b.id);
+    this.emit({ type: 'transfer', x: b.x, y: b.y, owner, kind: 'building', id: b.id });
+  }
   formationRadius(s) { return s.def.size === 1 ? s.def.radius + 2 : 8 + Math.sqrt(s.members.length) * 5; }
   memberMaxHp(s) { return Math.round(s.def.hp * this.players[s.owner].upgrades.hp); }
   memberMaxShield(s) { return Math.round((s.def.shield || 0) * this.players[s.owner].upgrades.shield); }
@@ -148,7 +165,7 @@ export class World {
 
   // ---------- spawning
   spawnSquad(owner, key, x, y, opts = {}) {
-    const fac = this.faction(owner);
+    const fac = opts.faction ? FACTIONS[opts.faction] : this.faction(owner);
     const def = fac.units[key];
     const s = {
       id: this.nextId++, kind: 'squad', owner, faction: fac.key, key, def,
@@ -175,8 +192,8 @@ export class World {
     return { hp, shield: sh, slot, px: s.x + sl[0], py: s.y + sl[1], hero: false };
   }
   footprint(def, cell) { return this.grid.cluster(cell, def.w >= 2 ? 1 : 0); }
-  placeBuilding(owner, key, cell, instant = false) {
-    const fac = this.faction(owner);
+  placeBuilding(owner, key, cell, instant = false, faction = null) {
+    const fac = faction ? FACTIONS[faction] : this.faction(owner);
     const def = fac.buildings[key];
     const cells = this.footprint(def, cell);
     const [x, y] = this.grid.center(cell);
@@ -258,13 +275,13 @@ export class World {
     const p = this.players[b.owner];
     const refund = b.done ? 0.5 : 0.75;
     p.ore += Math.floor(b.def.cost.ore * refund); p.flux += Math.floor(b.def.cost.flux * refund);
-    for (const k of b.queue) { const d = this.faction(b.owner).units[k]; p.ore += d.cost.ore; p.flux += d.cost.flux; if (d.hero) p.heroQueued = false; }
+    for (const k of b.queue) { const d = FACTIONS[b.faction].units[k]; p.ore += d.cost.ore; p.flux += d.cost.flux; if (d.hero) p.heroQueued = false; }
     b.queue = [];
     this.destroyBuilding(b, NONE, true);
   }
   cmdTrain(b, key) {
     if (b.dead || !b.done) return { ok: false, reason: 'Not ready' };
-    const def = this.faction(b.owner).units[key];
+    const def = FACTIONS[b.faction].units[key];
     if (!def || !b.def.trains.includes(key)) return { ok: false, reason: 'Cannot train here' };
     if (!this.allowed(b.owner, 'unit', key)) return { ok: false, reason: 'Not available in this chapter' };
     const p = this.players[b.owner];
@@ -280,7 +297,7 @@ export class World {
   }
   cmdCancelTrain(b, i) {
     const key = b.queue[i]; if (!key) return;
-    const def = this.faction(b.owner).units[key];
+    const def = FACTIONS[b.faction].units[key];
     const p = this.players[b.owner];
     p.ore += def.cost.ore; p.flux += def.cost.flux;
     if (def.hero) p.heroQueued = false;
@@ -290,7 +307,7 @@ export class World {
   cmdRally(b, x, y) { b.rally = { x, y }; }
   queuedPop(owner) {
     let n = 0;
-    for (const b of this.buildings) if (b.owner === owner && !b.dead) for (const k of b.queue) n += this.faction(owner).units[k].pop;
+    for (const b of this.buildings) if (b.owner === owner && !b.dead) for (const k of b.queue) n += FACTIONS[b.faction].units[k].pop;
     return n;
   }
   spreadTargets(squads, x, y) {
@@ -483,20 +500,20 @@ export class World {
     if (b.maxShield && this.time - b.lastHit > 4) b.shield = Math.min(b.maxShield, b.shield + b.maxShield * 0.06 * dt);
     // training
     if (b.queue.length) {
-      const def = this.faction(b.owner).units[b.queue[0]];
+      const def = FACTIONS[b.faction].units[b.queue[0]];
       b.queueProgress += dt / def.buildTime;
       if (b.queueProgress >= 1) {
         b.queue.shift(); b.queueProgress = 0;
         if (def.hero) p.heroQueued = false;
         const sp = this.spawnPointFor(b, def.flying);
-        const s = this.spawnSquad(b.owner, def.key, sp.x, sp.y);
+        const s = this.spawnSquad(b.owner, def.key, sp.x, sp.y, { faction: b.faction });
         s.homeX = sp.x; s.homeY = sp.y;
         if (b.rally) this.cmdMove([s], b.rally.x, b.rally.y, 'amove');
         this.emit({ type: 'spawn', x: sp.x, y: sp.y, owner: b.owner, key: def.key });
       }
     }
-    // turret
-    if (b.def.weapon) {
+    // turret (neutral structures stay quiet)
+    if (b.def.weapon && !p.neutral) {
       b.cooldown -= dt;
       let t = this.byId(b.targetId);
       const range = b.def.weapon.range * TILE;
@@ -756,11 +773,11 @@ export class World {
   inRange(a, b, range) { return this.entityDist(a, b) <= range; }
   acquire(src, radius, isBuilding = false) {
     const owner = src.owner;
+    if (this.players[owner].neutral) return null;
     let best = null, bestScore = Infinity;
     const weapon = src.def.weapon;
-    const canHitAir = true;
     for (const s of this.squads) {
-      if (s.dead || s.owner === owner || !s.members.length) continue;
+      if (s.dead || !this.hostile(owner, s.owner) || !s.members.length) continue;
       if (!this.visible(owner, s.x, s.y)) continue;
       const d = this.entityDist(src, s);
       if (d > radius) continue;
@@ -773,7 +790,7 @@ export class World {
       if (score < bestScore) { bestScore = score; best = s; }
     }
     for (const b of this.buildings) {
-      if (b.dead || b.owner === owner) continue;
+      if (b.dead || !this.hostile(owner, b.owner)) continue;
       if (!this.visible(owner, b.x, b.y) && !this.players[owner].known.has(b.id)) continue;
       const d = this.entityDist(src, b);
       if (d > radius) continue;
@@ -874,7 +891,7 @@ export class World {
       }
     }
     // retaliate: idle squads turn on their attacker
-    if (attacker && !target.targetId && target.order.type === 'idle' && !target.def.weapon?.minRange && this.visible(target.owner, attacker.x, attacker.y)) target.targetId = attacker.id;
+    if (attacker && attacker.owner !== undefined && this.hostile(target.owner, attacker.owner) && !target.targetId && target.order.type === 'idle' && !target.def.weapon?.minRange && this.visible(target.owner, attacker.x, attacker.y)) target.targetId = attacker.id;
   }
   damageBuilding(b, dmg, type, attacker) {
     if (b.dead) return;
@@ -910,7 +927,7 @@ export class World {
     if (b.oreIdx !== NONE) this.ore[b.oreIdx].building = 0;
     if (b.pointIdx !== NONE) this.points[b.pointIdx].outpost = 0;
     const p = this.players[b.owner];
-    for (const k of b.queue) if (this.faction(b.owner).units[k].hero) p.heroQueued = false;
+    for (const k of b.queue) if (FACTIONS[b.faction].units[k].hero) p.heroQueued = false;
     if (byOwner !== NONE && byOwner !== b.owner) this.players[byOwner].stats.destroyed++;
     for (const pl of this.players) pl.known.delete(b.id);
     if (!silent) this.emit({ type: 'buildingDestroyed', x: b.x, y: b.y, r: b.radius, owner: b.owner, faction: b.faction, hq: !!b.def.hq, key: b.key, by: byOwner });
@@ -934,7 +951,7 @@ export class World {
     this.emit({ type: 'sound', name: 'blast', x: pr.tx, y: pr.ty });
     const attacker = this.byId(pr.srcId) || { owner: pr.owner, kind: 'none' };
     for (const s of this.squads) {
-      if (s.dead || s.owner === pr.owner) continue;
+      if (s.dead || !this.hostile(pr.owner, s.owner)) continue;
       if (dist(s.x, s.y, pr.tx, pr.ty) > R + this.formationRadius(s)) continue;
       for (const m of [...s.members]) {
         const d = dist(m.px, m.py, pr.tx, pr.ty);
@@ -944,7 +961,7 @@ export class World {
       }
     }
     for (const b of this.buildings) {
-      if (b.dead || b.owner === pr.owner) continue;
+      if (b.dead || !this.hostile(pr.owner, b.owner)) continue;
       if (this.entityDist({ x: pr.tx, y: pr.ty }, b) <= R) this.damageBuilding(b, pr.dmg, pr.type, attacker);
     }
     if (pr.terrain) this.damageTerrain(pr.tx, pr.ty, R, pr.terrain, pr.owner);
@@ -977,7 +994,7 @@ export class World {
     for (const pt of this.points) {
       const rates = new Map();
       for (const s of this.squads) {
-        if (s.dead || !s.def.canCapture || s.broken || s.order.type === 'retreat') continue;
+        if (s.dead || !s.def.canCapture || s.broken || s.order.type === 'retreat' || this.players[s.owner].neutral) continue;
         if (dist(s.x, s.y, pt.x, pt.y) > 2.3 * TILE) continue;
         rates.set(s.owner, (rates.get(s.owner) || 0) + s.def.capRate * s.members.filter((m) => !m.hero).length + (s.hero ? 1 : 0));
       }
@@ -1011,19 +1028,28 @@ export class World {
       const stamp = (x, y, r) => { for (const i of this.grid.cellsWithin(x, y, r * TILE + this.grid.R * 0.5)) v[i] = 2; };
       for (const s of this.squads) if (s.owner === p.id && !s.dead) stamp(s.x, s.y, s.def.sight + s.buff.sight);
       for (const b of this.buildings) if (b.owner === p.id && !b.dead) stamp(b.x, b.y, b.def.sight);
-      // remember enemy buildings
+    }
+    // allies share sight
+    for (const p of this.players) for (const q of this.players) {
+      if (!this.allied(p.id, q.id)) continue;
+      const a = p.vision, b = q.vision;
+      for (let i = 0; i < a.length; i++) if (b[i] > a[i]) a[i] = b[i];
+    }
+    for (const p of this.players) {
+      // remember hostile buildings
       for (const b of this.buildings) {
-        if (b.owner === p.id || b.dead) continue;
+        if (!this.hostile(p.id, b.owner) || b.dead) continue;
         if (this.visible(p.id, b.x, b.y)) p.known.set(b.id, { id: b.id, key: b.key, faction: b.faction, owner: b.owner, cell: b.cell, cells: b.cells, x: b.x, y: b.y, radius: b.radius, hp: b.hp, maxHp: b.maxHp, hq: !!b.def.hq, name: b.def.name });
       }
     }
   }
 
   checkVictory() {
-    const alive = this.players.filter((p) => p.alive);
-    if (alive.length <= 1 && !this.gameOver) {
+    const alive = this.players.filter((p) => p.alive && !p.neutral);
+    const teams = new Set(alive.map((p) => p.team));
+    if (teams.size <= 1 && !this.gameOver) {
       this.gameOver = true;
-      this.winner = alive.length ? alive[0].id : NONE;
+      this.winner = alive.length ? (alive.find((p) => p.id === 0) ? 0 : alive[0].id) : NONE;
       this.emit({ type: 'gameOver', winner: this.winner });
     }
   }

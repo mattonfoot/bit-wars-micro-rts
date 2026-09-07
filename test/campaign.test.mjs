@@ -12,11 +12,17 @@ for (const camp of Object.values(CAMPAIGNS)) {
   for (const ch of camp.chapters) {
     const c = Campaign.build(ch);
     const w = c.world;
-    const enemies = Campaign.enemies(ch);
-    const ais = enemies.map((E, k) => (E.ai ? new AI(w, k + 1, E.ai === 'passive' ? 'normal' : E.ai, { passive: E.ai === 'passive' }) : null)).filter(Boolean);
+    const enemies = Campaign.enemies(ch), allies = Campaign.allies(ch);
+    const mk = (spec, pid) => (spec.ai ? new AI(w, pid, spec.ai === 'passive' ? 'normal' : spec.ai, { passive: spec.ai === 'passive' }) : null);
+    const ais = [...enemies.map((E, k) => mk(E, 1 + k)), ...allies.map((A, k) => mk(A, 1 + enemies.length + k))].filter(Boolean);
     assert.ok(w.players[0].hqId || ch.player.hq === false, `${ch.key}: player HQ`);
-    assert.equal(w.players.length, enemies.length + 1, `${ch.key}: player count`);
+    const neutralCount = Object.keys(c.neutralIds).length;
+    assert.equal(w.players.length, 1 + enemies.length + allies.length + neutralCount, `${ch.key}: player count`);
     enemies.forEach((E, k) => { if (E.hq !== false) assert.ok(w.buildings.some((b) => b.owner === k + 1 && b.def.hq), `${ch.key}: enemy ${k + 1} HQ`); });
+    allies.forEach((A, k) => { if (A.hq !== false) assert.ok(w.buildings.some((b) => b.owner === 1 + enemies.length + k && b.def.hq), `${ch.key}: ally ${k + 1} HQ`); });
+    for (const p of w.players) if (p.neutral) { for (const s of w.squads) if (s.owner === p.id) assert.ok(s.members.length > 0, `${ch.key}: neutral squad has members`); }
+    assert.ok(Array.isArray(ch.story) && ch.story.length >= 1 && Array.isArray(ch.epilogue) && ch.epilogue.length >= 1 && typeof ch.briefing === 'string' && ch.briefing.length > 20, `${ch.key}: story/briefing/epilogue`);
+    assert.ok(ch.stages.length >= 1 && ch.stages.every((st) => st.objectives.length >= 1), `${ch.key}: stages`);
     for (const st of ch.stages) for (const o of st.objectives) { const p = c.progressOf(o); assert.ok(Array.isArray(p) && p.length >= 2, `${ch.key}/${o.id} progress`); }
     for (let i = 0; i < 60 * 30; i++) {
       w.tick(TICK); for (const ai of ais) ai.update(TICK); c.onEvents(w.events); c.update(TICK); w.events.length = 0; w.dirtyTiles.length = 0;
@@ -28,7 +34,7 @@ for (const camp of Object.values(CAMPAIGNS)) {
     const c2 = Campaign.restore(ch, w2, saved.campaign);
     assert.equal(JSON.stringify(c2.serialize()), JSON.stringify(c.serialize()), `${ch.key} campaign state round-trip`);
     n++;
-    console.log(`${ch.key.padEnd(9)} ${ch.title.padEnd(20)} ok · players ${w.players.length} · squads ${w.squads.length} · buildings ${w.buildings.length} · objectives ${c.list().map((o) => `${o.cur}/${o.target}`).join(' ')}`);
+    console.log(`${ch.key.padEnd(9)} ${(ch.style || 'lesson').padEnd(16)} ${ch.title.padEnd(22)} ok · players ${w.players.length} · squads ${w.squads.length} · buildings ${w.buildings.length} · objectives ${c.list().map((o) => `${o.cur}/${o.target}`).join(' ')}`);
   }
 }
 // Drive blue-1 to completion: train 2 darts, build lode, capture point 0, kill the guard, capture point 2.

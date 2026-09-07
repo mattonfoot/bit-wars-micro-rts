@@ -103,8 +103,9 @@ class Game {
     this.hud.toast(`Chapter ${index + 1}: ${chapter.title}`, 'good', null, 0, 5000);
   }
   makeChapterAI(chapter, world) {
-    const enemies = Campaign.enemies(chapter);
-    return enemies.map((E, k) => { if (!E.ai) return null; const passive = E.ai === 'passive'; return new AI(world, k + 1, passive ? 'normal' : E.ai, { passive }); }).filter(Boolean);
+    const enemies = Campaign.enemies(chapter), allies = Campaign.allies(chapter);
+    const mk = (spec, pid) => { if (!spec.ai) return null; const passive = spec.ai === 'passive'; return new AI(world, pid, passive ? 'normal' : spec.ai, { passive }); };
+    return [...enemies.map((E, k) => mk(E, 1 + k)), ...allies.map((A, k) => mk(A, 1 + enemies.length + k))].filter(Boolean);
   }
   resume(save) {
     let world;
@@ -232,6 +233,7 @@ class Game {
         case 'heroDown': if (e.owner === this.viewer) this.hud.toast('Your hero has fallen. Retrain at HQ.', 'bad'); break;
         case 'upgrade': if (e.owner === this.viewer) this.hud.toast('Upgrade complete: all squads improved', 'good'); break;
         case 'terrainDestroyed': this.minimap.dirty = true; break;
+        case 'transfer': if (e.owner === this.viewer) { this.audio.play('captured'); this.minimap.dirty = true; } break;
         case 'squadDied': if (e.owner === this.viewer) this.hud.toast(`${FACTIONS[this.world.players[e.owner].faction].units[e.key].name} wiped out`, 'bad', () => this.centerOn(e.x, e.y), 1500); break;
         default: break;
       }

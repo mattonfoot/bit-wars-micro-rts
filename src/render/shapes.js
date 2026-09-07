@@ -2,11 +2,15 @@
 import { FACTIONS } from '../game/data.js';
 import { TAU } from '../engine/math.js';
 
-export function factionColors(faction, owner, viewer, viewerFaction) {
+/** rel: 'own' | 'enemy' | 'ally' | 'neutral' */
+export function factionColors(faction, owner, viewer, viewerFaction, rel) {
   const f = FACTIONS[faction];
-  const enemy = owner !== viewer;
-  const fill = enemy && faction === viewerFaction ? f.alt : f.color;
-  return { fill, stroke: enemy ? '#12070a' : '#ffffff', dark: f.dark, light: f.light, enemy };
+  if (!rel) rel = owner === viewer ? 'own' : 'enemy';
+  if (rel === 'neutral') return { fill: '#8a8f98', stroke: '#3a3d44', dark: '#5a5e66', light: '#b5b9c2', enemy: false, rel };
+  const other = rel !== 'own';
+  const fill = other && faction === viewerFaction ? f.alt : f.color;
+  const stroke = rel === 'own' ? '#ffffff' : rel === 'ally' ? '#c9d6e3' : '#12070a';
+  return { fill, stroke, dark: f.dark, light: f.light, enemy: rel === 'enemy', rel };
 }
 
 function poly(ctx, pts) {

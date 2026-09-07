@@ -146,7 +146,7 @@ export class HUD {
     const b = bl[0] || enemy;
     if (b) {
       const f = FACTIONS[b.faction];
-      const q = b.queue.length ? `Training: ${b.queue.map((k) => f.units[k].name).join(', ')}` : '';
+      const q = b.queue.length ? `Training: ${b.queue.map((k) => f.units[k]?.name || k).join(', ')}` : '';
       info.innerHTML = `<div class="icon">${buildingIconSVG(b.faction, b.def, f.color, 36)}</div>
         <div class="body"><div class="name">${b.def.name}${b.owner !== g.viewer ? ' <span class="tag">Enemy</span>' : ''}</div><div class="role">${b.done ? b.def.desc : `Under construction ${(b.progress * 100).toFixed(0)}%`}</div><div class="role">${q}</div></div>
         <div class="bars"><div class="bar"><i style="width:${(b.hp / b.maxHp) * 100}%;background:#5cff7a"></i></div>${b.maxShield ? `<div class="bar"><i style="width:${(b.shield / b.maxShield) * 100}%;background:#a6fff0"></i></div>` : ''}<div class="cw">${Math.ceil(b.hp)}/${b.maxHp}</div></div>`;
@@ -199,14 +199,15 @@ export class HUD {
     }
     if (bl.length === 1) {
       const b = bl[0];
+      const bf = FACTIONS[b.faction];
       if (b.def.trains && b.done) {
         for (const k of b.def.trains) {
           if (!w.allowed(g.viewer, 'unit', k)) continue;
-          const u = f.units[k];
+          const u = bf.units[k];
           const ok = can(u.cost) && (!u.hero || (!p.heroAlive && !p.heroQueued));
           const qn = b.queue.filter((x) => x === k).length;
-          const req = u.requires && !w.buildings.some((x) => x.owner === g.viewer && !x.dead && x.done && x.key === u.requires) ? f.buildings[u.requires].name : null;
-          const el = this.btn(`${unitIconSVG(p.faction, u.shape, f.color, 22)}<span>${u.name}</span>${req ? `<span class="cost no">needs ${req}</span>` : costHtml(u.cost, ok)}${qn ? `<span class="q">${qn}</span>` : ''}<span class="prog" data-k="${k}"></span>`, () => g.doTrain(b, k), ok && !req ? '' : 'dis', `${u.desc} Pop ${u.pop}.`);
+          const req = u.requires && !w.buildings.some((x) => x.owner === g.viewer && !x.dead && x.done && x.key === u.requires) ? bf.buildings[u.requires].name : null;
+          const el = this.btn(`${unitIconSVG(b.faction, u.shape, bf.color, 22)}<span>${u.name}</span>${req ? `<span class="cost no">needs ${req}</span>` : costHtml(u.cost, ok)}${qn ? `<span class="q">${qn}</span>` : ''}<span class="prog" data-k="${k}"></span>`, () => g.doTrain(b, k), ok && !req ? '' : 'dis', `${u.desc} Pop ${u.pop}.`);
           cmd.appendChild(el);
         }
         if (b.queue.length) cmd.appendChild(this.btn('Cancel last', () => g.doCancelTrain(b), 'wide'));

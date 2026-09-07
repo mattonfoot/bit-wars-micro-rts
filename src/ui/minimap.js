@@ -49,20 +49,20 @@ export class Minimap {
     const vf = world.players[this.viewer].faction;
     // known enemy buildings
     for (const k of world.players[this.viewer].known.values()) {
-      const c = factionColors(k.faction, k.owner, this.viewer, vf);
+      const c = factionColors(k.faction, k.owner, this.viewer, vf, this.renderer.rel(k.owner));
       ctx.fillStyle = c.fill; ctx.globalAlpha = 0.6; ctx.beginPath(); ctx.arc(k.x, k.y, k.radius, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
     }
     // buildings
     for (const b of world.buildings) {
       if (b.dead) continue;
       if (b.owner !== this.viewer && !vis(b.x, b.y)) continue;
-      const c = factionColors(b.faction, b.owner, this.viewer, vf);
+      const c = factionColors(b.faction, b.owner, this.viewer, vf, this.renderer.rel(b.owner));
       ctx.fillStyle = c.fill; ctx.beginPath(); ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2); ctx.fill();
       if (b.def.hq) { ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5 / scale; ctx.stroke(); }
     }
     // points
     for (const p of world.points) {
-      ctx.fillStyle = p.owner >= 0 ? factionColors(world.players[p.owner].faction, p.owner, this.viewer, vf).fill : '#cfd3d8';
+      ctx.fillStyle = p.owner >= 0 ? factionColors(world.players[p.owner].faction, p.owner, this.viewer, vf, this.renderer.rel(p.owner)).fill : '#cfd3d8';
       ctx.beginPath(); ctx.arc(p.x, p.y, TILE * 1.1, 0, Math.PI * 2); ctx.fill();
       ctx.strokeStyle = '#000'; ctx.lineWidth = 1 / scale; ctx.stroke();
       if (p.contested) { ctx.strokeStyle = '#fff'; ctx.lineWidth = 2 / scale; ctx.beginPath(); ctx.arc(p.x, p.y, TILE * 1.6, 0, Math.PI * 2); ctx.stroke(); }
@@ -74,7 +74,7 @@ export class Minimap {
       if (s.dead) continue;
       const own = s.owner === this.viewer;
       if (!own && !vis(s.x, s.y)) continue;
-      const c = factionColors(s.faction, s.owner, this.viewer, vf);
+      const c = factionColors(s.faction, s.owner, this.viewer, vf, this.renderer.rel(s.owner));
       ctx.fillStyle = c.fill; ctx.beginPath(); ctx.arc(s.x, s.y, TILE * (own ? 0.75 : 0.85), 0, Math.PI * 2); ctx.fill();
       if (own) { ctx.strokeStyle = '#fff'; ctx.lineWidth = 1 / scale; ctx.stroke(); }
     }

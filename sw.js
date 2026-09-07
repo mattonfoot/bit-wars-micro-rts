@@ -1,12 +1,12 @@
 // Service worker: precache the app shell so the installed app works offline.
-const VERSION = 'bitwars-v6';
+const VERSION = 'bitwars-v7';
 const ASSETS = [
   './', './index.html', './css/style.css', './manifest.webmanifest',
   './src/main.js', './src/engine/rng.js', './src/engine/math.js', './src/engine/camera.js', './src/engine/input.js', './src/engine/audio.js',
   './src/game/data.js', './src/game/world.js', './src/game/combat.js', './src/game/pathfinding.js', './src/game/ai.js', './src/game/campaign.js', './src/game/campaigns.js', './src/game/codex.js', './src/game/chapters/common.js', './src/game/chapters/styles.js', './src/game/chapters/arc.js', './src/game/chapters/crossovers.js', './src/game/chapters/blue-arc.js', './src/game/chapters/red-arc.js', './src/game/chapters/green-arc.js', './src/game/chapters/blue-lessons.js', './src/game/chapters/red-lessons.js', './src/game/chapters/green-lessons.js',
   './src/map/terrain.js', './src/map/themes.js', './src/map/generator.js', './src/map/hexgrid.js',
   './src/render/renderer.js', './src/render/terrain.js', './src/render/fog.js', './src/render/shapes.js',
-  './src/ui/hud.js', './src/ui/minimap.js', './src/ui/menu.js',
+  './src/ui/hud.js', './src/ui/minimap.js', './src/ui/icons.js', './src/ui/menu.js',
   './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png',
 ];
 self.addEventListener('install', (e) => {

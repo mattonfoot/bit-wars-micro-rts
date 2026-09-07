@@ -3,6 +3,7 @@ import { FACTIONS, FACTION_KEYS } from '../game/data.js';
 import { THEMES, THEME_KEYS } from '../map/themes.js';
 import { unitIconSVG, buildingIconSVG } from '../render/shapes.js';
 import { CAMPAIGNS, LORE, actOf } from '../game/campaigns.js';
+import { ico } from './icons.js';
 import { loadProgress } from '../game/campaign.js';
 import { CODEX } from '../game/codex.js';
 import { DMG_LABEL, ARMOR_LABEL } from '../game/data.js';
@@ -45,14 +46,14 @@ export class Menu {
     r.innerHTML = `
       <div class="screen title">
         <div class="titlehead">
-          <h1><span class="b">BIT</span> <span class="r">WARS</span> <span class="g">◉</span></h1>
+          <h1><span class="b">BIT</span> <span class="r">WARS</span> <span class="g">${ico('circle', 30)}</span></h1>
           <div class="sub">Micro RTS · squads, cover, morale and frontline economics</div>
         </div>
         <div class="setting">${LORE.world}</div>
         <div class="fpicks">${FACTION_KEYS.map((k) => { const f = FACTIONS[k]; return `<button class="fpick" data-f="${k}" style="--fc:${f.color}">${unitIconSVG(k, Object.values(f.units)[0].shape, f.color, 40)}<span class="fname">${f.name}</span><span class="ftag">${f.tagline}</span></button>`; }).join('')}</div>
         <div class="titlefoot">
           ${save ? `<button class="big slim" id="btnResume">RESUME BATTLE <span class="dim">· ${save.settings.mode === 'campaign' ? 'Campaign' : save.world.map.name} · ${Math.floor(save.world.time / 60)}:${String(Math.floor(save.world.time % 60)).padStart(2, '0')}</span></button>` : ''}
-          <div class="links"><button class="link" id="btnHelp">How to play</button><span class="dim" id="installHint">On iPhone: Share → Add to Home Screen</span></div>
+          <div class="links"><button class="link" id="btnHelp">How to play</button><span class="dim" id="installHint">On iPhone: Share, then Add to Home Screen</span></div>
         </div>
       </div>`;
     for (const b of r.querySelectorAll('.fpick')) b.onclick = () => { this.settings.faction = b.dataset.f; this.save(); this.go('faction'); };
@@ -70,9 +71,9 @@ export class Menu {
     r.innerHTML = `
       <div class="screen faction" style="--fc:${f.color}">
         <div class="bar">
-          <button class="nav" id="btnHome">‹ Home</button>
+          <button class="nav" id="btnHome">${ico('left', 14)} Home</button>
           <div class="dots">${FACTION_KEYS.map((x) => `<i class="${x === k ? 'on' : ''}" data-f="${x}" style="--fc:${FACTIONS[x].color}"></i>`).join('')}</div>
-          <div class="arrows"><button class="nav" id="btnPrev">‹</button><button class="nav" id="btnNext">›</button></div>
+          <div class="arrows"><button class="nav" id="btnPrev">${ico('left', 16)}</button><button class="nav" id="btnNext">${ico('right', 16)}</button></div>
         </div>
         <div class="fbody" id="fbody">
           <div class="fdetails">
@@ -118,7 +119,7 @@ export class Menu {
     const r = this.root, k = this.settings.faction, f = FACTIONS[k], camp = CAMPAIGNS[k], doneN = loadProgress()[k] || 0;
     r.innerHTML = `
       <div class="screen" style="--fc:${f.color}">
-        <div class="bar"><button class="nav" id="btnBack">‹ ${f.name}</button><div class="bartitle">${camp.title} <span class="dim">· ${doneN}/${camp.chapters.length} complete</span></div><span></span></div>
+        <div class="bar"><button class="nav" id="btnBack">${ico('left', 14)} ${f.name}</button><div class="bartitle">${camp.title} <span class="dim">· ${doneN}/${camp.chapters.length} complete</span></div><span></span></div>
         <div class="chapters" id="chapters"></div>
       </div>`;
     r.querySelector('#btnBack').onclick = () => this.go('faction');
@@ -130,7 +131,7 @@ export class Menu {
       const state = i < doneN ? 'done' : i === doneN ? 'next' : 'locked';
       const row = document.createElement('button');
       row.className = 'chapter ' + state;
-      row.innerHTML = `<span class="num">${i + 1}</span><span class="body"><b>${ch.title}${ch.crossover ? ' <span class="xo">crossover</span>' : ''}</b><span class="brief">${ch.briefing}</span></span><span class="state">${state === 'done' ? '✓' : state === 'next' ? '▶' : '🔒'}</span>`;
+      row.innerHTML = `<span class="num">${i + 1}</span><span class="body"><b>${ch.title}${ch.crossover ? ' <span class="xo">crossover</span>' : ''}</b><span class="brief">${ch.briefing}</span></span><span class="state">${ico(state === 'done' ? 'check' : state === 'next' ? 'play' : 'lock', 16)}</span>`;
       row.onclick = () => { if (state !== 'locked') this.showBriefing(camp, ch, i); };
       list.appendChild(row);
     });
@@ -162,7 +163,7 @@ export class Menu {
     const list = (title, items, cls) => items.length ? `<div class="cx-sec ${cls}"><div class="cx-h">${title}</div><ul>${items.map((x) => `<li>${x}</li>`).join('')}</ul></div>` : '';
     this.root.innerHTML = `
       <div class="screen" style="--fc:${f.color}">
-        <div class="bar"><button class="nav" id="cxBack">‹ ${f.name}</button><div class="bartitle">Codex <span class="dim">· ${f.name}</span></div><span></span></div>
+        <div class="bar"><button class="nav" id="cxBack">${ico('left', 14)} ${f.name}</button><div class="bartitle">Codex <span class="dim">· ${f.name}</span></div><span></span></div>
         <div class="codex">
           <div class="cx-list">
             <div class="cx-lh">Units</div>
@@ -188,12 +189,12 @@ export class Menu {
     const r = this.root, s = this.settings, f = FACTIONS[s.faction];
     r.innerHTML = `
       <div class="screen" style="--fc:${f.color}">
-        <div class="bar"><button class="nav" id="btnBack">‹ ${f.name}</button><div class="bartitle">Skirmish</div><span></span></div>
+        <div class="bar"><button class="nav" id="btnBack">${ico('left', 14)} ${f.name}</button><div class="bartitle">Skirmish</div><span></span></div>
         <div class="setup">
           <div class="row"><span class="lbl">Map</span><span class="chips" id="themeChips"></span></div>
           <div class="blurb dim" id="themeBlurb"></div>
           <div class="row"><span class="lbl">Size</span><span class="chips" id="sizeChips"></span><span class="lbl">Enemy</span><span class="chips" id="diffChips"></span></div>
-          <div class="row"><span class="lbl">Seed</span><input id="seedInput" placeholder="random" value="${s.seed || ''}" autocomplete="off" /><button class="chip" id="seedRnd">🎲</button></div>
+          <div class="row"><span class="lbl">Seed</span><input id="seedInput" placeholder="random" value="${s.seed || ''}" autocomplete="off" /><button class="chip" id="seedRnd">${ico('dice', 14)}</button></div>
           <button class="big" id="btnStart">BATTLE</button>
         </div>
       </div>`;
@@ -208,7 +209,7 @@ export class Menu {
       }
     };
     const blurb = () => { r.querySelector('#themeBlurb').textContent = s.theme === 'random' ? 'A random theme every battle.' : THEMES[s.theme].blurb; };
-    chips('#themeChips', [...THEME_KEYS, 'random'], 'theme', (k) => (k === 'random' ? '🎲 Random' : THEMES[k].name), blurb);
+    chips('#themeChips', [...THEME_KEYS, 'random'], 'theme', (k) => (k === 'random' ? ico('dice', 12) + ' Random' : THEMES[k].name), blurb);
     chips('#sizeChips', [48, 64, 80], 'size', (v) => (v === 48 ? 'Small' : v === 64 ? 'Medium' : 'Large'));
     chips('#diffChips', ['easy', 'normal', 'hard'], 'difficulty', (v) => v[0].toUpperCase() + v.slice(1));
     blurb();
@@ -225,11 +226,11 @@ export class Menu {
     const r = this.root;
     r.innerHTML = `
       <div class="screen">
-        <div class="bar"><button class="nav" id="btnBack">‹ Home</button><div class="bartitle">How to play</div><span></span></div>
+        <div class="bar"><button class="nav" id="btnBack">${ico('left', 14)} Home</button><div class="bartitle">How to play</div><span></span></div>
         <div class="hscroll help pad">
           <table>
             <tr><td>Tap unit</td><td>Select squad. Tap a squad icon in the top bar to select it; tap again to jump the camera there. Double-tap a unit to select all of that type on screen.</td></tr>
-            <tr><td>Tap ground</td><td>Move selected squads. Tap an enemy to attack it. ✕ deselects.</td></tr>
+            <tr><td>Tap ground</td><td>Move selected squads. Tap an enemy to attack it. The cross button deselects.</td></tr>
             <tr><td>Long-press</td><td>Attack-move: advance and engage everything on the way.</td></tr>
             <tr><td>Flank</td><td>Tap Flank, then an enemy: the squad swings wide around the enemy's facing and attacks from behind. Set-up guns traverse slowly and cannot answer until they have turned.</td></tr>
             <tr><td>Drag / pinch</td><td>Pan and zoom. Tap the minimap to jump. Use <b>Box</b> to drag-select.</td></tr>
@@ -264,7 +265,7 @@ export class Menu {
     const stages = ch.stages.map((st, k) => `<div class="stagebox"><div class="stagehead">${k === 0 ? 'Objectives' : 'Then'}</div>${st.intro ? `<div class="help" style="margin-bottom:4px">${st.intro}</div>` : ''}<ul>${st.objectives.map((o) => `<li class="${o.optional ? 'opt' : ''}">${o.text}${o.optional ? ' <em>(optional)</em>' : ''}</li>`).join('')}</ul></div>`).join('');
     r.className = 'overlay page';
     r.innerHTML = `<div class="screen" style="--fc:${f.color}">
-      <div class="bar"><button class="nav" id="chBack">‹ Chapters</button><div class="bartitle">${camp.title} · Chapter ${i + 1}</div><span></span></div>
+      <div class="bar"><button class="nav" id="chBack">${ico('left', 14)} Chapters</button><div class="bartitle">${camp.title} · Chapter ${i + 1}</div><span></span></div>
       <div class="brief2">
         <div class="hscroll pad">
           <h1 style="font-size:24px;margin:0">${ch.title}</h1>
@@ -290,7 +291,7 @@ export class Menu {
       <div class="bar"><span class="dim">${campaign.title} · Chapter ${index + 1}: ${chapter.title}</span><div class="bartitle" style="color:${won ? '#7CFC9A' : '#ff5f5f'}">${won ? (last ? 'CAMPAIGN COMPLETE' : 'CHAPTER COMPLETE') : 'CHAPTER FAILED'}</div><span class="dim">${fmt(time)}</span></div>
       <div class="brief2">
         <div class="hscroll pad">
-          ${won ? `<div class="story">${chapter.epilogue.map((p) => `<p>${p}</p>`).join('')}</div>` : `<div class="sub">${reason}</div><ul class="objlist">${objectives.map((o) => `<li class="${o.done ? 'done' : ''}">${o.done ? '✓' : '○'} ${o.text}${o.target > 1 ? ` (${o.cur}/${o.target})` : ''}</li>`).join('')}</ul>`}
+          ${won ? `<div class="story">${chapter.epilogue.map((p) => `<p>${p}</p>`).join('')}</div>` : `<div class="sub">${reason}</div><ul class="objlist">${objectives.map((o) => `<li class="${o.done ? 'done' : ''}">${ico(o.done ? 'check' : 'circle', 12)} ${o.text}${o.target > 1 ? ` (${o.cur}/${o.target})` : ''}</li>`).join('')}</ul>`}
           <div class="stats"><span>Squads killed</span><span>${me.kills} vs ${enemy.kills}</span><span>Squads lost</span><span>${me.losses}</span><span>Structures destroyed</span><span>${me.destroyed}</span></div>
         </div>
         <div class="briefside">
@@ -311,13 +312,13 @@ export class Menu {
     r.innerHTML = `<div class="panel" style="max-width:360px;text-align:center">
       <h1 style="font-size:24px">PAUSED</h1>
       <button class="big" id="pResume">RESUME</button>
-      <button class="big secondary" id="pSound">${handlers.muted ? '🔇 Sound off' : '🔊 Sound on'}</button>
+      <button class="big secondary" id="pSound">${ico(handlers.muted ? 'mute' : 'sound', 14)} ${handlers.muted ? 'Sound off' : 'Sound on'}</button>
       <button class="big secondary" id="pRestart">Restart battle</button>
       <button class="big secondary" id="pQuit">Quit to menu</button>
-      <div class="help" style="margin-top:14px;text-align:left">Tap = select / move · Tap enemy = attack · Long-press = attack-move · Pinch = zoom · ✕ deselects · <b>Retreat</b> sprints a squad home · <b>Reinforce</b> refills a squad.</div></div>`;
+      <div class="help" style="margin-top:14px;text-align:left">Tap = select / move · Tap enemy = attack · Long-press = attack-move · Pinch = zoom · Cross = deselect · <b>Retreat</b> sprints a squad home · <b>Reinforce</b> refills a squad.</div></div>`;
     r.classList.remove('hidden');
     r.querySelector('#pResume').onclick = () => { r.classList.add('hidden'); handlers.resume(); };
-    r.querySelector('#pSound').onclick = (e) => { const m = handlers.toggleSound(); e.target.textContent = m ? '🔇 Sound off' : '🔊 Sound on'; };
+    r.querySelector('#pSound').onclick = (e) => { const m = handlers.toggleSound(); e.currentTarget.innerHTML = `${ico(m ? 'mute' : 'sound', 14)} ${m ? 'Sound off' : 'Sound on'}`; };
     r.querySelector('#pRestart').onclick = () => { r.classList.add('hidden'); handlers.restart(); };
     r.querySelector('#pQuit').onclick = () => { r.classList.add('hidden'); handlers.quit(); };
   }

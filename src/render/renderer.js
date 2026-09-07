@@ -2,6 +2,7 @@
 import { T, TILE } from '../map/terrain.js';
 import { FACTIONS, reinforceCost } from '../game/data.js';
 import { TerrainLayer } from './terrain.js';
+import { drawMark } from '../ui/icons.js';
 import { FogLayer } from './fog.js';
 import { drawUnit, drawBuilding, factionColors } from './shapes.js';
 import { THEMES } from '../map/themes.js';
@@ -203,9 +204,9 @@ export class Renderer {
         if (s.cover && !s.def.noCover && this.time - s.lastHit < 4 && s.lastHit > 0) { ctx.fillStyle = s.cover === 2 ? '#8ecbff' : '#c5e3ff'; ctx.beginPath(); ctx.moveTo(ix, -2); ctx.lineTo(ix + 7, 0); ctx.lineTo(ix + 3.5, 8); ctx.lineTo(ix, 0); ctx.closePath(); ctx.fill(); ix += 10; }
         if (s.broken) { ctx.fillStyle = '#ff3b3b'; ctx.fillText('!', ix, 3); ix += 8; }
         if (s.reinforce > 0) { ctx.fillStyle = '#fff'; ctx.fillText('+' + s.reinforce, ix, 3); ix += 12; }
-        if (s.hero) { ctx.fillStyle = '#ffe680'; ctx.fillText('★', ix, 3); ix += 10; }
-        if (s.order.type === 'retreat') { ctx.fillStyle = '#ffd166'; ctx.fillText('«', ix, 3); ix += 8; }
-        if (s.setup > 0 && s.def.weapon.setup) { ctx.fillStyle = '#fff'; ctx.fillText(s.setup >= s.def.weapon.setup ? '▣' : '…', ix, 3); }
+        if (s.hero) { drawMark(ctx, 'hero', ix + 4, 3, '#ffe680', 4.5); ix += 11; }
+        if (s.order.type === 'retreat') { drawMark(ctx, 'retreat', ix + 4, 3, '#ffd166', 3.5); ix += 10; }
+        if (s.setup > 0 && s.def.weapon.setup) drawMark(ctx, s.setup >= s.def.weapon.setup ? 'setup' : 'pending', ix + 4, 3, '#fff', 3.5);
         ctx.restore();
       }
     }

@@ -2,6 +2,7 @@
 import { FACTIONS, POP_CAP, reinforceCost, ARMOR_LABEL, DMG_LABEL } from '../game/data.js';
 import { unitIconSVG, buildingIconSVG } from '../render/shapes.js';
 import { COVER_NAME } from '../game/combat.js';
+import { ico } from './icons.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -16,8 +17,10 @@ export class HUD {
     this.minimapCanvas = $('minimap');
     this.acc = 0; this.squadKey = ''; this.cmdKey = '';
     $('btnMenu').onclick = () => game.openPause();
-    $('btnSound').onclick = (e) => { const m = game.toggleSound(); e.target.textContent = m ? '🔇' : '🔊'; };
-    $('btnSound').textContent = game.audio.muted ? '🔇' : '🔊';
+    $('btnSound').onclick = () => game.toggleSound();
+    $('btnSound').innerHTML = ico(game.audio.muted ? 'mute' : 'sound', 16);
+    $('btnMenu').innerHTML = ico('menu', 16);
+    $('mmToggle').innerHTML = ico('expand', 12);
     this.lastToast = new Map();
   }
   show() { this.root.classList.remove('hidden'); }
@@ -43,10 +46,10 @@ export class HUD {
     if (key === this.objKey) return;
     this.objKey = key;
     const firstOpen = list.find((o) => !o.done && !o.constraint && !o.optional) || list.find((o) => !o.done) || list[0];
-    el.innerHTML = `<div class="objhead">${title} · ${stage + 1}/${stages}<span class="objtoggle">▾</span></div>` + list.map((o) => {
+    el.innerHTML = `<div class="objhead">${title} · ${stage + 1}/${stages}<span class="objtoggle">${ico('down', 10)}</span></div>` + list.map((o) => {
       const prog = o.target > 1 ? ` <span class="prog">${o.cur}/${o.target}</span>` : '';
       const cls = (o.done ? 'done' : '') + (o.optional ? ' opt' : '') + (o.constraint && !o.done ? ' fail' : '') + (o.holding === false && o.target > 1 && !o.done ? ' warn' : '') + (o === firstOpen ? ' first' : '');
-      return `<div class="obj ${cls}" title="${o.hint || ''}">${o.done ? '✓' : o.constraint ? '⚑' : '○'} ${o.text}${prog}</div>`;
+      return `<div class="obj ${cls}" title="${o.hint || ''}">${ico(o.done ? 'check' : o.constraint ? 'flag' : 'circle', 11)} ${o.text}${prog}</div>`;
     }).join('');
   }
   update(dt) {
@@ -85,7 +88,7 @@ export class HUD {
       for (const s of squads) {
         const d = document.createElement('div'); d.className = 'sq'; d.dataset.id = s.id;
         const f = FACTIONS[s.faction];
-        d.innerHTML = `${unitIconSVG(s.faction, s.def.shape, f.color, 22)}<div class="n"></div><div class="hp"><i></i></div>${s.def.hero ? '<span class="hero">★</span>' : ''}`;
+        d.innerHTML = `${unitIconSVG(s.faction, s.def.shape, f.color, 22)}<div class="n"></div><div class="hp"><i></i></div>${s.def.hero ? `<span class="hero">${ico('hero', 9)}</span>` : ''}`;
         d.onclick = () => {
           if (g.selection.size === 1 && g.selection.has(s.id)) g.centerOn(s.x, s.y);
           else g.select([s.id]);
@@ -99,11 +102,11 @@ export class HUD {
       d.classList.toggle('sel', g.selection.has(s.id));
       d.classList.toggle('broken', s.broken);
       const alive = s.members.filter((m) => !m.hero).length;
-      d.querySelector('.n').textContent = s.def.size > 1 ? `${alive}/${s.def.size}` : s.hero ? '★' : '';
+      d.querySelector('.n').innerHTML = s.def.size > 1 ? `${alive}/${s.def.size}` : s.hero ? ico('hero', 9) : '';
       const frac = w.squadHp(s) / Math.max(1, w.squadMaxHp(s));
       const bar = d.querySelector('.hp i'); bar.style.width = (frac * 100).toFixed(0) + '%'; bar.classList.toggle('low', frac < 0.4);
       let heroStar = d.querySelector('.hero');
-      if (s.hero && !heroStar) { heroStar = document.createElement('span'); heroStar.className = 'hero'; heroStar.textContent = '★'; d.appendChild(heroStar); }
+      if (s.hero && !heroStar) { heroStar = document.createElement('span'); heroStar.className = 'hero'; heroStar.innerHTML = ico('hero', 9); d.appendChild(heroStar); }
       if (!s.hero && !s.def.hero && heroStar) heroStar.remove();
     }
   }
@@ -129,7 +132,7 @@ export class HUD {
       if (s.order.type === 'retreat') tags.push('<span class="tag">Retreating</span>');
       if (s.order.type === 'flank') tags.push('<span class="tag">Flanking</span>');
       if (s.reinforce) tags.push(`<span class="tag">Reinforcing +${s.reinforce}</span>`);
-      if (s.hero) tags.push(`<span class="tag">★ ${s.hero.name} attached</span>`);
+      if (s.hero) tags.push(`<span class="tag">${ico('hero', 10)} ${s.hero.name} attached</span>`);
       if (d.weapon.setup) tags.push(`<span class="tag">${s.setup >= d.weapon.setup ? 'Set up' : 'Setting up…'}</span>`);
       if (s.owner !== g.viewer) tags.push('<span class="tag">Enemy</span>');
       const wpn = `${DMG_LABEL[d.weapon.type]} · rng ${d.weapon.range}`;
@@ -180,26 +183,26 @@ export class HUD {
         const el = this.btn(`${buildingIconSVG(p.faction, b, f.color, 22)}<span>${b.name}</span>${costHtml(b.cost, ok)}`, () => g.startBuild(b.key), (gh?.key === b.key ? 'on ' : '') + (ok ? '' : 'dis'), b.desc);
         cmd.appendChild(el);
       }
-      if (gh?.key && gh.cell !== undefined) cmd.appendChild(this.btn(gh.ok ? '✔ Confirm placement' : '✖ ' + (gh.reason || 'Invalid'), () => g.confirmBuild(), 'wide ' + (gh.ok ? 'on' : 'dis')));
+      if (gh?.key && gh.cell !== undefined) cmd.appendChild(this.btn(gh.ok ? ico('check', 14) + ' Confirm placement' : ico('close', 14) + ' ' + (gh.reason || 'Invalid'), () => g.confirmBuild(), 'wide ' + (gh.ok ? 'on' : 'dis')));
       else if (gh?.key) { const h = document.createElement('div'); h.className = 'hint'; h.textContent = f.buildings[gh.key].onOre ? 'Tap an ore vein' : f.buildings[gh.key].onPoint ? 'Tap a captured strategic point' : 'Tap where to build (near your structures)'; cmd.appendChild(h); }
       cmd.appendChild(this.btn('Cancel', () => g.setMode('normal'), 'wide'));
       return;
     }
     if (sq.length) {
-      cmd.appendChild(this.btn(`<span class="k">✕</span>${window.innerHeight < 500 ? 'Clear' : 'Deselect'}`, () => g.select([]), '', 'Clear the selection'));
-      cmd.appendChild(this.btn('<span class="k">➜</span>Move', () => g.setMode(mode === 'move' ? 'normal' : 'move'), mode === 'move' ? 'on' : '', 'Next tap: move'));
-      cmd.appendChild(this.btn('<span class="k">⚔</span>Attack', () => g.setMode(mode === 'amove' ? 'normal' : 'amove'), mode === 'amove' ? 'on' : '', 'Next tap: attack-move (or long-press the map)'));
-      cmd.appendChild(this.btn('<span class="k">↺</span>Flank', () => g.setMode(mode === 'flank' ? 'normal' : 'flank'), mode === 'flank' ? 'on' : '', 'Next tap on an enemy: circle behind it and attack from the rear'));
-      cmd.appendChild(this.btn('<span class="k">✋</span>Hold', () => g.doHold(), '', 'Hold position'));
-      cmd.appendChild(this.btn('<span class="k">«</span>Retreat', () => g.doRetreat(), 'danger', 'Sprint home; recovers morale'));
-      cmd.appendChild(this.btn('<span class="k">■</span>Stop', () => g.doStop()));
+      cmd.appendChild(this.btn(`<span class="k">${ico('close')}</span>${window.innerHeight < 500 ? 'Clear' : 'Deselect'}`, () => g.select([]), '', 'Clear the selection'));
+      cmd.appendChild(this.btn(`<span class="k">${ico('move')}</span>Move`, () => g.setMode(mode === 'move' ? 'normal' : 'move'), mode === 'move' ? 'on' : '', 'Next tap: move'));
+      cmd.appendChild(this.btn(`<span class="k">${ico('attack')}</span>Attack`, () => g.setMode(mode === 'amove' ? 'normal' : 'amove'), mode === 'amove' ? 'on' : '', 'Next tap: attack-move (or long-press the map)'));
+      cmd.appendChild(this.btn(`<span class="k">${ico('flank')}</span>Flank`, () => g.setMode(mode === 'flank' ? 'normal' : 'flank'), mode === 'flank' ? 'on' : '', 'Next tap on an enemy: circle behind it and attack from the rear'));
+      cmd.appendChild(this.btn(`<span class="k">${ico('hold')}</span>Hold`, () => g.doHold(), '', 'Hold position'));
+      cmd.appendChild(this.btn(`<span class="k">${ico('retreat')}</span>Retreat`, () => g.doRetreat(), 'danger', 'Sprint home; recovers morale'));
+      cmd.appendChild(this.btn(`<span class="k">${ico('stop')}</span>Stop`, () => g.doStop()));
       const reinf = sq.filter((s) => s.def.size > 1 && s.members.filter((m) => !m.hero).length + s.reinforce < s.def.size);
       if (reinf.length) { const c = reinforceCost(reinf[0].def); cmd.appendChild(this.btn(`<span class="k">+1</span>${window.innerHeight < 500 ? 'Refill' : 'Reinforce'}${costHtml(c, can(c))}`, () => g.doReinforce(), can(c) ? '' : 'dis', 'Add a member to the squad (slower away from base)')); }
       const hero = sq.length === 1 && sq[0].def.hero ? sq[0] : null;
-      if (hero) cmd.appendChild(this.btn('<span class="k">★</span>Attach', () => g.setMode(mode === 'attach' ? 'normal' : 'attach'), mode === 'attach' ? 'on' : '', 'Next tap on a squad: attach hero'));
+      if (hero) cmd.appendChild(this.btn(`<span class="k">${ico('hero')}</span>Attach`, () => g.setMode(mode === 'attach' ? 'normal' : 'attach'), mode === 'attach' ? 'on' : '', 'Next tap on a squad: attach hero'));
       const withHero = sq.find((s) => s.hero);
-      if (withHero) cmd.appendChild(this.btn('<span class="k">★</span>Detach', () => g.doDetach(), '', 'Detach the hero'));
-      cmd.appendChild(this.btn('<span class="k">⬚</span>Box', () => g.setMode(mode === 'box' ? 'normal' : 'box'), mode === 'box' ? 'on' : '', 'Drag to box-select'));
+      if (withHero) cmd.appendChild(this.btn(`<span class="k">${ico('detach')}</span>Detach`, () => g.doDetach(), '', 'Detach the hero'));
+      cmd.appendChild(this.btn(`<span class="k">${ico('box')}</span>Box`, () => g.setMode(mode === 'box' ? 'normal' : 'box'), mode === 'box' ? 'on' : '', 'Drag to box-select'));
       return;
     }
     if (bl.length === 1) {
@@ -216,17 +219,17 @@ export class HUD {
           cmd.appendChild(el);
         }
         if (b.queue.length) cmd.appendChild(this.btn('Cancel last', () => g.doCancelTrain(b), 'wide'));
-        cmd.appendChild(this.btn('<span class="k">⚑</span>Rally', () => g.setMode(mode === 'rally' ? 'normal' : 'rally'), mode === 'rally' ? 'on' : '', 'Next tap: set rally point'));
+        cmd.appendChild(this.btn(`<span class="k">${ico('rally')}</span>Rally`, () => g.setMode(mode === 'rally' ? 'normal' : 'rally'), mode === 'rally' ? 'on' : '', 'Next tap: set rally point'));
       }
       cmd.appendChild(this.btn(b.done ? (window.innerHeight < 500 ? 'Raze' : 'Demolish') : 'Cancel build', () => g.doCancelBuilding(b), 'danger'));
-      cmd.appendChild(this.btn(`<span class="k">✕</span>${window.innerHeight < 500 ? 'Clear' : 'Deselect'}`, () => g.select([]), '', 'Clear the selection'));
+      cmd.appendChild(this.btn(`<span class="k">${ico('close')}</span>${window.innerHeight < 500 ? 'Clear' : 'Deselect'}`, () => g.select([]), '', 'Clear the selection'));
       return;
     }
-    if (bl.length > 1) { cmd.appendChild(this.btn('Select one structure to manage it', () => {}, 'wide dis')); cmd.appendChild(this.btn('<span class="k">✕</span>Deselect', () => g.select([]), 'wide')); return; }
-    if (g.selectedEnemy()) { cmd.appendChild(this.btn('<span class="k">✕</span>Deselect', () => g.select([]), 'wide')); return; }
-    cmd.appendChild(this.btn('<span class="k">🏗</span>Build', () => g.setMode('build'), ''));
-    cmd.appendChild(this.btn('<span class="k">⬚</span>Box', () => g.setMode(mode === 'box' ? 'normal' : 'box'), mode === 'box' ? 'on' : '', 'Drag to box-select'));
-    cmd.appendChild(this.btn('<span class="k">⚑</span>Army', () => g.selectAllArmy(), '', 'Select every squad'));
+    if (bl.length > 1) { cmd.appendChild(this.btn('Select one structure to manage it', () => {}, 'wide dis')); cmd.appendChild(this.btn(`<span class="k">${ico('close')}</span>Deselect`, () => g.select([]), 'wide')); return; }
+    if (g.selectedEnemy()) { cmd.appendChild(this.btn(`<span class="k">${ico('close')}</span>Deselect`, () => g.select([]), 'wide')); return; }
+    cmd.appendChild(this.btn(`<span class="k">${ico('build')}</span>Build`, () => g.setMode('build'), ''));
+    cmd.appendChild(this.btn(`<span class="k">${ico('box')}</span>Box`, () => g.setMode(mode === 'box' ? 'normal' : 'box'), mode === 'box' ? 'on' : '', 'Drag to box-select'));
+    cmd.appendChild(this.btn(`<span class="k">${ico('flag')}</span>Army`, () => g.selectAllArmy(), '', 'Select every squad'));
     const h = document.createElement('div'); h.className = 'hint'; h.textContent = 'Hold points for Flux. Extractors on ore veins for Ore.'; cmd.appendChild(h);
   }
   updateCmdProgress(bl) {

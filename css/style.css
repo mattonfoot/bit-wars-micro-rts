@@ -37,7 +37,14 @@ button { font: inherit; color: inherit; }
 .sq .hp { position: absolute; left: 4px; right: 4px; bottom: 3px; height: 3px; background: rgba(0,0,0,0.6); }
 .sq .hp i { display: block; height: 100%; background: var(--ok); }
 .sq .hp i.low { background: var(--bad); }
-.sq .hero { position: absolute; top: 1px; right: 3px; font-size: 9px; color: var(--accent); }
+.sq .hero { position: absolute; top: 2px; right: 3px; color: var(--accent); line-height: 0; }
+.ic { display: inline-block; vertical-align: -0.18em; flex: 0 0 auto; }
+#topbar button { display: inline-flex; align-items: center; justify-content: center; line-height: 0; }
+#mmToggle { display: inline-flex; align-items: center; justify-content: center; }
+.nav { display: inline-flex; align-items: center; gap: 4px; }
+#objectives .obj .ic { vertical-align: -0.1em; margin-right: 1px; }
+#objectives .objtoggle { line-height: 0; }
+.chapter .state .ic { display: block; }
 .sq.all { width: 40px; font-size: 11px; font-weight: 700; }
 
 #minimapWrap { position: absolute; left: calc(var(--sal) + 6px); bottom: calc(var(--sab) + 6px); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #000; box-shadow: 0 4px 16px rgba(0,0,0,0.5); }
@@ -67,7 +74,8 @@ button { font: inherit; color: inherit; }
 #cmd button.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; color: var(--accent); }
 #cmd button.dis { opacity: 0.4; }
 #cmd button.danger { border-color: rgba(255,95,95,0.5); }
-#cmd button .k { font-size: 16px; line-height: 1; }
+#cmd button .k { line-height: 0; }
+#cmd button .k .ic { width: 18px; height: 18px; }
 #cmd button svg { width: 22px; height: 22px; }
 #cmd button .cost { font-size: 9px; color: var(--muted); font-weight: 500; }
 #cmd button .cost.no { color: var(--bad); }
@@ -293,10 +301,11 @@ html.native, html.native body { -webkit-touch-callout: none; overscroll-behavior
   #info .icon, #info .icon svg { width: 26px; height: 26px; }
   #info .name { font-size: 12px; }
   #info .bars { width: 70px; }
-  #info .role { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #info .body { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #info .role { display: inline; }
   #cmd { right: calc(var(--sar) + 4px); bottom: calc(var(--sab) + 4px); width: 180px; grid-template-columns: repeat(4, 1fr); gap: 4px; }
   #cmd button { height: 44px; border-radius: 7px; font-size: 9px; line-height: 1.05; letter-spacing: -0.2px; gap: 1px; padding: 1px 2px; }
-  #cmd button .k { font-size: 13px; }
+  #cmd button .k .ic { width: 15px; height: 15px; }
   #cmd button svg { width: 15px; height: 15px; }
   #cmd button .cost { font-size: 8.5px; }
   #cmd button.wide { grid-column: span 4; height: 30px; }

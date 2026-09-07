@@ -9,6 +9,7 @@ import { Input } from './engine/input.js';
 import { Audio } from './engine/audio.js';
 import { Renderer } from './render/renderer.js';
 import { Minimap } from './ui/minimap.js';
+import { ico } from './ui/icons.js';
 import { HUD } from './ui/hud.js';
 import { Menu } from './ui/menu.js';
 import { Campaign, markComplete } from './game/campaign.js';
@@ -155,7 +156,7 @@ class Game {
       quit: () => { this.paused = false; this.quit(); },
     });
   }
-  toggleSound() { this.audio.setMuted(!this.audio.muted); document.getElementById('btnSound').textContent = this.audio.muted ? '🔇' : '🔊'; return this.audio.muted; }
+  toggleSound() { this.audio.setMuted(!this.audio.muted); document.getElementById('btnSound').innerHTML = ico(this.audio.muted ? 'mute' : 'sound', 16); return this.audio.muted; }
 
   // ---------- loop
   frame(t) {

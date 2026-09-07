@@ -4,6 +4,7 @@
   --sat: env(safe-area-inset-top, 0px); --sab: env(safe-area-inset-bottom, 0px); --sal: env(safe-area-inset-left, 0px); --sar: env(safe-area-inset-right, 0px);
 }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif; -webkit-user-select: none; user-select: none; overscroll-behavior: none; }
 body { position: fixed; inset: 0; width: 100%; height: 100%; }
 #game { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
@@ -243,16 +244,16 @@ html.native, html.native body { -webkit-touch-callout: none; overscroll-behavior
 .cx-top svg { width: 48px; height: 48px; flex: 0 0 auto; }
 .cx-name { font-size: 20px; font-weight: 800; line-height: 1.1; }
 .cx-role { color: var(--muted); font-size: 13px; }
-.cx-desc { margin: 6px 0 8px; color: #d6dbe2; }
+.cx-desc { margin: 6px 0 8px; color: #d6dbe2; font-size: 13px; line-height: 1.45; }
 .cx-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 3px 10px; margin-bottom: 8px; }
 .cx-stats .st { display: flex; justify-content: space-between; gap: 6px; border-bottom: 1px solid var(--line); padding: 3px 0; }
 .cx-stats .st span { color: var(--muted); }
 .cx-stats .st b { font-weight: 600; text-align: right; }
 .cx-sec { margin-top: 6px; }
-.cx-sec.story p { margin: 4px 0; color: #d6dbe2; font-style: italic; }
+.cx-sec.story p { margin: 4px 0; color: #d6dbe2; font-style: italic; font-size: 13px; line-height: 1.45; }
 .cx-h { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 2px; }
 .cx-sec ul { margin: 0; padding-left: 16px; }
-.cx-sec li { margin: 2px 0; }
+.cx-sec li { margin: 2px 0; font-size: 13px; line-height: 1.45; }
 .cx-sec.good .cx-h { color: var(--ok); }
 .cx-sec.bad .cx-h { color: var(--bad); }
 .cx-sec.tac .cx-h { color: var(--accent); }

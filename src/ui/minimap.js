@@ -6,7 +6,7 @@ export class Minimap {
   constructor(canvas, world, renderer, viewer) {
     this.canvas = canvas; this.ctx = canvas.getContext('2d');
     this.world = world; this.renderer = renderer; this.viewer = viewer;
-    this.size = 150;
+    this.big = false; this.size = 150;
     this.alerts = [];
     this.terrainCache = document.createElement('canvas');
     this.dirty = true;
@@ -14,6 +14,8 @@ export class Minimap {
   }
   resize() {
     const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const compact = window.innerHeight < 500; // phones in landscape: keep the map visible
+    this.size = this.big ? (compact ? 190 : 230) : (compact ? 96 : 150);
     const css = this.size;
     this.canvas.style.width = css + 'px'; this.canvas.style.height = css + 'px';
     this.canvas.width = css * dpr; this.canvas.height = css * dpr;

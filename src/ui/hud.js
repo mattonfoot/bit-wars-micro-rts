@@ -11,6 +11,8 @@ export class HUD {
     this.root = $('hud');
     this.el = { ore: $('oreVal'), oreInc: $('oreInc'), flux: $('fluxVal'), fluxInc: $('fluxInc'), pop: $('popVal'), pts: $('ptsVal'), timer: $('timer'), squadbar: $('squadbar'), info: $('info'), cmd: $('cmd'), toasts: $('toasts'), mode: $('modeBanner'), obj: $('objectives') };
     this.el.obj.onclick = () => this.el.obj.classList.toggle('collapsed');
+    if (window.innerHeight < 500) this.el.obj.classList.add('collapsed');
+    $('mmToggle').onclick = (e) => { e.stopPropagation(); const mm = game.minimap; if (!mm) return; mm.big = !mm.big; mm.resize(); };
     this.minimapCanvas = $('minimap');
     this.acc = 0; this.squadKey = ''; this.cmdKey = '';
     $('btnMenu').onclick = () => game.openPause();
@@ -40,9 +42,10 @@ export class HUD {
     const key = JSON.stringify([title, stage, list.map((o) => [o.id, o.cur, o.done, o.holding])]);
     if (key === this.objKey) return;
     this.objKey = key;
-    el.innerHTML = `<div class="objhead">${title} · ${stage + 1}/${stages}</div>` + list.map((o) => {
+    const firstOpen = list.find((o) => !o.done && !o.constraint && !o.optional) || list.find((o) => !o.done) || list[0];
+    el.innerHTML = `<div class="objhead">${title} · ${stage + 1}/${stages}<span class="objtoggle">▾</span></div>` + list.map((o) => {
       const prog = o.target > 1 ? ` <span class="prog">${o.cur}/${o.target}</span>` : '';
-      const cls = (o.done ? 'done' : '') + (o.optional ? ' opt' : '') + (o.constraint && !o.done ? ' fail' : '') + (o.holding === false && o.target > 1 && !o.done ? ' warn' : '');
+      const cls = (o.done ? 'done' : '') + (o.optional ? ' opt' : '') + (o.constraint && !o.done ? ' fail' : '') + (o.holding === false && o.target > 1 && !o.done ? ' warn' : '') + (o === firstOpen ? ' first' : '');
       return `<div class="obj ${cls}" title="${o.hint || ''}">${o.done ? '✓' : o.constraint ? '⚑' : '○'} ${o.text}${prog}</div>`;
     }).join('');
   }
@@ -183,7 +186,7 @@ export class HUD {
       return;
     }
     if (sq.length) {
-      cmd.appendChild(this.btn('<span class="k">✕</span>Deselect', () => g.select([]), '', 'Clear the selection'));
+      cmd.appendChild(this.btn(`<span class="k">✕</span>${window.innerHeight < 500 ? 'Clear' : 'Deselect'}`, () => g.select([]), '', 'Clear the selection'));
       cmd.appendChild(this.btn('<span class="k">➜</span>Move', () => g.setMode(mode === 'move' ? 'normal' : 'move'), mode === 'move' ? 'on' : '', 'Next tap: move'));
       cmd.appendChild(this.btn('<span class="k">⚔</span>Attack', () => g.setMode(mode === 'amove' ? 'normal' : 'amove'), mode === 'amove' ? 'on' : '', 'Next tap: attack-move (or long-press the map)'));
       cmd.appendChild(this.btn('<span class="k">↺</span>Flank', () => g.setMode(mode === 'flank' ? 'normal' : 'flank'), mode === 'flank' ? 'on' : '', 'Next tap on an enemy: circle behind it and attack from the rear'));
@@ -191,7 +194,7 @@ export class HUD {
       cmd.appendChild(this.btn('<span class="k">«</span>Retreat', () => g.doRetreat(), 'danger', 'Sprint home; recovers morale'));
       cmd.appendChild(this.btn('<span class="k">■</span>Stop', () => g.doStop()));
       const reinf = sq.filter((s) => s.def.size > 1 && s.members.filter((m) => !m.hero).length + s.reinforce < s.def.size);
-      if (reinf.length) { const c = reinforceCost(reinf[0].def); cmd.appendChild(this.btn(`<span class="k">+1</span>Reinforce${costHtml(c, can(c))}`, () => g.doReinforce(), can(c) ? '' : 'dis', 'Add a member to the squad (slower away from base)')); }
+      if (reinf.length) { const c = reinforceCost(reinf[0].def); cmd.appendChild(this.btn(`<span class="k">+1</span>${window.innerHeight < 500 ? 'Refill' : 'Reinforce'}${costHtml(c, can(c))}`, () => g.doReinforce(), can(c) ? '' : 'dis', 'Add a member to the squad (slower away from base)')); }
       const hero = sq.length === 1 && sq[0].def.hero ? sq[0] : null;
       if (hero) cmd.appendChild(this.btn('<span class="k">★</span>Attach', () => g.setMode(mode === 'attach' ? 'normal' : 'attach'), mode === 'attach' ? 'on' : '', 'Next tap on a squad: attach hero'));
       const withHero = sq.find((s) => s.hero);
@@ -215,8 +218,8 @@ export class HUD {
         if (b.queue.length) cmd.appendChild(this.btn('Cancel last', () => g.doCancelTrain(b), 'wide'));
         cmd.appendChild(this.btn('<span class="k">⚑</span>Rally', () => g.setMode(mode === 'rally' ? 'normal' : 'rally'), mode === 'rally' ? 'on' : '', 'Next tap: set rally point'));
       }
-      cmd.appendChild(this.btn(b.done ? 'Demolish' : 'Cancel build', () => g.doCancelBuilding(b), 'danger'));
-      cmd.appendChild(this.btn('<span class="k">✕</span>Deselect', () => g.select([]), '', 'Clear the selection'));
+      cmd.appendChild(this.btn(b.done ? (window.innerHeight < 500 ? 'Raze' : 'Demolish') : 'Cancel build', () => g.doCancelBuilding(b), 'danger'));
+      cmd.appendChild(this.btn(`<span class="k">✕</span>${window.innerHeight < 500 ? 'Clear' : 'Deselect'}`, () => g.select([]), '', 'Clear the selection'));
       return;
     }
     if (bl.length > 1) { cmd.appendChild(this.btn('Select one structure to manage it', () => {}, 'wide dis')); cmd.appendChild(this.btn('<span class="k">✕</span>Deselect', () => g.select([]), 'wide')); return; }

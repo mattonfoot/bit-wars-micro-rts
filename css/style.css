@@ -160,7 +160,10 @@ html.native, html.native body { -webkit-touch-callout: none; overscroll-behavior
 #objectives .obj.fail { color: var(--bad); }
 #objectives .obj.warn { color: var(--accent); }
 #objectives .obj .prog { color: var(--accent); font-weight: 700; }
-#objectives.collapsed .obj { display: none; }
+#objectives.collapsed .obj:not(.first) { display: none; }
+#objectives .objtoggle { float: right; font-size: 10px; opacity: 0.7; }
+#objectives.collapsed .objtoggle { transform: rotate(-90deg); display: inline-block; }
+#mmToggle { position: absolute; top: 2px; right: 2px; width: 20px; height: 20px; border-radius: 5px; border: 1px solid var(--line); background: rgba(0,0,0,0.55); color: #ddd; font-size: 12px; line-height: 1; padding: 0; }
 #objectives.collapsed .objhead::after { content: ' ▾'; }
 #modeBanner.show ~ #objectives { top: calc(var(--sat) + 78px); }
 .toast.hint { border-color: var(--accent); color: #ffe9b3; white-space: normal; max-width: 70vw; text-align: center; }
@@ -269,3 +272,33 @@ html.native, html.native body { -webkit-touch-callout: none; overscroll-behavior
 .xo { display: inline-block; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--fc); border: 1px solid var(--fc); border-radius: 4px; padding: 0 5px; margin-left: 6px; vertical-align: middle; opacity: .85; }
 .xoline { margin-top: 2px; }
 .acthead { grid-column: 1 / -1; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin: 6px 0 0 2px; }
+
+/* ---- Compact HUD for phones in landscape: leave as much of the map visible as possible ---- */
+@media (max-height: 500px) {
+  #topbar { height: 30px; font-size: 12px; gap: 8px; padding: 0 6px; }
+  #topbar button { padding: 2px 7px; font-size: 11px; }
+  #squadbar { top: calc(var(--sat) + 32px); gap: 4px; padding: 2px 4px; right: calc(var(--sar) + 200px); }
+  .sq { width: 38px; height: 38px; border-radius: 7px; }
+  .sq svg { width: 18px; height: 18px; }
+  .sq .n { font-size: 9px; }
+  .sq.all { width: 34px; font-size: 10px; }
+  #objectives { top: calc(var(--sat) + 33px); width: 190px; font-size: 10.5px; padding: 4px 7px; border-radius: 8px; }
+  #objectives .objhead { font-size: 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #modeBanner { top: calc(var(--sat) + 33px); font-size: 11px; padding: 4px 9px; }
+  #toasts { top: calc(var(--sat) + 76px); }
+  .toast { font-size: 11px; padding: 4px 10px; }
+  #minimapWrap { left: calc(var(--sal) + 4px); bottom: calc(var(--sab) + 4px); border-radius: 6px; }
+  #info { left: calc(var(--sal) + 108px); right: calc(var(--sar) + 188px); bottom: calc(var(--sab) + 4px); min-height: 32px; padding: 4px 7px; font-size: 11px; gap: 8px; border-radius: 7px; }
+  #info.empty { display: none; }
+  #info .icon, #info .icon svg { width: 26px; height: 26px; }
+  #info .name { font-size: 12px; }
+  #info .bars { width: 70px; }
+  #info .role { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #cmd { right: calc(var(--sar) + 4px); bottom: calc(var(--sab) + 4px); width: 180px; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+  #cmd button { height: 44px; border-radius: 7px; font-size: 9px; line-height: 1.05; letter-spacing: -0.2px; gap: 1px; padding: 1px 2px; }
+  #cmd button .k { font-size: 13px; }
+  #cmd button svg { width: 15px; height: 15px; }
+  #cmd button .cost { font-size: 8.5px; }
+  #cmd button.wide { grid-column: span 4; height: 30px; }
+  #cmd .hint { grid-column: span 4; font-size: 9.5px; }
+}

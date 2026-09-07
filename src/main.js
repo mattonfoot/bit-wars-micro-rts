@@ -15,7 +15,7 @@ import { Campaign, markComplete } from './game/campaign.js';
 import { chapterByKey } from './game/campaigns.js';
 import { dist, clamp } from './engine/math.js';
 
-const MODE_LABELS = { move: 'MOVE: tap a destination', amove: 'ATTACK-MOVE: tap a destination', build: 'BUILD: choose a structure', rally: 'RALLY: tap a point', attach: 'ATTACH: tap a squad', box: 'BOX SELECT: drag over units' };
+const MODE_LABELS = { move: 'MOVE: tap a destination', amove: 'ATTACK-MOVE: tap a destination', build: 'BUILD: choose a structure', rally: 'RALLY: tap a point', attach: 'ATTACH: tap a squad', flank: 'FLANK: tap an enemy to circle behind it', box: 'BOX SELECT: drag over units' };
 
 class Game {
   constructor() {
@@ -327,6 +327,13 @@ class Game {
         const sq = this.selectedSquads();
         const hit = this.entityAt(wx, wy, false);
         if (sq.length) { if (hit) this.world.cmdAttack(sq, hit); else this.world.cmdAttackMove(sq, wx, wy); this.audio.play('order'); }
+        this.setMode('normal', true); return;
+      }
+      case 'flank': {
+        const sq = this.selectedSquads();
+        const hit = this.entityAt(wx, wy, false);
+        if (sq.length && hit && this.world.hostile(this.viewer, hit.owner)) { this.world.cmdFlank(sq, hit); this.audio.play('order'); this.hud.toast('Flanking: circling behind the target', ''); }
+        else this.hud.toast('Tap an enemy to flank', 'bad');
         this.setMode('normal', true); return;
       }
       case 'attach': {

@@ -124,6 +124,7 @@ export class HUD {
       if (s.broken) tags.push('<span class="tag broken">BROKEN</span>');
       if (s.cover && !d.noCover && w.time - s.lastHit < 6) tags.push(`<span class="tag cover">${COVER_NAME[s.cover]}</span>`);
       if (s.order.type === 'retreat') tags.push('<span class="tag">Retreating</span>');
+      if (s.order.type === 'flank') tags.push('<span class="tag">Flanking</span>');
       if (s.reinforce) tags.push(`<span class="tag">Reinforcing +${s.reinforce}</span>`);
       if (s.hero) tags.push(`<span class="tag">★ ${s.hero.name} attached</span>`);
       if (d.weapon.setup) tags.push(`<span class="tag">${s.setup >= d.weapon.setup ? 'Set up' : 'Setting up…'}</span>`);
@@ -185,6 +186,7 @@ export class HUD {
       cmd.appendChild(this.btn('<span class="k">✕</span>Deselect', () => g.select([]), '', 'Clear the selection'));
       cmd.appendChild(this.btn('<span class="k">➜</span>Move', () => g.setMode(mode === 'move' ? 'normal' : 'move'), mode === 'move' ? 'on' : '', 'Next tap: move'));
       cmd.appendChild(this.btn('<span class="k">⚔</span>Attack', () => g.setMode(mode === 'amove' ? 'normal' : 'amove'), mode === 'amove' ? 'on' : '', 'Next tap: attack-move (or long-press the map)'));
+      cmd.appendChild(this.btn('<span class="k">↺</span>Flank', () => g.setMode(mode === 'flank' ? 'normal' : 'flank'), mode === 'flank' ? 'on' : '', 'Next tap on an enemy: circle behind it and attack from the rear'));
       cmd.appendChild(this.btn('<span class="k">✋</span>Hold', () => g.doHold(), '', 'Hold position'));
       cmd.appendChild(this.btn('<span class="k">«</span>Retreat', () => g.doRetreat(), 'danger', 'Sprint home; recovers morale'));
       cmd.appendChild(this.btn('<span class="k">■</span>Stop', () => g.doStop()));

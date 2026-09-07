@@ -5,10 +5,11 @@ import { FACTIONS, POP_CAP, START_ORE, START_FLUX, hqKey, reinforceCost } from '
 import { findPath, smoothPath, lineWalkable, nearestPassable } from './pathfinding.js';
 import { coverAt, COVER_DMG, COVER_SUPP, isFlank, dmgMult } from './combat.js';
 import { RNG } from '../engine/rng.js';
-import { clamp, dist, angleTo, lerpAngle, TAU } from '../engine/math.js';
+import { clamp, dist, angleTo, angleDiff, lerpAngle, TAU } from '../engine/math.js';
 
 export const TICK = 1 / 60;
 const VISION_INTERVAL = 6;
+const TRAVERSE_RATE = 1.0; // radians per second for arc-limited weapons
 const NONE = -1;
 
 function formationSlots(n, radius) {
@@ -347,6 +348,24 @@ export class World {
     }
     this.emit({ type: 'order', x: target.x, y: target.y, kind: 'attack', owner: squads[0]?.owner });
   }
+  /** Flank: swing wide around the target's facing and attack it from behind. */
+  cmdFlank(squads, target) {
+    for (const s of squads) {
+      if (s.dead) continue;
+      s.order = { type: 'flank', targetId: target.id, x: target.x, y: target.y, phase: 0 };
+      s.targetId = 0; s.setup = 0; s.path = null; s.repathTimer = 0;
+    }
+    this.emit({ type: 'order', x: target.x, y: target.y, kind: 'flank', owner: squads[0]?.owner });
+  }
+  /** Waypoints for a flank: a wide point on the chosen side of the target's facing, then a point behind it. */
+  flankWaypoints(s, t, side) {
+    const facing = t.kind === 'squad' ? t.facing : angleTo(t.x, t.y, s.x, s.y);
+    const D = Math.max(s.def.weapon.range * TILE * 0.9, 2.5 * TILE);
+    const perp = facing + side * Math.PI / 2;
+    const wide = 2.2 * D;
+    const pts = [[t.x + Math.cos(perp) * wide + Math.cos(facing) * D * 0.3, t.y + Math.sin(perp) * wide + Math.sin(facing) * D * 0.3], [t.x - Math.cos(facing) * D, t.y - Math.sin(facing) * D]];
+    return pts.map(([x, y]) => { const i = this.grid.cellAt(clamp(x, this.grid.R, this.grid.worldW - this.grid.R), clamp(y, this.grid.R, this.grid.worldH - this.grid.R)); const np = i >= 0 ? nearestPassable(this.map, i, { blocked: this.blockedFn(), flying: s.def.flying }) : -1; return np >= 0 ? this.grid.center(np) : [x, y]; });
+  }
   cmdHold(squads) { for (const s of squads) { s.order = { type: 'hold', x: s.x, y: s.y }; s.path = null; s.targetId = 0; } }
   cmdStop(squads) { for (const s of squads) { s.order = { type: 'idle', x: s.x, y: s.y }; s.homeX = s.x; s.homeY = s.y; s.path = null; s.targetId = 0; } }
   cmdRetreat(squads) {
@@ -624,6 +643,22 @@ export class World {
         target = t; s.targetId = t.id; chase = true;
         break;
       }
+      case 'flank': {
+        const t = this.byId(o.targetId);
+        if (!t || t.dead || (t.kind === 'squad' && !t.members.length)) { o.type = 'amove'; o.x = s.x; o.y = s.y; s.path = null; s.targetId = 0; break; }
+        // walk the wide arc without stopping to shoot; the side is chosen once, the route re-planned only if the target moves or turns
+        allowFire = false; s.targetId = 0; target = null;
+        const tf = t.kind === 'squad' ? t.facing : 0;
+        if (o.side === undefined) o.side = angleDiff(angleTo(t.x, t.y, s.x, s.y), tf) >= 0 ? 1 : -1;
+        const stale = !o.wp || dist(t.x, t.y, o.tx, o.ty) > 1.5 * TILE || Math.abs(angleDiff(tf, o.tf)) > 0.6;
+        if (stale) { o.tx = t.x; o.ty = t.y; o.tf = tf; o.wp = this.flankWaypoints(s, t, o.side); s.path = null; }
+        let goal = o.wp[Math.min(o.phase, 1)];
+        if (dist(s.x, s.y, goal[0], goal[1]) < 1.2 * TILE) { o.phase++; s.path = null; goal = o.wp[1]; }
+        if (o.phase >= 2) { o.type = 'attack'; o.x = t.x; o.y = t.y; s.targetId = t.id; s.path = null; target = t; chase = true; break; }
+        if (!s.path && s.repathTimer <= 0) { this.setPath(s, goal[0], goal[1]); s.repathTimer = 0.5; }
+        if (s.path) moveTo = 'path';
+        break;
+      }
       case 'amove':
       case 'idle':
       case 'hold':
@@ -713,7 +748,16 @@ export class World {
         else ft = null;
       }
       if (ft && this.inRange(s, ft, range) && !(weapon.minRange && dist(s.x, s.y, ft.x, ft.y) < weapon.minRange * TILE)) {
-        if (!moved) s.facing = lerpAngle(s.facing, angleTo(s.x, s.y, ft.x, ft.y), Math.min(1, dt * 12));
+        if (!moved) {
+          const want = angleTo(s.x, s.y, ft.x, ft.y);
+          if (weapon.arc) {
+            // set-up guns traverse slowly and can only fire inside their arc: flank them and they take seconds to answer
+            const d = angleDiff(s.facing, want), step = TRAVERSE_RATE * dt;
+            if (Math.abs(d) > weapon.arc) s.setup = 0; // swinging past the arc means re-deploying the gun
+            s.facing = Math.abs(d) <= step ? want : s.facing + Math.sign(d) * step;
+            if (Math.abs(angleDiff(s.facing, want)) > weapon.arc) { this.updateMembers(s, dt); return; }
+          } else s.facing = lerpAngle(s.facing, want, Math.min(1, dt * 12));
+        }
         if (weapon.setup) {
           if (!moved) s.setup = Math.min(weapon.setup, s.setup + dt);
           if (s.setup < weapon.setup) return;
@@ -785,6 +829,8 @@ export class World {
       let score = d;
       if (s.broken) score += 40;
       if (s.def.weapon && !s.def.hero) score -= 30; // prioritise threats
+      // arc-limited guns keep their lane: a target outside the arc costs a long traverse
+      if (weapon?.arc && !isBuilding && Math.abs(angleDiff(src.facing, angleTo(src.x, src.y, s.x, s.y))) > weapon.arc) score += 6 * TILE;
       // counters: prefer targets our damage type is good against
       if (weapon) score -= dmgMult(weapon.type, s.def.armor) * 20;
       if (score < bestScore) { bestScore = score; best = s; }

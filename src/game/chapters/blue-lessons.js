@@ -46,10 +46,10 @@ export const BLUE_LESSONS = {
       enemy: garrison('red', { squads: [{ key: 'hammers', at: 'point:1', order: 'hold' }, { key: 'hammers', at: 'point:3', order: 'hold' }, { key: 'hammers', at: 'point:4', order: 'hold' }, { key: 'bolts', at: 'point:3' }, { key: 'bolts', at: 'point:4' }], points: [1, 3, 4], structures: [{ key: 'post', at: 'point:3' }] }),
       stages: [
         stage([obj('nest', 'build', 'Build a Nest', { key: 'nest', n: 1 }), obj('wedges', 'train', 'Train 2 Wedge Raiders', { key: 'wedges', n: 2 })]),
-        stage([obj('flank', 'flank', 'Land 12 flanking hits', { n: 12, hint: 'A squad is flanked when hit from more than 110° behind its facing.' }), obj('broken', 'broken', 'Break 2 enemy squads', { n: 2 })], 'Attacks from behind deal extra damage and shred morale. Wedges double the bonus. Circle wide, then strike.'),
+        stage([obj('flank', 'flank', 'Land 8 flanking hits', { n: 8, hint: 'Select the Wedges, tap Flank, then tap a Hammer Team. They circle behind it on their own.' }), obj('broken', 'broken', 'Break 2 enemy squads', { n: 2 })], 'Attacks from behind deal extra damage and shred morale, and Wedges double the bonus. Use the Flank command: the squad swings wide around the gun team and hits it from the rear while it is still turning.'),
         stage([obj('post', 'destroy', 'Destroy the Watch Post', { key: 'post', n: 1 }), obj('cap', 'capture', 'Hold 4 strategic points', { n: 4 })], 'Now roll up the passes. The Watch Post must fall before its point can be taken.'),
       ],
-      hints: [{ at: 'start', text: 'Hammer Teams must set up to fire and have a narrow arc. Never approach one from the front.' }, { at: 'stage:2', text: 'Broken squads fight at a third strength and take 50% more damage. Finish them.' }],
+      hints: [{ at: 'start', text: 'Hammer Teams must set up to fire, have a narrow arc and turn slowly. Never approach one from the front.' }, { at: 'stage:1', text: 'Keep the Darts in front of a Hammer Team to hold its attention, then send the Wedges round with Flank.' }, { at: 'stage:2', text: 'Broken squads fight at a third strength and take 50% more damage. Finish them.' }],
     },
     {
       key: 'blue-4', title: 'Wings over Ash', theme: 'ashfall', size: 64, seed: 'shear-4',

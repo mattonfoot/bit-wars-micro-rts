@@ -8,7 +8,7 @@ import { THEMES } from '../map/themes.js';
 import { TAU, clamp } from '../engine/math.js';
 import { COVER_NAME } from '../game/combat.js';
 
-const ORDER_COLORS = { move: '#7CFC9A', amove: '#ff5f5f', attack: '#ff5f5f', retreat: '#ffd166', capture: '#fff' };
+const ORDER_COLORS = { move: '#7CFC9A', amove: '#ff5f5f', attack: '#ff5f5f', flank: '#ffa94d', retreat: '#ffd166', capture: '#fff' };
 
 export class Renderer {
   constructor(canvas, world, camera, viewer) {

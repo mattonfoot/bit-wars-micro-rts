@@ -198,4 +198,36 @@ check('finales: each faction must break both rivals, then complete its own goal'
   }
 });
 
+check('flank order circles behind a gun team and lands flanking hits', () => {
+  const ch = CAMPAIGNS.blue.chapters[2]; const { c, w, run } = start(ch);
+  assert.equal(ch.key, 'blue-3');
+  const gun = w.squads.find((s) => s.owner === 1 && s.key === 'hammers'); assert.ok(gun);
+  // the gun faces east at a pinning Dart Swarm; the Wedges start further out in front and are told to flank
+  gun.facing = 0;
+  const pin = w.spawnSquad(0, 'darts', gun.x + 5 * TILE, gun.y); w.cmdHold([pin]);
+  const wedges = w.spawnSquad(0, 'wedges', gun.x + 9 * TILE, gun.y);
+  w.cmdFlank([wedges], gun);
+  assert.equal(wedges.order.type, 'flank');
+  let sawRear = false;
+  const ok = run(45, () => { if (!sawRear && wedges.x < gun.x - 0.8 * TILE) sawRear = true; return (c.counters.flank || 0) >= 8; });
+  assert.ok(sawRear, 'the Wedges went round behind the gun team');
+  assert.ok(ok, `flanking hits landed (${c.counters.flank || 0})`);
+  assert.ok(['attack', 'amove', 'idle'].includes(wedges.order.type), 'flank hands over to a direct attack');
+});
+
+check('set-up guns traverse slowly and cannot fire outside their arc', () => {
+  const ch = CAMPAIGNS.blue.chapters[2]; const { w, run } = start(ch);
+  const gun = w.squads.find((s) => s.owner === 1 && s.key === 'hammers'); assert.ok(gun.def.weapon.arc);
+  gun.facing = 0; gun.setup = gun.def.weapon.setup;
+  const behind = w.spawnSquad(0, 'darts', gun.x - 4 * TILE, gun.y); w.cmdHold([behind]);
+  const shots = () => w.events.filter((e) => e.type === 'shot' || e.type === 'muzzle').length;
+  let firedEarly = false, firedLater = false;
+  let prevCd = gun.cooldown;
+  for (let i = 0; i < 240; i++) { w.tick(TICK); if (gun.cooldown > prevCd && i < 90) firedEarly = true; prevCd = gun.cooldown; w.events.length = 0; }
+  const turned = Math.abs(Math.abs(gun.facing) - Math.PI) < 0.5;
+  assert.ok(turned, `gun traverses toward the attacker over a few seconds (facing ${gun.facing.toFixed(2)})`);
+  void shots; void firedLater; void run;
+  assert.equal(firedEarly, false, 'no shots before the traverse brings the target into the arc');
+});
+
 console.log(`All ${passed} mechanic checks passed`);

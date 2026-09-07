@@ -231,6 +231,7 @@ export class Menu {
             <tr><td>Tap unit</td><td>Select squad. Tap a squad icon in the top bar to select it; tap again to jump the camera there. Double-tap a unit to select all of that type on screen.</td></tr>
             <tr><td>Tap ground</td><td>Move selected squads. Tap an enemy to attack it. ✕ deselects.</td></tr>
             <tr><td>Long-press</td><td>Attack-move: advance and engage everything on the way.</td></tr>
+            <tr><td>Flank</td><td>Tap Flank, then an enemy: the squad swings wide around the enemy's facing and attacks from behind. Set-up guns traverse slowly and cannot answer until they have turned.</td></tr>
             <tr><td>Drag / pinch</td><td>Pan and zoom. Tap the minimap to jump. Use <b>Box</b> to drag-select.</td></tr>
             <tr><td>Mouse</td><td>Left-click/drag selects, right-click commands, wheel zooms. Keys: A attack-move, H hold, S stop, R retreat, B build, Esc cancel, Space jump to last alert.</td></tr>
           </table>

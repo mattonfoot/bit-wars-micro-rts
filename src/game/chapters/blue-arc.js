@@ -5,7 +5,7 @@ const GREEN_GATE = [{ faction: 'green', hq: false, ai: null, structures: [{ key:
 
 export const BLUE_ARC = {
   goal: 'The Bloom',
-  backstory: 'Before the fracture the Swarm was one thing. The Apex remembers being whole, and every Burrow the Swarm sinks is reaching for the seam where the one thing was cut: the Prime Vein. Seed the Vein and the Swarm divides through the whole Lattice at once, every shear-line a Hive, every crystal a triangle. The Foundry calls it a plague. The Collective calls it noise. The Apex calls it the Bloom, and it will go through both of them to reach it.',
+  backstory: 'Before the fracture the Swarm was one thing. The Apex remembers being whole, and every Burrow the Swarm sinks is reaching for the seam where the one thing was cut: the Prime Vein. Seed the Vein and the Swarm divides through the whole Lattice at once, every shear-line a Hive, every crystal a piece of the Swarm. The Foundry calls it a plague. The Collective calls it noise. The Apex calls it the Bloom, and it will go through both of them to reach it.',
   outcome: 'The Apex stands in the seam of the Prime Vein and divides. The Lattice is reforged in the shape that multiplies: one Swarm, everywhere, forever hungry.',
   acts: [
     { title: 'Act I · Awakening', from: 0 }, { title: 'Act II · The Basin', from: 5 }, { title: 'Act III · Shields', from: 10 },
@@ -27,7 +27,7 @@ export const BLUE_ARC = {
     C('The Quarry', 'crystal', 64, 3, 'countdown', { rival: 'red', minutes: 9, waves: 6 },
       ['The Swarm has followed the hum into the crystal quarry, and the Foundry\'s whole army has followed the Swarm. The Hive is growing an Obelisk over the seam. It needs nine minutes.', 'Nine minutes of Foundry doctrine coming down the ramps.'],
       'Survive the countdown: hold the quarry for nine minutes until the Obelisk and its escort arrive, then break out.',
-      ['The Obelisk walks out of the Hive on the ninth minute and the rim goes quiet, ramp by ramp.', 'The Basin is the Swarm\'s. The hum leads east now, across the ice, into ground the spheres have been watching from for months.']),
+      ['The Obelisk walks out of the Hive on the ninth minute and the rim goes quiet, ramp by ramp.', 'The Basin is the Swarm\'s. The hum leads east now, across the ice, into ground the Collective has been watching from for months.']),
     // ---- Act III · Shields (11-15): the Collective has been watching the Basin war, and now the Swarm walks into its sight.
     C('The Watchers', 'frost', 64, 3, 'assault', { rival: 'green', ranks: [2, 3] },
       ['Beacons on every hill along the ice, and Bastions beside them. The Collective watched the whole Basin war from here and never fired a shot.', 'It fires now. The Swarm has never cared about being seen. Now it learns what the fog is for.'],
@@ -37,7 +37,7 @@ export const BLUE_ARC = {
     C('Blind City', 'urban', 64, 4, 'assault', { rival: 'green', ranks: [2, 4, 5] },
       ['The Collective has seeded the Ruined City with Beacons. From each it sees ten blocks, and where it sees, its Bastions fire. The hum runs under the city too, and the Swarm has to cross it.', 'The Apex sends Kites over the roofs first. Beacons cannot see up.'],
       'Assault the Beacons and Bastions in the city and take the points they guarded.',
-      ['The city goes blind, block by block. The Collective\'s beams fall silent for want of targets.', 'Then the sky lights up. Halos, and behind them a column of spheres crossing the dunes under them.']),
+      ['The city goes blind, block by block. The Collective\'s beams fall silent for want of targets.', 'Then the sky lights up. Halos, and behind them a Collective column crossing the dunes under them.']),
     X('halo', 4),
     C('The Sanctum', 'frost', 64, 4, 'commando', { rival: 'green', target: 'up' },
       ['The Collective\'s Sanctum harmonises every shield on the Glass Front, and its note is the opposite of the hum: it stills things. Where it plays, the Burrows go quiet.', 'The Apex goes in itself, with two squads, in the dark.'],
@@ -52,7 +52,7 @@ export const BLUE_ARC = {
     C('Ashfall Crossing', 'ashfall', 64, 5, 'countdown', { rival: 'green', minutes: 12, waves: 8 },
       ['The Swarm holds the Ashfall crossing alone. The Collective, fleeing the Bleed, is coming with everything it has left.', 'Twelve minutes until the Hive\'s new swarms reach the crossing.'],
       'Survive the countdown: hold the Ashfall crossing for twelve minutes until relief arrives, then counter-attack.',
-      ['The relief swarms arrive on the twelfth minute and the crossing is a field of dark spheres.', 'The Foundry, walled up in the ruins since the Bleed, has started digging out on two roads at once.']),
+      ['The relief swarms arrive on the twelfth minute and the crossing is a field of broken shields.', 'The Foundry, walled up in the ruins since the Bleed, has started digging out on two roads at once.']),
     C('Divide', 'frost', 64, 5, 'multiFront', { rival: 'red' },
       ['The Foundry has dug out of the city on two roads, and the Swarm has bases on both. Neither base can help the other.', 'The Apex divides. It always could. It is, after all, what the Bloom will be.'],
       'Multi-front: hold both bases against Foundry pushes, then destroy the Foundry\'s forward base.',
@@ -78,7 +78,7 @@ export const BLUE_ARC = {
     C('The Crossing', 'frost', 64, 6, 'tugOfWar', { rival: 'red' },
       ['The frozen river has five outposts along it, Foundry on every one. The Swarm takes them the way it takes everything: the next one, then the next.', 'Every outpost taken, the Hive sends more.'],
       'Tug-of-war: push across the frozen river outpost by outpost; each one taken brings reinforcements.',
-      ['The far bank is Swarm. The Foundry\'s Works on it is glass.', 'An emissary is waiting on the far bank. It is a sphere, and it is not shooting.']),
+      ['The far bank is Swarm. The Foundry\'s Works on it is glass.', 'An emissary is waiting on the far bank. It is Collective, and it is not shooting.']),
     // ---- Act VI · Pacts (26-30): the Apex learns what an ally is, and what it is for.
     X('glasspact', 6),
     X('ironaccord', 6),
@@ -96,7 +96,7 @@ export const BLUE_ARC = {
     C('Crossfire', 'urban', 80, 7, 'crossfire', { r1: 'red', r2: 'green', minutes: 9 },
       ['The coalition attacks from both corners of the city at once, waves timed to arrive together.', 'The Hive has three points, a Spire, and nine minutes to prove that a swarm surrounded is a swarm with more targets.'],
       'Two-front defence: hold three points for nine minutes against alternating Foundry and Collective waves.',
-      ['The city is quiet and the streets are full of squares and spheres.', 'The Apex smells ore on the wind. Their economies are exposed.']),
+      ['The city is quiet and the streets are full of Foundry and Collective dead.', 'The Apex smells ore on the wind. Their economies are exposed.']),
     C('Scorched Vein', 'ashfall', 80, 7, 'raid', { rival: 'red', n: 4 },
       ['Foundry Drill Rigs and Collective Siphons share the lava fields now, each guarded by the other\'s turrets.', 'The Apex sends Kites and Wedges with one instruction: leave nothing that pumps ore.'],
       'Deep raid: destroy four coalition extractors on the lava fields without losing more than two squads.',
@@ -106,7 +106,7 @@ export const BLUE_ARC = {
       'Full war against a hardened Foundry with Collective support at its gates: destroy the Foundry.',
       ['The Foundry falls for the last time. The Collective garrison surrenders the gates.', 'Beyond the canyons the hum is no longer a hum. It is a chord, and the Apex has heard it before, from the inside.']),
     C('The Approaches', 'crystal', 64, 7, 'protectVip', { rival: 'green', ranks: [1, 2, 3] },
-      ['The approaches to the Prime Vein are three points on a ridge, and the Collective holds them. The Apex must take them itself; the Swarm will not advance without it.', 'The Collective knows. Every Lens on the ridge is looking for the bright one.'],
+      ['The approaches to the Prime Vein are three points on a ridge, and the Collective holds them. The Apex must take them itself; the Swarm will not advance without it.', 'The Collective knows. Every Lens on the ridge is looking for the Apex.'],
       'Protect the VIP: keep the Apex alive while it leads the capture of the three approach points.',
       ['Three points, and the Apex still standing on the last of them.', 'The Vein is in sight. It glows, and it is calling.']),
     // ---- Act VIII · The Bloom (36-40): the end of the world, the Swarm's way.

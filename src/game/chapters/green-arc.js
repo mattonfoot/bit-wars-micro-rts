@@ -96,7 +96,7 @@ export const GREEN_ARC = {
     C('Crossfire', 'urban', 80, 7, 'crossfire', { r1: 'blue', r2: 'red', minutes: 9 },
       ['The coalition attacks from both corners of the city at once, Kites over the roofs and Mortars behind.', 'The Collective has an Array, three points and nine minutes to prove that shields, given a breath, come back.'],
       'Two-front defence: hold three points for nine minutes against alternating Swarm and Foundry waves.',
-      ['The city is quiet and the streets are full of triangles and squares.', 'Their economies are exposed. The Oracle has already mapped them.']),
+      ['The city is quiet and the streets are full of Swarm and Foundry dead.', 'Their economies are exposed. The Oracle has already mapped them.']),
     C('Scorched Vein', 'ashfall', 80, 7, 'raid', { rival: 'blue', n: 4 },
       ['Lode Burrows and Drill Rigs share the lava fields, guarded by Thorns and Bunkers.', 'The Oracle sends Lenses and a Halo with one instruction: nothing that pumps ore is to be left standing.'],
       'Deep raid: destroy four coalition extractors on the lava fields without losing more than two squads.',
@@ -106,7 +106,7 @@ export const GREEN_ARC = {
       'Full war against a hardened Swarm with Foundry support at its gates: destroy the Hive.',
       ['The Hive falls for the last time. The Foundry garrison surrenders the gates.', 'Beyond the canyons the seam is loud enough for anyone to hear. The Long Count is nearly done.']),
     C('The Approaches', 'crystal', 64, 7, 'protectVip', { rival: 'red', ranks: [1, 2, 3] },
-      ['The approaches to the Prime Vein are three points on a ridge, and the Foundry holds them. The Oracle must take them itself; the Collective will not advance without it.', 'The Foundry knows. Every Hammer Team on the ridge is set up facing the bright one.'],
+      ['The approaches to the Prime Vein are three points on a ridge, and the Foundry holds them. The Oracle must take them itself; the Collective will not advance without it.', 'The Foundry knows. Every Hammer Team on the ridge is set up facing the Oracle.'],
       'Protect the VIP: keep the Oracle alive while it leads the capture of the three approach points.',
       ['Three points, and the Oracle still standing on the last of them.', 'The Vein is in sight. The Oracle has seen it for years. It is louder than the computation said.']),
     // ---- Act VIII · The Answer (36-40): the end of the world, the Collective's way.

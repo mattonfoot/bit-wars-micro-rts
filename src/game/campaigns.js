@@ -13,7 +13,7 @@ import { CROSSOVERS } from './chapters/crossovers.js';
 import { STYLES } from './chapters/styles.js';
 
 export const LORE = {
-  world: 'The Lattice was once a single crystal world. When it cracked, three peoples woke in the fracture: the Vector Swarm, endlessly dividing triangles born along the shear-lines; the Iron Foundry, square-cut folk of the deep forges who believe only in what lasts; and the Aegis Collective, contemplative spheres who read the future in the pattern of the break. At the heart of the Lattice lies the Prime Vein, the seam of ore that held the world together. Whoever holds it can forge the Lattice anew, in their own shape.',
+  world: 'The Lattice was once a single crystal world. When it cracked, three peoples woke in the fracture: the Vector Swarm, endlessly dividing, born along the shear-lines; the Iron Foundry, riveted folk of the deep forges who believe only in what lasts; and the Aegis Collective, contemplative and shielded, who read the future in the pattern of the break. At the heart of the Lattice lies the Prime Vein, the seam of ore that held the world together. Whoever holds it can forge the Lattice anew, in their own shape.',
   memory: 'Three stories, three endings. They cross where the armies met; only one of them can be true.',
 };
 

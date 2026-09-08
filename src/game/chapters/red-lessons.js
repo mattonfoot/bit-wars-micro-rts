@@ -4,14 +4,14 @@ import { garrison, war, obj, stage, wave } from './common.js';
 const F = 'red';
 export const RED_LESSONS = {
   faction: F, title: 'Doctrine', tagline: 'Hold. Suppress. Breach. Rebuild.',
-  intro: 'The Foundry does not bloom and it does not flow. It holds ground, one riveted square at a time, and it does not give ground back. The Foreman\'s guild has one teaching: everything that lasts was built under fire.',
+  intro: 'The Foundry does not bloom and it does not flow. It holds ground, one riveted block at a time, and it does not give ground back. The Foreman\'s guild has one teaching: everything that lasts was built under fire.',
   chapters: [
     // ---------------- ACT I
     {
       key: 'red-1', title: 'Hold the Line', theme: 'urban', size: 48, seed: 'doctrine-1',
       story: ['A single Foundry, fresh from the forge, on the edge of the Ruined City. The Swarm has already found it: Dart packs are coming down the boulevards in waves.', 'You have walls, rubble, and Bolt Squads. That is all a Foundry has ever needed.'],
       briefing: 'Learn the basics: train Bolt Squads, hold position in cover, survive the swarm waves and claim a point.',
-      epilogue: ['The swarm breaks on the walls, three times. The street is carpeted with blue shards and not one Bolt Squad has moved.', 'The Foreman sends word: the swarms are being driven from the Verdant Basin. Go there. Bring the heavy guns.'],
+      epilogue: ['The swarm breaks on the walls, three times. The street is carpeted with Swarm shards and not one Bolt Squad has moved.', 'The Foreman sends word: the swarms are being driven from the Verdant Basin. Go there. Bring the heavy guns.'],
       player: { faction: F, ore: 320, flux: 60, units: ['bolts'], buildings: ['drill'] },
       enemy: garrison('blue', { squads: [{ key: 'darts', at: 'point:2' }], points: [2] }),
       waves: [wave(75, [{ key: 'darts', n: 1 }], { text: 'Dart Swarm inbound. Hold.' }), wave(140, [{ key: 'darts', n: 2 }], { text: 'Two swarms. Stay in cover.' }), wave(210, [{ key: 'darts', n: 2 }, { key: 'needles', n: 1 }], { text: 'Last wave. Hold the line.' })],
@@ -24,9 +24,9 @@ export const RED_LESSONS = {
     },
     {
       key: 'red-2', title: 'Suppressing Fire', theme: 'verdant', size: 48, seed: 'doctrine-2',
-      story: ['The Verdant Basin, thick with brush and swarms. Rifles cannot kill triangles faster than the Hive makes them.', 'But a Hammer Team does not need to kill. Set up, and it pins a whole squad in place, breaks its morale, and leaves it helpless for the Bolts to finish.'],
+      story: ['The Verdant Basin, thick with brush and swarms. Rifles cannot kill swarms faster than the Hive makes them.', 'But a Hammer Team does not need to kill. Set up, and it pins a whole squad in place, breaks its morale, and leaves it helpless for the Bolts to finish.'],
       briefing: 'Suppression: build Hammer Teams, set them up, and break swarms before they reach you. Reinforce in the field.',
-      epilogue: ['The basin is quiet. Broken swarms flee in every direction and do not come back.', 'The Foreman\'s next order is a map of the Ruined City, with the Swarm\'s new Claim Spikes marked in red.'],
+      epilogue: ['The basin is quiet. Broken swarms flee in every direction and do not come back.', 'The Foreman\'s next order is a map of the Ruined City, with the Swarm\'s new Claim Spikes marked on the map.'],
       player: { faction: F, ore: 450, flux: 90, units: ['bolts', 'hammers'], buildings: ['drill', 'bunker'], squads: [{ key: 'bolts', at: [3, 4] }] },
       enemy: garrison('blue', { squads: [{ key: 'darts', at: 'point:1', n: 2 }, { key: 'darts', at: 'point:3', n: 2 }, { key: 'needles', at: 'point:3' }], points: [1, 3] }),
       waves: [wave(120, [{ key: 'darts', n: 2 }], { from: 'point:3', target: 'point:0', text: 'Swarm inbound on your point. Guns up.' }), wave(240, [{ key: 'darts', n: 2 }, { key: 'wedges', n: 1 }], { from: 'point:3', target: 'point:0', text: 'Wedges: they will try to get behind the guns.' })],

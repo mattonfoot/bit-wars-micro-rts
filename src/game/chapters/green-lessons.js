@@ -4,7 +4,7 @@ import { garrison, war, obj, stage, wave } from './common.js';
 const F = 'green';
 export const GREEN_LESSONS = {
   faction: F, title: 'Protocol', tagline: 'Endure. Observe. Answer.',
-  intro: 'The Collective wakes last, as it always does, having computed the others\' first moves before making its own. Its spheres are few and each is precious, wrapped in shields that heal if given a breath. The Oracle has read the fracture. The answer is already decided; the Collective only has to survive long enough to give it.',
+  intro: 'The Collective wakes last, as it always does, having computed the others\' first moves before making its own. Its cells are few and each is precious, wrapped in shields that heal if given a breath. The Oracle has read the fracture. The answer is already decided; the Collective only has to survive long enough to give it.',
   chapters: [
     // ---------------- ACT I
     {
@@ -23,7 +23,7 @@ export const GREEN_LESSONS = {
     },
     {
       key: 'green-2', title: 'Long Sight', theme: 'frost', size: 48, seed: 'protocol-2',
-      story: ['Frostbite. Crusher Tanks on the ice, escorting drill crews to veins the Collective was saving.', 'The Core answers with the Lens Team: two spheres that focus light into a beam that can cross a frozen lake and open a tank like a tin. They see further than anything alive. They must, because they die to a stiff breeze.'],
+      story: ['Frostbite. Crusher Tanks on the ice, escorting drill crews to veins the Collective was saving.', 'The Core answers with the Lens Team: two lenses that focus light into a beam that can cross a frozen lake and open a tank like a tin. They see further than anything alive. They must, because they die to a stiff breeze.'],
       briefing: 'Range and vision: field Lens Teams, kill armour from beyond its reach, and take the veins back.',
       epilogue: ['The tanks burn on the ice with no idea where the beams came from.', 'The Oracle notes a new pattern: the Foundry is fortifying the drill fields with Bunkers.'],
       player: { faction: F, ore: 480, flux: 110, units: ['wardens', 'lenses'], buildings: ['siphon', 'bastion'], squads: [{ key: 'wardens', at: [3, 4] }] },

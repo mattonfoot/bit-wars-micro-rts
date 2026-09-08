@@ -4,7 +4,7 @@ import { garrison, war, obj, stage, wave } from './common.js';
 const F = 'blue';
 export const BLUE_LESSONS = {
   faction: F, title: 'Shear', tagline: 'The Swarm wakes. The Swarm divides. The Swarm takes.',
-  intro: 'The Hive slept through the long dark, its triangles folded flat against the shear-line. Now the ore hum has returned and the Apex stirs. The Swarm does not plan. It multiplies, it moves, and it arrives from the side nobody is watching.',
+  intro: 'The Hive slept through the long dark, its swarms folded flat against the shear-line. Now the ore hum has returned and the Apex stirs. The Swarm does not plan. It multiplies, it moves, and it arrives from the side nobody is watching.',
   chapters: [
     // ---------------- ACT I: lessons
     {
@@ -53,7 +53,7 @@ export const BLUE_LESSONS = {
     },
     {
       key: 'blue-4', title: 'Wings over Ash', theme: 'ashfall', size: 64, seed: 'shear-4',
-      story: ['The Ashfall is Foundry country: drill rigs on every vein, bunkers on every road, lava between. On the ground the Swarm would be ground down.', 'So the Hive raises a Spire, and from the Spire come Kites: hovering triangles that ignore lava, walls and roads alike. An economy that cannot be defended is not an economy.'],
+      story: ['The Ashfall is Foundry country: drill rigs on every vein, bunkers on every road, lava between. On the ground the Swarm would be ground down.', 'So the Hive raises a Spire, and from the Spire come Kites: hovering raiders that ignore lava, walls and roads alike. An economy that cannot be defended is not an economy.'],
       briefing: 'Harassment: build a Spire, raise Kites, burn the Foundry drill rigs, and starve a living opponent while you hold the points.',
       epilogue: ['Rig after rig goes dark. With no ore the Foundry stops building, then stops fighting, then simply stops.', 'The Apex has watched long enough. It will lead the next assault itself.'],
       player: { faction: F, ore: 550, flux: 150, units: ['darts', 'needles', 'wedges', 'kites'], buildings: ['lode', 'nest', 'spire', 'thorn', 'claim'] },

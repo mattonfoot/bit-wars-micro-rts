@@ -22,7 +22,7 @@ export const FACTIONS = {
     shape: 'tri',
     tagline: 'Numbers. Speed. Flanks.',
     color: '#3d8bff', alt: '#31d5e6', dark: '#1a3f86', light: '#a9ccff',
-    lore: 'A hive of self-replicating triangles. Individually fragile, the Swarm wins by out-producing, out-running and out-flanking anything slower than itself.',
+    lore: 'A hive that divides faster than it can be killed. Individually fragile, the Swarm wins by out-producing, out-running and out-flanking anything slower than itself.',
     playstyle: ['Cheapest, fastest units', 'Large squads: losses feel small, wins feel huge', 'Flank bonus doubled', 'Weak to blast and suppression'],
     units: {
       darts: {
@@ -59,7 +59,7 @@ export const FACTIONS = {
         weapon: { range: 4.5, dmg: 7, rof: 2.0, type: 'light', supp: 4, travel: 0 },
         capRate: 0, canCapture: false, shape: 'kite', noCover: true,
         role: 'Air harasser', strong: 'Infantry, extractors', weak: 'Anti-armour, energy',
-        desc: 'Hovering triangles that ignore terrain. Perfect for raiding economy and pinning squads.',
+        desc: 'Hovering raiders that ignore terrain. Perfect for raiding economy and pinning squads.',
       },
       obelisk: {
         key: 'obelisk', name: 'Obelisk', building: 'spire', tier: 3, requires: 'nest',
@@ -96,7 +96,7 @@ export const FACTIONS = {
     shape: 'square',
     tagline: 'Steel. Suppression. Siege.',
     color: '#ff4b3e', alt: '#ff9a2e', dark: '#7a1f18', light: '#ffb3ad',
-    lore: 'Riveted squares forged for one purpose: to hold ground. Foundry squads are few but tough, and their heavy weapons pin whole armies in place.',
+    lore: 'Riveted iron forged for one purpose: to hold ground. Foundry squads are few but tough, and their heavy weapons pin whole armies in place.',
     playstyle: ['Sturdiest units and buildings', 'Suppression weapons break enemy morale', 'Breachers and tanks destroy terrain', 'Slow; weak to fast flankers'],
     units: {
       bolts: {
@@ -170,7 +170,7 @@ export const FACTIONS = {
     shape: 'circle',
     tagline: 'Shields. Precision. Patience.',
     color: '#3ddc84', alt: '#b5e61d', dark: '#155c38', light: '#b6f5d1',
-    lore: 'Serene spheres wrapped in regenerating shields. The Collective fields few units, each precious, each nearly impossible to kill if you let it breathe.',
+    lore: 'A serene order wrapped in regenerating shields. The Collective fields few units, each precious, each nearly impossible to kill if you let it breathe.',
     playstyle: ['Shields regenerate when out of combat', 'Fewest, most expensive units', 'Long range and vision', 'Weak to sustained blast damage'],
     units: {
       wardens: {

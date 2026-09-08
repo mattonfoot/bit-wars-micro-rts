@@ -25,7 +25,7 @@ function rot(pts, a) { const c = Math.cos(a), s = Math.sin(a); return pts.map(([
 export function drawUnit(ctx, shape, x, y, r, facing, col, opts = {}) {
   ctx.save();
   ctx.translate(x, y);
-  ctx.fillStyle = col.fill; ctx.strokeStyle = col.stroke; ctx.lineWidth = Math.max(1, r * 0.22);
+  ctx.fillStyle = col.fill; ctx.strokeStyle = col.stroke; ctx.lineWidth = Math.max(0.6, r * 0.11);
   ctx.lineJoin = 'round';
   const a = facing;
   switch (shape) {
@@ -98,7 +98,7 @@ export function drawBuilding(ctx, faction, def, x, y, w, h, col, opts = {}) {
   ctx.save();
   ctx.translate(x, y);
   const hw = w / 2 - 3, hh = h / 2 - 3;
-  ctx.fillStyle = col.fill; ctx.strokeStyle = col.stroke; ctx.lineWidth = 2.5; ctx.lineJoin = 'round';
+  ctx.fillStyle = col.fill; ctx.strokeStyle = col.stroke; ctx.lineWidth = 1.2; ctx.lineJoin = 'round';
   const t = opts.time || 0;
   if (faction === 'blue') {
     if (def.hq) {
@@ -123,10 +123,10 @@ export function drawBuilding(ctx, faction, def, x, y, w, h, col, opts = {}) {
     const R = Math.min(hw, hh);
     ctx.beginPath(); ctx.arc(0, 0, R, 0, TAU); ctx.fill(); ctx.stroke();
     ctx.fillStyle = col.dark;
-    if (def.hq) { ctx.beginPath(); ctx.arc(0, 0, R * 0.7, 0, TAU); ctx.fill(); ctx.strokeStyle = col.light; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(0, 0, R * 0.45, 0, TAU); ctx.stroke(); ctx.fillStyle = col.light; ctx.beginPath(); ctx.arc(0, 0, R * 0.2, 0, TAU); ctx.fill(); }
+    if (def.hq) { ctx.beginPath(); ctx.arc(0, 0, R * 0.7, 0, TAU); ctx.fill(); ctx.strokeStyle = col.light; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(0, 0, R * 0.45, 0, TAU); ctx.stroke(); ctx.fillStyle = col.light; ctx.beginPath(); ctx.arc(0, 0, R * 0.2, 0, TAU); ctx.fill(); }
     else if (def.onOre) { ctx.beginPath(); ctx.arc(0, 0, R * 0.5, 0, TAU); ctx.fill(); ctx.fillStyle = col.light; ctx.beginPath(); ctx.arc(-R * 0.2, -R * 0.2, R * 0.18, 0, TAU); ctx.fill(); }
     else if (def.turret) { ctx.beginPath(); ctx.arc(0, 0, R * 0.55, 0, TAU); ctx.fill(); ctx.save(); ctx.rotate(opts.facing || 0); ctx.fillStyle = col.stroke; ctx.fillRect(0, -2, R * 1.2, 4); ctx.restore(); }
-    else if (def.onPoint) { ctx.strokeStyle = col.light; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(0, 0, R * 0.55, 0, TAU); ctx.stroke(); }
+    else if (def.onPoint) { ctx.strokeStyle = col.light; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(0, 0, R * 0.55, 0, TAU); ctx.stroke(); }
     else if (def.upgrade) { for (let i = 0; i < 3; i++) { const an = t * 0.8 + (i * TAU) / 3; ctx.beginPath(); ctx.arc(Math.cos(an) * R * 0.45, Math.sin(an) * R * 0.45, R * 0.22, 0, TAU); ctx.fill(); } }
     else { ctx.beginPath(); ctx.ellipse(0, 0, R * 0.75, R * 0.45, 0, 0, TAU); ctx.fill(); ctx.fillStyle = col.light; ctx.beginPath(); ctx.arc(0, 0, R * 0.2, 0, TAU); ctx.fill(); }
   }
@@ -161,7 +161,7 @@ export function unitIconSVG(faction, shape, color, size = 28) {
         : shape === 'oracle' ? `<circle cx="${h}" cy="${h}" r="${s * 0.3}" /><circle cx="${h}" cy="${h}" r="${s * 0.44}" fill="none" stroke="${c}" stroke-width="2" stroke-dasharray="3 3"/>`
         : `<circle cx="${h}" cy="${h}" r="${s * 0.4}" />`;
   }
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 ${s} ${s}" fill="${c}" stroke="#0b0d12" stroke-width="1.5">${body}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 ${s} ${s}" fill="${c}" stroke="#0b0d12" stroke-width="0.8">${body}</svg>`;
 }
 export function buildingIconSVG(faction, def, color, size = 28) {
   const s = size, h = s / 2, c = color;
@@ -183,5 +183,5 @@ export function buildingIconSVG(faction, def, color, size = 28) {
     : def.onPoint ? `<circle cx="${h}" cy="${h}" r="${s * 0.4}" fill="none" stroke="${c}" stroke-width="${s * 0.15}"/>`
     : def.upgrade ? `<circle cx="${s * 0.35}" cy="${s * 0.35}" r="${s * 0.2}"/><circle cx="${s * 0.65}" cy="${s * 0.35}" r="${s * 0.2}"/><circle cx="${h}" cy="${s * 0.68}" r="${s * 0.2}"/>`
     : `<circle cx="${h}" cy="${h}" r="${s * 0.45}"/><ellipse cx="${h}" cy="${h}" rx="${s * 0.3}" ry="${s * 0.16}" fill="#111"/>`;
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 ${s} ${s}" fill="${c}" stroke="#0b0d12" stroke-width="1.5">${body}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 ${s} ${s}" fill="${c}" stroke="#0b0d12" stroke-width="0.8">${body}</svg>`;
 }

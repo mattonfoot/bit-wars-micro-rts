@@ -56,13 +56,13 @@ export const BLUE_LESSONS = {
       story: ['The Ashfall is Foundry country: drill rigs on every vein, bunkers on every road, lava between. On the ground the Swarm would be ground down.', 'So the Hive raises a Spire, and from the Spire come Kites: hovering raiders that ignore lava, walls and roads alike. An economy that cannot be defended is not an economy.'],
       briefing: 'Harassment: build a Spire, raise Kites, burn the Foundry drill rigs, and starve a living opponent while you hold the points.',
       epilogue: ['Rig after rig goes dark. With no ore the Foundry stops building, then stops fighting, then simply stops.', 'The Apex has watched long enough. It will lead the next assault itself.'],
-      player: { faction: F, ore: 550, flux: 150, units: ['darts', 'needles', 'wedges', 'kites'], buildings: ['lode', 'nest', 'spire', 'thorn', 'claim'] },
-      enemy: war('red', 'easy', { incomeMult: 0.9, structures: [{ key: 'drill', at: 'ore:6' }, { key: 'drill', at: 'ore:7' }, { key: 'drill', at: 'ore:4' }, { key: 'bunker', at: [-3, 3] }, { key: 'works', at: [4, -2] }], squads: [{ key: 'bolts', at: [0, 5] }, { key: 'hammers', at: [-4, 0] }] }),
+      player: { faction: F, ore: 800, flux: 300, incomeMult: 1.3, units: ['darts', 'needles', 'wedges', 'kites'], buildings: ['lode', 'nest', 'spire', 'thorn', 'claim'], structures: [{ key: 'lode', at: 'ore:0' }, { key: 'lode', at: 'ore:1' }, { key: 'thorn', at: [3, 3] }], squads: [{ key: 'darts', at: [2, 4] }], points: [0, 1] },
+      enemy: war('red', 'easy', { incomeMult: 0.65, aiPop: 16, structures: [{ key: 'drill', at: 'ore:6' }, { key: 'drill', at: 'ore:7' }, { key: 'drill', at: 'ore:4' }, { key: 'bunker', at: [-3, 3] }, { key: 'works', at: [4, -2] }], squads: [{ key: 'bolts', at: [0, 5] }] }),
       stages: [
         stage([obj('spire', 'build', 'Build a Spire', { key: 'spire', n: 1 }), obj('kites', 'train', 'Train 2 Kite Wings', { key: 'kites', n: 2 })]),
-        stage([obj('rigs', 'destroy', 'Destroy 3 Drill Rigs', { key: 'drill', n: 3 }), obj('hold', 'hold', 'Hold 4 points for 90 seconds', { n: 4, seconds: 90 })], 'Kites fly. Cross the lava, hit the drill rigs, leave before the bunkers turn.'),
+        stage([obj('rigs', 'destroy', 'Destroy 3 Drill Rigs', { key: 'drill', n: 3 }), obj('hold', 'hold', 'Hold 3 points for 90 seconds', { n: 3, seconds: 90 })], 'Kites fly. Cross the lava, hit the drill rigs, and pull out before the bunkers turn. Two Burrows are already feeding the Hive; keep them alive.'),
       ],
-      hints: [{ at: 'start', text: 'The Foundry here is alive and will attack. Claim your veins and points early.' }, { at: 'stage:1', text: 'Kites are vehicles: anti-armour and energy hurt them. Avoid Needle-type fire and turrets.' }],
+      hints: [{ at: 'start', text: 'The Foundry here is alive and will attack. Claim points early and keep a Thorn and some Darts at home.' }, { at: 'stage:1', text: 'Kites are vehicles: rifles barely scratch them, but anti-armour, turrets and Breachers do. Hit a rig, then fly home to heal before the response arrives.' }],
     },
     {
       key: 'blue-5', title: 'Apex', theme: 'urban', size: 64, seed: 'shear-5',

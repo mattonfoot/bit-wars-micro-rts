@@ -54,8 +54,8 @@ export const FACTIONS = {
       },
       kites: {
         key: 'kites', name: 'Kite Wing', building: 'spire', tier: 2,
-        cost: { ore: 190, flux: 60 }, pop: 5, buildTime: 24,
-        size: 3, hp: 70, armor: 'vehicle', speed: 150, sight: 10, radius: 7, flying: true,
+        cost: { ore: 190, flux: 45 }, pop: 5, buildTime: 22,
+        size: 3, hp: 82, armor: 'vehicle', speed: 150, sight: 10, radius: 7, flying: true,
         weapon: { range: 4.5, dmg: 7, rof: 2.0, type: 'light', supp: 4, travel: 0 },
         capRate: 0, canCapture: false, shape: 'kite', noCover: true,
         role: 'Air harasser', strong: 'Infantry, extractors', weak: 'Anti-armour, energy',

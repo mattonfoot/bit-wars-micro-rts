@@ -33,8 +33,8 @@ export function drawUnit(ctx, shape, x, y, r, facing, col, opts = {}) {
     case 'needle': poly(ctx, rot([[r * 1.9, 0], [-r * 0.8, r * 0.55], [-r * 0.5, 0], [-r * 0.8, -r * 0.55]], a)); ctx.fill(); ctx.stroke(); break;
     case 'chevron': poly(ctx, rot([[r * 1.3, 0], [-r * 1.0, r * 1.0], [-r * 0.3, 0], [-r * 1.0, -r * 1.0]], a)); ctx.fill(); ctx.stroke(); break;
     case 'kite':
-      poly(ctx, rot([[r * 1.5, 0], [0, r * 0.9], [-r * 1.0, 0], [0, -r * 0.9]], a)); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = col.stroke; poly(ctx, rot([[r * 0.5, 0], [-r * 0.2, r * 0.3], [-r * 0.2, -r * 0.3]], a)); ctx.fill();
+      poly(ctx, rot([[r * 0.7, 0], [-r * 0.6, r * 1.6], [-r * 0.6, -r * 1.6]], a)); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = col.stroke; poly(ctx, rot([[r * 0.35, 0], [-r * 0.35, r * 0.35], [-r * 0.35, -r * 0.35]], a)); ctx.fill();
       break;
     case 'obelisk':
       poly(ctx, rot([[r * 1.1, 0], [-r * 0.8, r], [-r * 0.8, -r]], a)); ctx.fill(); ctx.stroke();
@@ -141,7 +141,7 @@ export function unitIconSVG(faction, shape, color, size = 28) {
     case 'blue':
       body = shape === 'needle' ? `<polygon points="${s * 0.95},${h} ${s * 0.1},${s * 0.8} ${s * 0.25},${h} ${s * 0.1},${s * 0.2}" />`
         : shape === 'chevron' ? `<polygon points="${s * 0.9},${h} ${s * 0.1},${s * 0.9} ${s * 0.4},${h} ${s * 0.1},${s * 0.1}" />`
-        : shape === 'kite' ? `<polygon points="${s * 0.95},${h} ${h},${s * 0.9} ${s * 0.15},${h} ${h},${s * 0.1}" />`
+        : shape === 'kite' ? `<polygon points="${s * 0.8},${h} ${s * 0.2},${s * 0.97} ${s * 0.2},${s * 0.03}" />`
         : shape === 'apex' ? `<polygon points="${h},${s * 0.05} ${s * 0.95},${s * 0.8} ${s * 0.05},${s * 0.8}" /><circle cx="${h}" cy="${s * 0.55}" r="${s * 0.12}" fill="#fff"/>`
         : `<polygon points="${s * 0.92},${h} ${s * 0.12},${s * 0.9} ${s * 0.12},${s * 0.1}" />`;
       break;

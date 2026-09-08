@@ -13,7 +13,7 @@ const byStyle = (faction, style, nth = 0) => CAMPAIGNS[faction].chapters.filter(
 function start(ch, withAi = false) {
   const c = Campaign.build(ch); const w = c.world;
   const enemies = Campaign.enemies(ch), allies = Campaign.allies(ch);
-  const mk = (spec, pid) => (withAi && spec.ai ? new AI(w, pid, spec.ai === 'passive' ? 'normal' : spec.ai, { passive: spec.ai === 'passive' }) : null);
+  const mk = (spec, pid) => (withAi && spec.ai ? new AI(w, pid, spec.ai === 'passive' ? 'normal' : spec.ai, { passive: spec.ai === 'passive', popCap: spec.aiPop }) : null);
   const ais = [...enemies.map((E, k) => mk(E, 1 + k)), ...allies.map((A, k) => mk(A, 1 + enemies.length + k))].filter(Boolean);
   const run = (secs, until) => { for (let i = 0; i < 60 * secs; i++) { w.tick(TICK); for (const ai of ais) ai.update(TICK); c.onEvents(w.events); c.update(TICK); w.events.length = 0; w.dirtyTiles.length = 0; if (until && until()) return true; } return until ? until() : true; };
   return { c, w, run };

@@ -105,7 +105,7 @@ class Game {
   }
   makeChapterAI(chapter, world) {
     const enemies = Campaign.enemies(chapter), allies = Campaign.allies(chapter);
-    const mk = (spec, pid) => { if (!spec.ai) return null; const passive = spec.ai === 'passive'; return new AI(world, pid, passive ? 'normal' : spec.ai, { passive }); };
+    const mk = (spec, pid) => { if (!spec.ai) return null; const passive = spec.ai === 'passive'; return new AI(world, pid, passive ? 'normal' : spec.ai, { passive, popCap: spec.aiPop }); };
     return [...enemies.map((E, k) => mk(E, 1 + k)), ...allies.map((A, k) => mk(A, 1 + enemies.length + k))].filter(Boolean);
   }
   resume(save) {

@@ -1,6 +1,6 @@
 // Small builders shared by the faction chapter files.
 export const garrison = (faction, o = {}) => ({ faction, hq: false, ai: null, squads: o.squads || [], structures: o.structures || [], points: o.points || [] });
-export const war = (faction, ai, o = {}) => ({ faction, ai, incomeMult: o.incomeMult || 1, structures: o.structures || [], squads: o.squads || [], points: o.points || [4, 5, 6], hq: o.hq });
+export const war = (faction, ai, o = {}) => ({ faction, ai, incomeMult: o.incomeMult || 1, structures: o.structures || [], squads: o.squads || [], points: o.points || [4, 5, 6], hq: o.hq, aiPop: o.aiPop });
 export const obj = (id, type, text, extra = {}) => ({ id, type, text, ...extra });
 export const stage = (objectives, intro) => (intro ? { intro, objectives } : { objectives });
 export const wave = (at, units, extra = {}) => ({ at, units, ...extra });

@@ -12,7 +12,7 @@ const DIFF = {
 
 export class AI {
   constructor(world, pid, difficulty = 'normal', opts = {}) {
-    this.w = world; this.pid = pid; this.passive = !!opts.passive;
+    this.w = world; this.pid = pid; this.passive = !!opts.passive; this.popCap = opts.popCap || POP_CAP; // scripted chapters can hold the army small
     this.d = DIFF[difficulty] || DIFF.normal;
     world.players[pid].incomeMult = this.d.income;
     this.fac = FACTIONS[world.players[pid].faction];
@@ -116,6 +116,7 @@ export class AI {
     const wantAntiInf = inf > veh * 2;
     const underThreat = w.time - this.lastDefend < 20;
     const armySmall = me.pop < 12 || (w.time < 240 && me.pop < 16);
+    if (me.pop >= this.popCap) return;
     for (const b of w.playerBuildings(this.pid)) {
       if (!b.def.trains || !b.done || b.queue.length >= 1) continue;
       if (this.saving && !underThreat && !armySmall) break; // let the economy catch up

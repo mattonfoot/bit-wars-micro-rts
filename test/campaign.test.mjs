@@ -13,7 +13,7 @@ for (const camp of Object.values(CAMPAIGNS)) {
     const c = Campaign.build(ch);
     const w = c.world;
     const enemies = Campaign.enemies(ch), allies = Campaign.allies(ch);
-    const mk = (spec, pid) => (spec.ai ? new AI(w, pid, spec.ai === 'passive' ? 'normal' : spec.ai, { passive: spec.ai === 'passive' }) : null);
+    const mk = (spec, pid) => (spec.ai ? new AI(w, pid, spec.ai === 'passive' ? 'normal' : spec.ai, { passive: spec.ai === 'passive', popCap: spec.aiPop }) : null);
     const ais = [...enemies.map((E, k) => mk(E, 1 + k)), ...allies.map((A, k) => mk(A, 1 + enemies.length + k))].filter(Boolean);
     assert.ok(w.players[0].hqId || ch.player.hq === false, `${ch.key}: player HQ`);
     const neutralCount = Object.keys(c.neutralIds).length;

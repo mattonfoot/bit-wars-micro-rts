@@ -38,10 +38,10 @@ export function ico(name, size = 16, cls = '') {
 }
 
 // Faction emblems in the same line style, coloured with the faction's own colour: the Swarm is an insect
-// carapace (broad shoulders tapering to a point, an inverted triangle with plated segments), the Foundry a hammer (a chunky head with chamfered left corners and a flared right face, on a thin shaft with three wraps of binding at the grip, each piece separated by a thin gap),
+// carapace (broad shoulders tapering to a point, an inverted triangle of four plates separated by thin gaps), the Foundry a hammer (a chunky head with chamfered left corners and a flared right face, on a thin shaft with three wraps of binding at the grip, each piece separated by a thin gap),
 // the Collective a solid core flanked by two outlined arc segments, split by a straight vertical gap top and bottom.
 const EMBLEMS = {
-  blue: 'M3 5h18l-2 4-7 12-7-12zM5 9h14M7.3 13h9.4M9.6 17h4.8',
+  blue: 'M3 5H21L19.2 8.6H4.8ZM5.2 9.4H18.8L16.9 12.6H7.1ZM7.5 13.3H16.5L14.6 16.5H9.4ZM9.8 17.2H14.2L12 21Z',
   red: 'M5.6 2H21l-2.6 7H5.6L4 7.4V3.6zM10.7 9.9h2.6v4.8h-2.6zM10.2 16.7l3.6-1.1v1.2l-3.6 1.1zM10.2 19.4l3.6-1.1v1.2l-3.6 1.1zM10.2 22.1l3.6-1.1v1.2l-3.6 1.1z',
   green: { d: 'M13.8 2.67A9.5 9.5 0 0 1 13.8 21.33V18.04A6.3 6.3 0 0 0 13.8 5.96ZM10.2 2.67A9.5 9.5 0 0 0 10.2 21.33V18.04A6.3 6.3 0 0 1 10.2 5.96Z', fill: 'M12 12m-3.1 0a3.1 3.1 0 1 0 6.2 0a3.1 3.1 0 1 0-6.2 0' },
 };

@@ -41,7 +41,7 @@ export function ico(name, size = 16, cls = '') {
 // carapace (broad shoulders tapering to a point, an inverted triangle of three plates with clear gaps, the middle one solid), the Foundry a hammer (a chunky head with chamfered left corners and a flared right face, on a thin shaft with three wraps of binding at the grip, each piece separated by a thin gap),
 // the Collective a solid core flanked by two outlined arc segments, split by a straight vertical gap top and bottom.
 const EMBLEMS = {
-  blue: { d: 'M3 5H21L19.4 8.3H4.6ZM9.5 16.7H14.5L12 21Z', fill: 'M5.4 9.7H18.6L15.3 15.3H8.7Z' },
+  blue: { d: 'M3 5H21L19.4 8.3H4.6ZM8.3 14.6H15.7L12 21Z', fill: 'M5.4 9.7H18.6L16.6 13.2H7.4Z' },
   red: 'M5.6 2H21l-2.6 7H5.6L4 7.4V3.6zM10.7 10.3h2.6v4h-2.6zM10.2 16.5l3.6-1v1.1l-3.6 1zM10.2 19.4l3.6-1v1.1l-3.6 1zM10.2 22.3l3.6-1v1.1l-3.6 1z',
   green: { d: 'M13.8 2.67A9.5 9.5 0 0 1 13.8 21.33V18.04A6.3 6.3 0 0 0 13.8 5.96ZM10.2 2.67A9.5 9.5 0 0 0 10.2 21.33V18.04A6.3 6.3 0 0 1 10.2 5.96Z', fill: 'M12 12m-3.1 0a3.1 3.1 0 1 0 6.2 0a3.1 3.1 0 1 0-6.2 0' },
 };

@@ -25,7 +25,7 @@ function rot(pts, a) { const c = Math.cos(a), s = Math.sin(a); return pts.map(([
 export function drawUnit(ctx, shape, x, y, r, facing, col, opts = {}) {
   ctx.save();
   ctx.translate(x, y);
-  ctx.fillStyle = col.fill; ctx.strokeStyle = col.stroke; ctx.lineWidth = Math.max(0.6, r * 0.11);
+  ctx.fillStyle = col.fill; ctx.strokeStyle = 'rgba(0,0,0,0)' /* no outline: shapes are flat fills */; ctx.lineWidth = Math.max(0.6, r * 0.11);
   ctx.lineJoin = 'round';
   const a = facing;
   switch (shape) {
@@ -68,7 +68,7 @@ export function drawUnit(ctx, shape, x, y, r, facing, col, opts = {}) {
       break;
     case 'circle': ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.fill(); ctx.stroke(); ctx.fillStyle = col.stroke; ctx.beginPath(); ctx.arc(Math.cos(a) * r * 0.5, Math.sin(a) * r * 0.5, r * 0.25, 0, TAU); ctx.fill(); break;
     case 'lens': ctx.rotate(a); ctx.beginPath(); ctx.ellipse(0, 0, r * 1.6, r * 0.7, 0, 0, TAU); ctx.fill(); ctx.stroke(); ctx.fillStyle = col.stroke; ctx.beginPath(); ctx.arc(r * 0.9, 0, r * 0.2, 0, TAU); ctx.fill(); break;
-    case 'ring': ctx.lineWidth = r * 0.55; ctx.strokeStyle = col.fill; ctx.beginPath(); ctx.arc(0, 0, r * 0.8, 0, TAU); ctx.stroke(); ctx.lineWidth = Math.max(1, r * 0.18); ctx.strokeStyle = col.stroke; ctx.beginPath(); ctx.arc(0, 0, r * 1.08, 0, TAU); ctx.stroke(); ctx.beginPath(); ctx.arc(0, 0, r * 0.52, 0, TAU); ctx.stroke(); break;
+    case 'ring': ctx.lineWidth = r * 0.55; ctx.strokeStyle = col.fill; ctx.beginPath(); ctx.arc(0, 0, r * 0.8, 0, TAU); ctx.stroke(); ctx.lineWidth = Math.max(1, r * 0.18); ctx.strokeStyle = 'rgba(0,0,0,0)' /* no outline: shapes are flat fills */; ctx.beginPath(); ctx.arc(0, 0, r * 1.08, 0, TAU); ctx.stroke(); ctx.beginPath(); ctx.arc(0, 0, r * 0.52, 0, TAU); ctx.stroke(); break;
     case 'halo':
       ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.fill(); ctx.stroke();
       ctx.strokeStyle = col.light; ctx.lineWidth = r * 0.16; ctx.beginPath(); ctx.arc(0, 0, r * 0.65, 0, TAU); ctx.stroke();
@@ -98,13 +98,12 @@ export function drawBuilding(ctx, faction, def, x, y, w, h, col, opts = {}) {
   ctx.save();
   ctx.translate(x, y);
   const hw = w / 2 - 3, hh = h / 2 - 3;
-  ctx.fillStyle = col.fill; ctx.strokeStyle = col.stroke; ctx.lineWidth = 1.2; ctx.lineJoin = 'round';
+  ctx.fillStyle = col.fill; ctx.strokeStyle = 'rgba(0,0,0,0)' /* no outline: shapes are flat fills */; ctx.lineWidth = 1.2; ctx.lineJoin = 'round';
   const t = opts.time || 0;
   if (faction === 'blue') {
     if (def.hq) {
       poly(ctx, [[0, -hh], [hw, hh * 0.8], [-hw, hh * 0.8]]); ctx.fill(); ctx.stroke();
       ctx.fillStyle = col.dark; poly(ctx, [[0, -hh * 0.45], [hw * 0.5, hh * 0.45], [-hw * 0.5, hh * 0.45]]); ctx.fill();
-      ctx.fillStyle = col.light; poly(ctx, [[0, hh * 0.3], [hw * 0.22, -hh * 0.1], [-hw * 0.22, -hh * 0.1]]); ctx.fill();
     } else if (def.onOre) { poly(ctx, [[0, -hh], [hw, hh], [-hw, hh]]); ctx.fill(); ctx.stroke(); ctx.fillStyle = col.dark; ctx.beginPath(); ctx.arc(0, hh * 0.3, hw * 0.35, 0, TAU); ctx.fill(); }
     else if (def.turret) { poly(ctx, [[0, -hh], [hw * 0.8, hh * 0.7], [-hw * 0.8, hh * 0.7]]); ctx.fill(); ctx.stroke(); ctx.save(); ctx.rotate(opts.facing || 0); ctx.fillStyle = col.stroke; ctx.fillRect(0, -2, hw * 1.1, 4); ctx.restore(); }
     else if (def.onPoint) { poly(ctx, [[0, -hh * 1.1], [hw * 0.6, hh * 0.6], [-hw * 0.6, hh * 0.6]]); ctx.fill(); ctx.stroke(); }
@@ -161,7 +160,7 @@ export function unitIconSVG(faction, shape, color, size = 28) {
         : shape === 'oracle' ? `<circle cx="${h}" cy="${h}" r="${s * 0.3}" /><circle cx="${h}" cy="${h}" r="${s * 0.44}" fill="none" stroke="${c}" stroke-width="2" stroke-dasharray="3 3"/>`
         : `<circle cx="${h}" cy="${h}" r="${s * 0.4}" />`;
   }
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 ${s} ${s}" fill="${c}" stroke="#0b0d12" stroke-width="0.8">${body}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 ${s} ${s}" fill="${c}" stroke="none">${body}</svg>`;
 }
 export function buildingIconSVG(faction, def, color, size = 28) {
   const s = size, h = s / 2, c = color;
@@ -183,5 +182,5 @@ export function buildingIconSVG(faction, def, color, size = 28) {
     : def.onPoint ? `<circle cx="${h}" cy="${h}" r="${s * 0.4}" fill="none" stroke="${c}" stroke-width="${s * 0.15}"/>`
     : def.upgrade ? `<circle cx="${s * 0.35}" cy="${s * 0.35}" r="${s * 0.2}"/><circle cx="${s * 0.65}" cy="${s * 0.35}" r="${s * 0.2}"/><circle cx="${h}" cy="${s * 0.68}" r="${s * 0.2}"/>`
     : `<circle cx="${h}" cy="${h}" r="${s * 0.45}"/><ellipse cx="${h}" cy="${h}" rx="${s * 0.3}" ry="${s * 0.16}" fill="#111"/>`;
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 ${s} ${s}" fill="${c}" stroke="#0b0d12" stroke-width="0.8">${body}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 ${s} ${s}" fill="${c}" stroke="none">${body}</svg>`;
 }

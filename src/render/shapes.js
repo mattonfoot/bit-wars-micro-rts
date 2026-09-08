@@ -102,13 +102,13 @@ export function drawBuilding(ctx, faction, def, x, y, w, h, col, opts = {}) {
   const t = opts.time || 0;
   if (faction === 'blue') {
     if (def.hq) {
-      poly(ctx, [[0, -hh], [hw, hh * 0.8], [-hw, hh * 0.8]]); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = col.dark; poly(ctx, [[0, -hh * 0.45], [hw * 0.5, hh * 0.45], [-hw * 0.5, hh * 0.45]]); ctx.fill();
-    } else if (def.onOre) { poly(ctx, [[0, -hh], [hw, hh], [-hw, hh]]); ctx.fill(); ctx.stroke(); ctx.fillStyle = col.dark; ctx.beginPath(); ctx.arc(0, hh * 0.3, hw * 0.35, 0, TAU); ctx.fill(); }
-    else if (def.turret) { poly(ctx, [[0, -hh], [hw * 0.8, hh * 0.7], [-hw * 0.8, hh * 0.7]]); ctx.fill(); ctx.stroke(); ctx.save(); ctx.rotate(opts.facing || 0); ctx.fillStyle = col.stroke; ctx.fillRect(0, -2, hw * 1.1, 4); ctx.restore(); }
-    else if (def.onPoint) { poly(ctx, [[0, -hh * 1.1], [hw * 0.6, hh * 0.6], [-hw * 0.6, hh * 0.6]]); ctx.fill(); ctx.stroke(); }
+      poly(ctx, [[0, -hh * 1.1], [hw, hh * 0.65], [-hw, hh * 0.65]]); ctx.fill(); ctx.stroke(); // apex and base placed so the centroid sits on the building centre
+      ctx.fillStyle = col.dark; poly(ctx, [[0, -hh * 0.5], [hw * 0.5, hh * 0.38], [-hw * 0.5, hh * 0.38]]); ctx.fill();
+    } else if (def.onOre) { poly(ctx, [[0, -hh * 1.1], [hw, hh * 0.75], [-hw, hh * 0.75]]); ctx.fill(); ctx.stroke(); ctx.fillStyle = col.dark; ctx.beginPath(); ctx.arc(0, hh * 0.2, hw * 0.35, 0, TAU); ctx.fill(); }
+    else if (def.turret) { poly(ctx, [[0, -hh * 1.05], [hw * 0.8, hh * 0.6], [-hw * 0.8, hh * 0.6]]); ctx.fill(); ctx.stroke(); ctx.save(); ctx.rotate(opts.facing || 0); ctx.fillStyle = col.stroke; ctx.fillRect(0, -2, hw * 1.1, 4); ctx.restore(); }
+    else if (def.onPoint) { poly(ctx, [[0, -hh * 1.15], [hw * 0.6, hh * 0.55], [-hw * 0.6, hh * 0.55]]); ctx.fill(); ctx.stroke(); }
     else if (def.trains?.includes('kites')) { poly(ctx, [[0, -hh], [hw, 0], [0, hh], [-hw, 0]]); ctx.fill(); ctx.stroke(); ctx.fillStyle = col.dark; poly(ctx, [[0, -hh * 0.5], [hw * 0.5, 0], [0, hh * 0.5], [-hw * 0.5, 0]]); ctx.fill(); }
-    else { poly(ctx, [[-hw, -hh], [hw, -hh], [0, hh]]); ctx.fill(); ctx.stroke(); ctx.fillStyle = col.dark; poly(ctx, [[-hw * 0.5, -hh * 0.6], [hw * 0.5, -hh * 0.6], [0, hh * 0.3]]); ctx.fill(); }
+    else { poly(ctx, [[-hw, -hh * 0.75], [hw, -hh * 0.75], [0, hh * 1.1]]); ctx.fill(); ctx.stroke(); ctx.fillStyle = col.dark; poly(ctx, [[-hw * 0.5, -hh * 0.42], [hw * 0.5, -hh * 0.42], [0, hh * 0.48]]); ctx.fill(); }
   } else if (faction === 'red') {
     ctx.fillRect(-hw, -hh, hw * 2, hh * 2); ctx.strokeRect(-hw, -hh, hw * 2, hh * 2);
     ctx.fillStyle = col.dark;
@@ -165,7 +165,7 @@ export function unitIconSVG(faction, shape, color, size = 28) {
 export function buildingIconSVG(faction, def, color, size = 28) {
   const s = size, h = s / 2, c = color;
   let body;
-  if (faction === 'blue') body = def.hq ? `<polygon points="${h},${s * 0.08} ${s * 0.95},${s * 0.9} ${s * 0.05},${s * 0.9}"/><polygon points="${h},${s * 0.4} ${s * 0.7},${s * 0.78} ${s * 0.3},${s * 0.78}" fill="#111"/>`
+  if (faction === 'blue') body = def.hq ? `<polygon points="${h},${s * 0.03} ${s * 0.95},${s * 0.84} ${s * 0.05},${s * 0.84}"/><polygon points="${h},${s * 0.34} ${s * 0.7},${s * 0.71} ${s * 0.3},${s * 0.71}" fill="#111"/>`
     : def.turret ? `<polygon points="${h},${s * 0.1} ${s * 0.85},${s * 0.85} ${s * 0.15},${s * 0.85}"/><rect x="${h}" y="${s * 0.5}" width="${s * 0.4}" height="${s * 0.1}" fill="#fff"/>`
     : def.onOre ? `<polygon points="${h},${s * 0.1} ${s * 0.9},${s * 0.9} ${s * 0.1},${s * 0.9}"/><circle cx="${h}" cy="${s * 0.68}" r="${s * 0.12}" fill="#111"/>`
     : def.onPoint ? `<polygon points="${h},${s * 0.05} ${s * 0.75},${s * 0.9} ${s * 0.25},${s * 0.9}"/>`

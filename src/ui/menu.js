@@ -203,7 +203,7 @@ export class Menu {
       const wrap = r.querySelector(id);
       for (const it of items) {
         const b = document.createElement('button');
-        b.className = 'chip' + (String(s[key]) === String(it) ? ' sel' : ''); b.textContent = fmt(it);
+        b.className = 'chip' + (String(s[key]) === String(it) ? ' sel' : ''); b.innerHTML = fmt(it);
         b.onclick = () => { s[key] = it; wrap.querySelectorAll('.chip').forEach((c) => c.classList.remove('sel')); b.classList.add('sel'); this.save(); after?.(); };
         wrap.appendChild(b);
       }

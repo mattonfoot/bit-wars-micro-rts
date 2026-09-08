@@ -105,6 +105,7 @@ export class TerrainLayer {
   constructor(map) {
     this.map = map; this.grid = map.grid;
     this.theme = THEMES[map.theme];
+    this.ink = { ...INK, deep: 'rgba(59,139,255,0.35)', ...(this.theme.ink || {}) }; // per-theme accents on the shared line style
     this.canvas = document.createElement('canvas');
     this.canvas.width = Math.ceil(this.grid.worldW); this.canvas.height = Math.ceil(this.grid.worldH);
     this.ctx = this.canvas.getContext('2d');
@@ -217,10 +218,10 @@ export class TerrainLayer {
       const deep = this.mask((t) => t === T.WATER);
       const coast = this.smoothField(water), deepF = this.smoothField(deep);
       for (let s = 0; s < coast.length; s++) { coast[s] += this.nWood[s] * 0.16; deepF[s] += this.nMtn[s] * 0.16; }
-      this.strokeLevels(coast, [0.5], () => ({ color: INK.water, width: 1.8 }));
-      this.strokeLevels(deepF, [0.78], () => ({ color: 'rgba(59,139,255,0.35)', width: 1 }));
+      this.strokeLevels(coast, [0.5], () => ({ color: this.ink.water, width: 1.8 }));
+      this.strokeLevels(deepF, [0.78], () => ({ color: this.ink.deep, width: 1 }));
     }
-    c.fillStyle = INK.shallow;
+    c.fillStyle = this.ink.shallow;
     for (let i = 0; i < N; i++) {
       if (tiles[i] !== T.SHALLOW) continue;
       for (let k = 0; k < 3; k++) { c.beginPath(); c.arc(g.cxs[i] + (h2(i, 30 + k) - 0.5) * 22, g.cys[i] + (h2(i, 40 + k) - 0.5) * 22, 1.2, 0, TAU); c.fill(); }
@@ -230,15 +231,21 @@ export class TerrainLayer {
     if (brush.some((v) => v)) {
       const wood = this.smoothField(brush);
       for (let s = 0; s < wood.length; s++) wood[s] += this.nWood[s] * 0.34;
-      this.strokeLevels(wood, [0.5], () => ({ color: INK.brush, width: 1.4 }));
-      c.strokeStyle = INK.brush; c.lineWidth = 1;
+      this.strokeLevels(wood, [0.5], () => ({ color: this.ink.brush, width: 1.4 }));
+      c.strokeStyle = this.ink.brush; c.lineWidth = 1;
+      const decor = this.theme.decor;
       for (let i = 0; i < N; i++) {
         if (!brush[i]) continue;
         for (let k = 0; k < 2; k++) {
           if (h2(i, 15 + k * 9) > 0.5) continue;
           const x = g.cxs[i] + (h2(i, 17 + k) - 0.5) * 22, y = g.cys[i] + (h2(i, 18 + k) - 0.5) * 22;
           if (this.fieldAt(wood, x, y) < 0.62) continue;
-          c.beginPath(); c.arc(x, y, 2.5 + h2(i, 16 + k) * 2.5, 0, TAU); c.stroke();
+          const r = 2.5 + h2(i, 16 + k) * 2.5;
+          c.beginPath();
+          if (decor === 'pines') { c.moveTo(x, y - r * 1.3); c.lineTo(x + r, y + r * 0.7); c.lineTo(x - r, y + r * 0.7); c.closePath(); }
+          else if (decor === 'crystals' || decor === 'embers') { c.moveTo(x, y - r); c.lineTo(x + r * 0.7, y); c.lineTo(x, y + r); c.lineTo(x - r * 0.7, y); c.closePath(); }
+          else c.arc(x, y, r, 0, TAU);
+          c.stroke();
         }
       }
     }
@@ -257,13 +264,13 @@ export class TerrainLayer {
       for (let s = 0; s < base.length; s++) { const h = base[s] * this.steep[s] + this.nMtn[s] * 0.22 * Math.min(1, base[s]); height[s] = h; if (h > maxH) maxH = h; }
       const outer = new Float32Array(base.length);
       for (let s = 0; s < base.length; s++) outer[s] = base[s] + this.nMtn[s] * 0.12;
-      this.strokeLevels(outer, [0.5], () => ({ color: INK.mountain, width: 1.5 }));
+      this.strokeLevels(outer, [0.5], () => ({ color: this.ink.mountain, width: 1.5 }));
       const levels = []; for (let lv = 0.9; lv < maxH; lv += 0.45) levels.push(lv);
       this.strokeLevels(height, levels, (k) => ({ color: k % 4 === 3 ? 'rgba(255,255,255,0.72)' : 'rgba(255,255,255,0.48)', width: k % 4 === 3 ? 1.1 : 0.85 }));
     }
     // buildings (walls and ruins)
-    this.strokeLoops(traceLoops(g, this.mask((t) => t === T.WALL || t === T.RUIN)), INK.building, 1.8, 0);
-    c.strokeStyle = INK.building; c.lineWidth = 1;
+    this.strokeLoops(traceLoops(g, this.mask((t) => t === T.WALL || t === T.RUIN)), this.ink.building, 1.8, 0);
+    c.strokeStyle = this.ink.building; c.lineWidth = 1;
     for (let i = 0; i < N; i++) {
       const t = tiles[i], x = g.cxs[i], y = g.cys[i];
       if (t === T.RUIN) c.strokeRect(x - 6, y - 6, 12, 12);
@@ -273,7 +280,7 @@ export class TerrainLayer {
     for (let i = 0; i < N; i++) {
       const t = tiles[i], cx = g.cxs[i], cy = g.cys[i];
       if (t === T.ROCK) {
-        c.strokeStyle = INK.rock; c.lineWidth = 1.4; c.beginPath();
+        c.strokeStyle = this.ink.rock; c.lineWidth = 1.4; c.beginPath();
         for (let k = 0; k < 7; k++) { const a = (k / 7) * TAU; const rr = (9 + h2(i, 16) * 3) * (0.7 + h2(i, 70 + k) * 0.4); const X = cx + Math.cos(a) * rr, Y = cy + Math.sin(a) * rr; if (k) c.lineTo(X, Y); else c.moveTo(X, Y); }
         c.closePath(); c.stroke();
         c.beginPath(); c.moveTo(cx - 4, cy - 2); c.lineTo(cx + 2, cy + 3); c.stroke();

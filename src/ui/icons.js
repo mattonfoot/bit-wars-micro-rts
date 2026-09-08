@@ -39,11 +39,11 @@ export function ico(name, size = 16, cls = '') {
 
 // Faction emblems in the same line style, coloured with the faction's own colour: the Swarm is an insect
 // carapace (broad shoulders tapering to a point, an inverted triangle with plated segments), the Foundry a hammer (a broad head on a thin shaft with three wraps of binding at the grip),
-// the Collective a solid core flanked by two hollow arcs, split by a straight vertical gap top and bottom.
+// the Collective a solid core flanked by two outlined arc segments, split by a straight vertical gap top and bottom.
 const EMBLEMS = {
   blue: 'M3 5h18l-2 4-7 12-7-12zM5 9h14M7.3 13h9.4M9.6 17h4.8',
   red: 'M4 3h16v5H4zM10.7 8h2.6v6.8h-2.6zM10.1 16.3l3.8-1.3v1.4l-3.8 1.3zM10.1 18.8l3.8-1.3v1.4l-3.8 1.3zM10.1 21.3l3.8-1.3v1.4l-3.8 1.3z',
-  green: { d: 'M13.8 3.18A9 9 0 0 1 13.8 20.82M10.2 3.18A9 9 0 0 0 10.2 20.82', fill: 'M12 12m-3.4 0a3.4 3.4 0 1 0 6.8 0a3.4 3.4 0 1 0-6.8 0' },
+  green: { d: 'M13.8 2.67A9.5 9.5 0 0 1 13.8 21.33V18.04A6.3 6.3 0 0 0 13.8 5.96ZM10.2 2.67A9.5 9.5 0 0 0 10.2 21.33V18.04A6.3 6.3 0 0 1 10.2 5.96Z', fill: 'M12 12m-3.1 0a3.1 3.1 0 1 0 6.2 0a3.1 3.1 0 1 0-6.2 0' },
 };
 const EMBLEM_COLORS = { blue: '#3b8bff', red: '#ff5f5f', green: '#3fbf5a' };
 /** Inline SVG emblem for a faction at the given pixel size; colour defaults to the faction colour. */

@@ -37,11 +37,11 @@ export function ico(name, size = 16, cls = '') {
   return `<svg class="ic ${cls}" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"${fill}/></svg>`;
 }
 
-// Faction emblems in the same line style, coloured with the faction's own colour: the Swarm is a swarm of
-// vectors in formation, the Foundry a hammer (a broad head on a thin shaft with three wraps of binding at the grip),
+// Faction emblems in the same line style, coloured with the faction's own colour: the Swarm is an insect
+// carapace (broad shoulders tapering to a point, an inverted triangle with plated segments), the Foundry a hammer (a broad head on a thin shaft with three wraps of binding at the grip),
 // the Collective a halo around a core.
 const EMBLEMS = {
-  blue: 'M4 10l4-5 4 5M12 10l4-5 4 5M8 20l4-5 4 5',
+  blue: 'M3 5h18l-2 4-7 12-7-12zM5 9h14M7.3 13h9.4M9.6 17h4.8',
   red: 'M4 3h16v5H4zM10.7 8h2.6v6.8h-2.6zM10.1 16.3l3.8-1.3v1.4l-3.8 1.3zM10.1 18.8l3.8-1.3v1.4l-3.8 1.3zM10.1 21.3l3.8-1.3v1.4l-3.8 1.3z',
   green: 'M12 12m-2.6 0a2.6 2.6 0 1 0 5.2 0a2.6 2.6 0 1 0-5.2 0M12 12m-9 0a9 4.2 0 1 0 18 0a9 4.2 0 1 0-18 0',
 };

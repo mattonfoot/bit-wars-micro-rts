@@ -3,7 +3,7 @@ import { FACTIONS, FACTION_KEYS } from '../game/data.js';
 import { THEMES, THEME_KEYS } from '../map/themes.js';
 import { unitIconSVG, buildingIconSVG } from '../render/shapes.js';
 import { CAMPAIGNS, LORE, actOf } from '../game/campaigns.js';
-import { ico } from './icons.js';
+import { ico, factionEmblemSVG } from './icons.js';
 import { loadProgress } from '../game/campaign.js';
 import { CODEX } from '../game/codex.js';
 import { DMG_LABEL, ARMOR_LABEL } from '../game/data.js';
@@ -50,7 +50,7 @@ export class Menu {
           <div class="sub">Micro RTS · squads, cover, morale and frontline economics</div>
         </div>
         <div class="setting">${LORE.world}</div>
-        <div class="fpicks">${FACTION_KEYS.map((k) => { const f = FACTIONS[k]; return `<button class="fpick" data-f="${k}" style="--fc:${f.color}">${unitIconSVG(k, Object.values(f.units)[0].shape, f.color, 40)}<span class="fname">${f.name}</span><span class="ftag">${f.tagline}</span></button>`; }).join('')}</div>
+        <div class="fpicks">${FACTION_KEYS.map((k) => { const f = FACTIONS[k]; return `<button class="fpick" data-f="${k}" style="--fc:${f.color}">${factionEmblemSVG(k, 40, f.color)}<span class="fname">${f.name}</span><span class="ftag">${f.tagline}</span></button>`; }).join('')}</div>
         <div class="titlefoot">
           ${save ? `<button class="big slim" id="btnResume">RESUME BATTLE <span class="dim">· ${save.settings.mode === 'campaign' ? 'Campaign' : save.world.map.name} · ${Math.floor(save.world.time / 60)}:${String(Math.floor(save.world.time % 60)).padStart(2, '0')}</span></button>` : ''}
           <div class="links"><button class="link" id="btnHelp">How to play</button><span class="dim" id="installHint">On iPhone: Share, then Add to Home Screen</span></div>
@@ -77,7 +77,7 @@ export class Menu {
         </div>
         <div class="fbody" id="fbody">
           <div class="fdetails">
-            <div class="fhead">${unitIconSVG(k, units[0].shape, f.color, 44)}<div><div class="fname">${f.name}</div><div class="ftag">${f.tagline}</div></div></div>
+            <div class="fhead">${factionEmblemSVG(k, 44, f.color)}<div><div class="fname">${f.name}</div><div class="ftag">${f.tagline}</div></div></div>
             <ul class="fplay">${f.playstyle.map((p) => `<li>${p}</li>`).join('')}</ul>
             <div class="roster">${units.map((u) => `<span class="ric" data-k="${u.key}" title="${u.name}: ${u.role}">${unitIconSVG(k, u.shape, f.color, 22)}</span>`).join('')}<span class="sep"></span>${buildings.map((b) => `<span class="ric" data-k="${b.key}" title="${b.name}">${buildingIconSVG(k, b, f.color, 22)}</span>`).join('')}</div>
             <div class="fbtns">

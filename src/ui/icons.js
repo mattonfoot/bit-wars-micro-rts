@@ -37,6 +37,20 @@ export function ico(name, size = 16, cls = '') {
   return `<svg class="ic ${cls}" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"${fill}/></svg>`;
 }
 
+// Faction emblems in the same line style, coloured with the faction's own colour: the Swarm is a swarm of
+// vectors in formation, the Foundry an anvil, the Collective a halo around a core.
+const EMBLEMS = {
+  blue: 'M4 10l4-5 4 5M12 10l4-5 4 5M8 20l4-5 4 5',
+  red: 'M4 8h11l6-2v3l-4 2h-3v4h3v3H7v-3h3v-4H5z',
+  green: 'M12 12m-2.6 0a2.6 2.6 0 1 0 5.2 0a2.6 2.6 0 1 0-5.2 0M12 12m-9 0a9 4.2 0 1 0 18 0a9 4.2 0 1 0-18 0',
+};
+const EMBLEM_COLORS = { blue: '#3b8bff', red: '#ff5f5f', green: '#3fbf5a' };
+/** Inline SVG emblem for a faction at the given pixel size; colour defaults to the faction colour. */
+export function factionEmblemSVG(faction, size = 40, color = EMBLEM_COLORS[faction] || 'currentColor') {
+  const d = EMBLEMS[faction] || EMBLEMS.green;
+  return `<svg class="ic emblem" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg>`;
+}
+
 /** Canvas versions of the few marks drawn over units: a hero star, retreat chevrons, a set-up square, and pending dots. */
 export function drawMark(ctx, name, x, y, color, s = 4) {
   ctx.save(); ctx.translate(x, y); ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 1.2; ctx.lineJoin = 'round'; ctx.lineCap = 'round';

@@ -3,7 +3,7 @@
 import { generateMap } from '../map/generator.js';
 import { World } from './world.js';
 import { FACTIONS, hqKey, START_ORE, START_FLUX } from './data.js';
-import { TILE, isBuildable } from '../map/terrain.js';
+import { TILE, isBuildable, T, TILE_HP } from '../map/terrain.js';
 import { nearestPassable } from './pathfinding.js';
 import { dist } from '../engine/math.js';
 
@@ -44,6 +44,7 @@ export class Campaign {
       if (spec.hq !== false) { const st = map.starts[Math.min(startIdx, map.starts.length - 1)]; const hq = world.placeBuilding(pid, hqKey(spec.faction), st.i, true); pl.hqId = hq.id; if (pid === 0) c.tags.hq = hq.id; }
       pl.ore = spec.ore ?? START_ORE; pl.flux = spec.flux ?? START_FLUX;
       if (spec.incomeMult) pl.incomeMult = spec.incomeMult;
+      for (const t of spec.terrain || []) c.placeTerrain(pid, t);
       for (const b of spec.structures || []) c.placeStructure(pid, b);
       for (const s of spec.squads || []) c.placeSquad(pid, s);
       for (const k of spec.points || []) { const pt = c.pointByRank(k); pt.owner = pid; pt.progress = 100; }
@@ -127,6 +128,14 @@ export class Campaign {
     }
     if (b) { if (spec.tag) this.tags[spec.tag] = b.id; if (spec.hp) b.hp = b.maxHp * spec.hp; if (spec.capturable) b.capturable = true; }
     return b;
+  }
+  /** Scripted terrain: paint a tile (by name, e.g. 'rubble' or 'brush') onto open ground at a position spec, optionally a small cluster. */
+  placeTerrain(owner, spec) {
+    const w = this.world, tile = T[String(spec.tile).toUpperCase()];
+    if (tile === undefined) return;
+    const base = this.cellOf(spec.at, owner);
+    const cells = spec.radius ? w.grid.cluster(base, spec.radius) : [base];
+    for (const i of cells) { if (i < 0 || w.blocked[i]) continue; const t = w.map.tiles[i]; if (t === T.GROUND || t === T.ROAD) { w.map.tiles[i] = tile; w.map.hp[i] = TILE_HP[tile] || 0; } }
   }
   tagged(tag) { const id = this.tags[tag]; return id ? this.world.byId(id) : null; }
   /** Spawn a scripted group for any owner and give it an order. */

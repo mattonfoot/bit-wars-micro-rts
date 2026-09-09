@@ -13,11 +13,11 @@ export const GREEN_LESSONS = {
       briefing: 'Learn the basics: train Warden Cells, mine ore, capture a point, and pull back to let shields recharge.',
       epilogue: ['Not one Warden lost. The Foundry sentinels are glass on the sand.', 'The Oracle reads new shapes in the fracture: Crusher Tanks moving across Frostbite towards the Core.'],
       player: { faction: F, ore: 320, flux: 70, units: ['wardens'], buildings: ['siphon'] },
-      enemy: garrison('red', { squads: [{ key: 'bolts', at: 'point:2', hp: 0.8 }, { key: 'bolts', at: 'point:1' }], points: [1, 2] }),
+      enemy: garrison('red', { squads: [{ key: 'bolts', at: 'point:2', hp: 0.8, order: 'hold' }, { key: 'bolts', at: 'point:1', order: 'hold' }], points: [1, 2] }),
       stages: [
         stage([obj('train', 'train', 'Train 2 Warden Cells', { key: 'wardens', n: 2, hint: 'Tap the Core, then Warden Cell.' }), obj('siphon', 'build', 'Build a Siphon on an ore vein', { key: 'siphon', n: 1 })]),
         stage([obj('cap', 'capture', 'Capture the nearest point', { rank: 0 }), obj('regen', 'shieldRegen', 'Pull a damaged Warden Cell back until its shields refill', { hint: 'Move a squad out of the fight (or tap Retreat). Rings around each orb show shield strength.' })], 'Shields absorb damage first and recharge when a squad is left alone. Fight, pull back, recharge, return.'),
-        stage([obj('kill', 'kill', 'Destroy both Bolt Squads', { n: 2 }), obj('cap2', 'capture', 'Hold 3 strategic points', { n: 3 }), obj('loss', 'loseMax', 'Lose no squads', { n: 0, optional: true })], 'Now answer.'),
+        stage([obj('kill', 'kill', 'Destroy both Bolt Squads', { n: 2 }), obj('cap1', 'capture', 'Capture the point the first sentinel held', { rank: 1, hint: 'Squads capture points by standing on them.' }), obj('cap2', 'capture', 'Capture the point the second sentinel held', { rank: 2 }), obj('loss', 'loseMax', 'Lose no squads', { n: 0, optional: true })], 'Now answer. Kill each sentinel, then stand on the point it was guarding.'),
       ],
       hints: [{ at: 'start', text: 'Wardens outrange Bolts. Fire, step back, fire.' }],
     },

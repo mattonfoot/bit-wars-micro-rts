@@ -233,4 +233,17 @@ check('set-up guns traverse slowly and cannot fire outside their arc', () => {
   assert.equal(firedEarly, false, 'no shots before the traverse brings the target into the arc');
 });
 
+check('Foundry chapter 1: holding in cover registers enough cover hits before the waves are spent', () => {
+  const ch = CAMPAIGNS.red.chapters[0]; const { c, w, run } = start(ch);
+  const hq = w.byId(w.players[0].hqId); const g = w.grid;
+  // a cover cell near the base, as the chapter asks the player to find
+  const covered = [...g.cellsWithin(hq.x, hq.y, 9 * TILE)].filter((i) => [5, 6, 7, 8, 9, 10].includes(w.map.tiles[i]) && w.map.tiles[i] !== 7);
+  assert.ok(covered.length, 'cover exists near the base');
+  const [cx, cy] = g.center(covered[0]);
+  const a = w.spawnSquad(0, 'bolts', cx, cy), b = w.spawnSquad(0, 'bolts', cx + 12, cy + 8); w.cmdHold([a, b]);
+  c.stage = 1;
+  run(270);
+  assert.ok((c.counters.cover || 0) >= 8, `cover hits ${c.counters.cover || 0}`);
+});
+
 console.log(`All ${passed} mechanic checks passed`);

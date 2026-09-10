@@ -1,4 +1,5 @@
-// Faction silhouettes. Blue = triangles, Red = squares, Green = circles. Everything else is variation on that.
+// Faction silhouettes, defined once as flat primitives and rendered both to the map canvas and to the
+// interface icons, so an entity always looks the same in play and in the GUI.
 import { FACTIONS } from '../game/data.js';
 import { TAU } from '../engine/math.js';
 
@@ -13,174 +14,143 @@ export function factionColors(faction, owner, viewer, viewerFaction, rel) {
   return { fill, stroke, dark: f.dark, light: f.light, enemy: rel === 'enemy', rel };
 }
 
-function poly(ctx, pts) {
-  ctx.beginPath();
-  ctx.moveTo(pts[0][0], pts[0][1]);
-  for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
-  ctx.closePath();
+// ---------- primitive helpers (unit space: a unit has radius 1 and faces +x; a building's half-size is 1)
+const P = (pts, c = 'fill') => ({ k: 'poly', pts, c });
+const C = (x, y, r, c = 'fill') => ({ k: 'circle', x, y, r, c });
+const E = (x, y, rx, ry, c = 'fill') => ({ k: 'ellipse', x, y, rx, ry, c });
+const R = (x, y, r, w, c = 'fill') => ({ k: 'ring', x, y, r, w, c });
+const L = (x1, y1, x2, y2, w, c = 'white') => ({ k: 'line', x1, y1, x2, y2, w, c });
+const Q = (x, y, w, h, c = 'fill', rot = 0) => { const pts = [[x, y], [x + w, y], [x + w, y + h], [x, y + h]]; return P(rot ? rotPts(pts, rot) : pts, c); };
+function rotPts(pts, a) { const c = Math.cos(a), s = Math.sin(a); return pts.map(([x, y]) => [x * c - y * s, x * s + y * c]); }
+const tri = (tip, back, half, c = 'fill') => P([[tip, 0], [back, half], [back, -half]], c);
+
+/** Unit silhouettes. `glow` marks heroes and stars that get a soft bloom on the map. */
+const UNITS = {
+  tri: () => [tri(1.2, -0.9, 0.9)],
+  needle: () => [P([[1.9, 0], [-0.8, 0.55], [-0.5, 0], [-0.8, -0.55]])],
+  chevron: () => [P([[1.3, 0], [-1, 1], [-0.3, 0], [-1, -1]])],
+  kite: () => [tri(0.7, -0.6, 1.6), tri(0.35, -0.35, 0.35, 'mark')],
+  obelisk: () => [tri(1.1, -0.8, 1), tri(0.5, -0.4, 0.45, 'light'), tri(0.1, -0.25, 0.15, 'dark')],
+  apex: () => [0, 1, 2].map((i) => P(rotPts([[1.3, 0], [-0.6, 0.6], [-0.6, -0.6]], (i * TAU) / 3))).concat([C(0, 0, 0.28, 'white')]),
+  square: () => [Q(-1, -1, 2, 2), Q(0.35, -0.25, 0.5, 0.5, 'mark')],
+  wide: () => [Q(-0.8, -1.4, 1.6, 2.8), Q(0.3, -0.2, 1.3, 0.4, 'mark')],
+  shield: () => [Q(-1, -1, 2, 2), Q(0.5, -1.2, 0.6, 2.4, 'light')],
+  tank: () => [Q(-1, -0.8, 2, 1.6), Q(-1, -0.95, 2, 0.25, 'dark'), Q(-1, 0.7, 2, 0.25, 'dark'), Q(-0.45, -0.45, 0.9, 0.9, 'light'), Q(0, -0.12, 1.5, 0.24, 'mark')],
+  mortar: () => [Q(-1, -1, 2, 2), Q(-0.4, -0.4, 0.8, 0.8, 'dark'), Q(-0.15, -0.15, 0.3, 0.3, 'mark')],
+  foreman: () => [Q(-1, -1, 2, 2, 'fill', Math.PI / 4), Q(-0.15, -0.7, 0.3, 1.4, 'white', Math.PI / 4), Q(-0.7, -0.15, 1.4, 0.3, 'white', Math.PI / 4)],
+  circle: () => [C(0, 0, 1), C(0.5, 0, 0.25, 'mark')],
+  lens: () => [E(0, 0, 1.6, 0.7), C(0.9, 0, 0.2, 'mark')],
+  ring: () => [R(0, 0, 0.8, 0.55)],
+  halo: () => [C(0, 0, 1), R(0, 0, 0.65, 0.16, 'light'), C(0, 0, 0.22, 'mark')],
+  nova: () => [C(0, 0, 1), R(0, 0, 0.25, 0.12, 'dark'), R(0, 0, 0.5, 0.12, 'dark'), R(0, 0, 0.75, 0.12, 'dark'), C(0.6, 0, 0.14, 'white')],
+  oracle: () => [C(0, 0, 1)].concat([...Array(8)].map((_, i) => { const a = (i * TAU) / 8; return L(Math.cos(a) * 0.5, Math.sin(a) * 0.5, Math.cos(a) * 1.5, Math.sin(a) * 1.5, 0.12); })).concat([C(0, 0, 0.3, 'white')]),
+};
+const GLOW = { apex: 1.2, foreman: 1.0, nova: 0.8, oracle: 1.0 };
+
+/** Building silhouettes per faction and role; `facing` turns a turret barrel, `t` animates the Sanctum's orbit. */
+function buildingPrims(faction, def, facing = 0, t = 0) {
+  const kind = def.hq ? 'hq' : def.onOre ? 'ore' : def.turret ? 'turret' : def.onPoint ? 'point' : def.upgrade ? 'upgrade' : def.trains?.includes('kites') ? 'spire' : 'prod';
+  if (faction === 'blue') {
+    switch (kind) {
+      case 'hq': return [P([[0, -1.1], [1, 0.65], [-1, 0.65]]), P([[0, -0.5], [0.5, 0.38], [-0.5, 0.38]], 'dark')];
+      case 'ore': return [P([[0, -1.1], [1, 0.75], [-1, 0.75]]), C(0, 0.2, 0.35, 'dark')];
+      case 'turret': return [P([[0, -1.05], [0.8, 0.6], [-0.8, 0.6]]), Q(0, -0.12, 1.1, 0.24, 'mark', facing)];
+      case 'point': return [P([[0, -1.15], [0.6, 0.55], [-0.6, 0.55]])];
+      case 'spire': return [P([[0, -1], [1, 0], [0, 1], [-1, 0]]), P([[0, -0.5], [0.5, 0], [0, 0.5], [-0.5, 0]], 'dark')];
+      default: return [P([[-1, -0.75], [1, -0.75], [0, 1.1]]), P([[-0.5, -0.42], [0.5, -0.42], [0, 0.48]], 'dark')];
+    }
+  }
+  if (faction === 'red') {
+    const base = [Q(-1, -1, 2, 2)];
+    switch (kind) {
+      case 'hq': return base.concat([Q(-0.7, -0.7, 1.4, 1.4, 'dark'), Q(-0.3, -0.3, 0.6, 0.6, 'light'), Q(-0.12, -0.12, 0.24, 0.24, 'fill')]);
+      case 'ore': return base.concat([Q(-0.5, -0.5, 1, 1, 'dark'), Q(-0.5, -0.5, 0.5, 0.5, 'light')]);
+      case 'turret': return base.concat([Q(-0.6, -0.6, 1.2, 1.2, 'dark'), Q(0, -0.15, 1.2, 0.3, 'mark', facing)]);
+      case 'point': return base.concat([Q(-0.3, -1, 0.6, 2, 'dark')]);
+      case 'upgrade': return base.concat([Q(-0.7, -0.7, 0.55, 0.55, 'dark'), Q(0.15, -0.7, 0.55, 0.55, 'dark'), Q(-0.7, 0.15, 0.55, 0.55, 'dark'), Q(0.15, 0.15, 0.55, 0.55, 'dark')]);
+      default: return base.concat([Q(-0.7, -0.7, 1.4, 1.4, 'dark'), Q(-0.7, -0.2, 1.4, 0.4, 'fill')]);
+    }
+  }
+  const base = [C(0, 0, 1)];
+  switch (kind) {
+    case 'hq': return base.concat([C(0, 0, 0.7, 'dark'), R(0, 0, 0.45, 0.1, 'light'), C(0, 0, 0.2, 'light')]);
+    case 'ore': return base.concat([C(0, 0, 0.5, 'dark'), C(-0.2, -0.2, 0.18, 'light')]);
+    case 'turret': return base.concat([C(0, 0, 0.55, 'dark'), Q(0, -0.12, 1.2, 0.24, 'mark', facing)]);
+    case 'point': return base.concat([R(0, 0, 0.55, 0.1, 'light')]);
+    case 'upgrade': return base.concat([0, 1, 2].map((i) => { const a = t * 0.8 + (i * TAU) / 3; return C(Math.cos(a) * 0.45, Math.sin(a) * 0.45, 0.22, 'dark'); }));
+    default: return base.concat([E(0, 0, 0.75, 0.45, 'dark'), C(0, 0, 0.2, 'light')]);
+  }
 }
-function rot(pts, a) { const c = Math.cos(a), s = Math.sin(a); return pts.map(([x, y]) => [x * c - y * s, x * s + y * c]); }
+
+// ---------- canvas rendering
+function paint(ctx, prims, scale, angle, colors) {
+  const c = Math.cos(angle), s = Math.sin(angle);
+  const tx = (x, y) => [(x * c - y * s) * scale, (x * s + y * c) * scale];
+  for (const p of prims) {
+    const col = colors[p.c] || colors.fill;
+    ctx.fillStyle = col; ctx.strokeStyle = col;
+    if (p.k === 'poly') { ctx.beginPath(); p.pts.forEach(([x, y], i) => { const [X, Y] = tx(x, y); i ? ctx.lineTo(X, Y) : ctx.moveTo(X, Y); }); ctx.closePath(); ctx.fill(); }
+    else if (p.k === 'circle') { const [X, Y] = tx(p.x, p.y); ctx.beginPath(); ctx.arc(X, Y, p.r * scale, 0, TAU); ctx.fill(); }
+    else if (p.k === 'ellipse') { const [X, Y] = tx(p.x, p.y); ctx.beginPath(); ctx.ellipse(X, Y, p.rx * scale, p.ry * scale, angle, 0, TAU); ctx.fill(); }
+    else if (p.k === 'ring') { const [X, Y] = tx(p.x, p.y); ctx.lineWidth = Math.max(0.8, p.w * scale); ctx.beginPath(); ctx.arc(X, Y, p.r * scale, 0, TAU); ctx.stroke(); }
+    else if (p.k === 'line') { const [X1, Y1] = tx(p.x1, p.y1), [X2, Y2] = tx(p.x2, p.y2); ctx.lineWidth = Math.max(0.8, p.w * scale); ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(X1, Y1); ctx.lineTo(X2, Y2); ctx.stroke(); }
+  }
+}
+const canvasColors = (col) => ({ fill: col.fill, dark: col.dark, light: col.light, mark: col.stroke, white: '#ffffff' });
 
 /** Draw one unit member. r = radius, facing = radians. */
-export function drawUnit(ctx, shape, x, y, r, facing, col, opts = {}) {
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.fillStyle = col.fill; ctx.strokeStyle = 'rgba(0,0,0,0)' /* no outline: shapes are flat fills */; ctx.lineWidth = Math.max(0.6, r * 0.11);
-  ctx.lineJoin = 'round';
-  const a = facing;
-  switch (shape) {
-    case 'tri': poly(ctx, rot([[r * 1.2, 0], [-r * 0.9, r * 0.9], [-r * 0.9, -r * 0.9]], a)); ctx.fill(); ctx.stroke(); break;
-    case 'needle': poly(ctx, rot([[r * 1.9, 0], [-r * 0.8, r * 0.55], [-r * 0.5, 0], [-r * 0.8, -r * 0.55]], a)); ctx.fill(); ctx.stroke(); break;
-    case 'chevron': poly(ctx, rot([[r * 1.3, 0], [-r * 1.0, r * 1.0], [-r * 0.3, 0], [-r * 1.0, -r * 1.0]], a)); ctx.fill(); ctx.stroke(); break;
-    case 'kite':
-      poly(ctx, rot([[r * 0.7, 0], [-r * 0.6, r * 1.6], [-r * 0.6, -r * 1.6]], a)); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = col.stroke; poly(ctx, rot([[r * 0.35, 0], [-r * 0.35, r * 0.35], [-r * 0.35, -r * 0.35]], a)); ctx.fill();
-      break;
-    case 'obelisk':
-      poly(ctx, rot([[r * 1.1, 0], [-r * 0.8, r], [-r * 0.8, -r]], a)); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = col.light; poly(ctx, rot([[r * 0.5, 0], [-r * 0.4, r * 0.45], [-r * 0.4, -r * 0.45]], a)); ctx.fill();
-      ctx.fillStyle = col.dark; poly(ctx, rot([[r * 0.1, 0], [-r * 0.25, r * 0.15], [-r * 0.25, -r * 0.15]], a)); ctx.fill();
-      break;
-    case 'apex': {
-      // star of three triangles
-      ctx.shadowColor = col.fill; ctx.shadowBlur = r * 1.2;
-      for (let i = 0; i < 3; i++) { poly(ctx, rot([[r * 1.3, 0], [-r * 0.6, r * 0.6], [-r * 0.6, -r * 0.6]], a + (i * TAU) / 3)); ctx.fill(); }
-      ctx.shadowBlur = 0;
-      poly(ctx, rot([[r * 1.3, 0], [-r * 0.6, r * 0.6], [-r * 0.6, -r * 0.6]], a)); ctx.stroke();
-      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(0, 0, r * 0.28, 0, TAU); ctx.fill();
-      break;
-    }
-    case 'square': ctx.rotate(a); ctx.fillRect(-r, -r, r * 2, r * 2); ctx.strokeRect(-r, -r, r * 2, r * 2); ctx.fillStyle = col.stroke; ctx.fillRect(r * 0.35, -r * 0.25, r * 0.5, r * 0.5); break;
-    case 'wide': ctx.rotate(a); ctx.fillRect(-r * 0.8, -r * 1.4, r * 1.6, r * 2.8); ctx.strokeRect(-r * 0.8, -r * 1.4, r * 1.6, r * 2.8); ctx.fillStyle = col.stroke; ctx.fillRect(r * 0.3, -r * 0.2, r * 1.3, r * 0.4); break;
-    case 'shield': ctx.rotate(a); ctx.fillRect(-r, -r, r * 2, r * 2); ctx.strokeRect(-r, -r, r * 2, r * 2); ctx.fillStyle = col.light; ctx.fillRect(r * 0.5, -r * 1.2, r * 0.6, r * 2.4); ctx.strokeRect(r * 0.5, -r * 1.2, r * 0.6, r * 2.4); break;
-    case 'tank':
-      ctx.rotate(a);
-      ctx.fillRect(-r, -r * 0.8, r * 2, r * 1.6); ctx.strokeRect(-r, -r * 0.8, r * 2, r * 1.6);
-      ctx.fillStyle = col.dark; ctx.fillRect(-r, -r * 0.95, r * 2, r * 0.25); ctx.fillRect(-r, r * 0.7, r * 2, r * 0.25);
-      ctx.fillStyle = col.fill; ctx.fillRect(-r * 0.45, -r * 0.45, r * 0.9, r * 0.9); ctx.strokeRect(-r * 0.45, -r * 0.45, r * 0.9, r * 0.9);
-      ctx.fillStyle = col.stroke; ctx.fillRect(0, -r * 0.12, r * 1.5, r * 0.24);
-      break;
-    case 'mortar': ctx.rotate(a); ctx.fillRect(-r, -r, r * 2, r * 2); ctx.strokeRect(-r, -r, r * 2, r * 2); ctx.fillStyle = col.dark; ctx.fillRect(-r * 0.4, -r * 0.4, r * 0.8, r * 0.8); ctx.fillStyle = col.stroke; ctx.fillRect(-r * 0.15, -r * 0.15, r * 0.3, r * 0.3); break;
-    case 'foreman':
-      ctx.shadowColor = col.fill; ctx.shadowBlur = r; ctx.rotate(a + Math.PI / 4);
-      ctx.fillRect(-r, -r, r * 2, r * 2); ctx.shadowBlur = 0; ctx.strokeRect(-r, -r, r * 2, r * 2);
-      ctx.fillStyle = '#fff'; ctx.fillRect(-r * 0.15, -r * 0.7, r * 0.3, r * 1.4); ctx.fillRect(-r * 0.7, -r * 0.15, r * 1.4, r * 0.3);
-      break;
-    case 'circle': ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.fill(); ctx.stroke(); ctx.fillStyle = col.stroke; ctx.beginPath(); ctx.arc(Math.cos(a) * r * 0.5, Math.sin(a) * r * 0.5, r * 0.25, 0, TAU); ctx.fill(); break;
-    case 'lens': ctx.rotate(a); ctx.beginPath(); ctx.ellipse(0, 0, r * 1.6, r * 0.7, 0, 0, TAU); ctx.fill(); ctx.stroke(); ctx.fillStyle = col.stroke; ctx.beginPath(); ctx.arc(r * 0.9, 0, r * 0.2, 0, TAU); ctx.fill(); break;
-    case 'ring': ctx.lineWidth = r * 0.55; ctx.strokeStyle = col.fill; ctx.beginPath(); ctx.arc(0, 0, r * 0.8, 0, TAU); ctx.stroke(); ctx.lineWidth = Math.max(1, r * 0.18); ctx.strokeStyle = 'rgba(0,0,0,0)' /* no outline: shapes are flat fills */; ctx.beginPath(); ctx.arc(0, 0, r * 1.08, 0, TAU); ctx.stroke(); ctx.beginPath(); ctx.arc(0, 0, r * 0.52, 0, TAU); ctx.stroke(); break;
-    case 'halo':
-      ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.fill(); ctx.stroke();
-      ctx.strokeStyle = col.light; ctx.lineWidth = r * 0.16; ctx.beginPath(); ctx.arc(0, 0, r * 0.65, 0, TAU); ctx.stroke();
-      ctx.fillStyle = col.stroke; ctx.beginPath(); ctx.arc(0, 0, r * 0.22, 0, TAU); ctx.fill();
-      break;
-    case 'nova':
-      ctx.shadowColor = col.fill; ctx.shadowBlur = r * 0.8;
-      ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.fill(); ctx.shadowBlur = 0; ctx.stroke();
-      ctx.strokeStyle = col.dark; ctx.lineWidth = r * 0.12;
-      for (let i = 1; i <= 3; i++) { ctx.beginPath(); ctx.arc(0, 0, (r * i) / 4, 0, TAU); ctx.stroke(); }
-      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(Math.cos(a) * r * 0.6, Math.sin(a) * r * 0.6, r * 0.14, 0, TAU); ctx.fill();
-      break;
-    case 'oracle':
-      ctx.shadowColor = col.fill; ctx.shadowBlur = r;
-      ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.fill(); ctx.shadowBlur = 0; ctx.stroke();
-      ctx.strokeStyle = '#fff'; ctx.lineWidth = r * 0.12;
-      for (let i = 0; i < 8; i++) { const an = a + (i * TAU) / 8; ctx.beginPath(); ctx.moveTo(Math.cos(an) * r * 0.5, Math.sin(an) * r * 0.5); ctx.lineTo(Math.cos(an) * r * 1.5, Math.sin(an) * r * 1.5); ctx.stroke(); }
-      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(0, 0, r * 0.3, 0, TAU); ctx.fill();
-      break;
-    default: ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.fill(); ctx.stroke();
-  }
+export function drawUnit(ctx, shape, x, y, r, facing, col) {
+  const prims = (UNITS[shape] || UNITS.circle)();
+  ctx.save(); ctx.translate(x, y);
+  if (GLOW[shape]) { ctx.shadowColor = col.fill; ctx.shadowBlur = r * GLOW[shape]; ctx.fillStyle = col.fill; ctx.beginPath(); ctx.arc(0, 0, r * 0.9, 0, TAU); ctx.fill(); ctx.shadowBlur = 0; }
+  paint(ctx, prims, r, facing, canvasColors(col));
   ctx.restore();
 }
 
 /** Draw a building. x,y centre, w,h in world units. */
 export function drawBuilding(ctx, faction, def, x, y, w, h, col, opts = {}) {
-  ctx.save();
-  ctx.translate(x, y);
-  const hw = w / 2 - 3, hh = h / 2 - 3;
-  ctx.fillStyle = col.fill; ctx.strokeStyle = 'rgba(0,0,0,0)' /* no outline: shapes are flat fills */; ctx.lineWidth = 1.2; ctx.lineJoin = 'round';
-  const t = opts.time || 0;
-  if (faction === 'blue') {
-    if (def.hq) {
-      poly(ctx, [[0, -hh * 1.1], [hw, hh * 0.65], [-hw, hh * 0.65]]); ctx.fill(); ctx.stroke(); // apex and base placed so the centroid sits on the building centre
-      ctx.fillStyle = col.dark; poly(ctx, [[0, -hh * 0.5], [hw * 0.5, hh * 0.38], [-hw * 0.5, hh * 0.38]]); ctx.fill();
-    } else if (def.onOre) { poly(ctx, [[0, -hh * 1.1], [hw, hh * 0.75], [-hw, hh * 0.75]]); ctx.fill(); ctx.stroke(); ctx.fillStyle = col.dark; ctx.beginPath(); ctx.arc(0, hh * 0.2, hw * 0.35, 0, TAU); ctx.fill(); }
-    else if (def.turret) { poly(ctx, [[0, -hh * 1.05], [hw * 0.8, hh * 0.6], [-hw * 0.8, hh * 0.6]]); ctx.fill(); ctx.stroke(); ctx.save(); ctx.rotate(opts.facing || 0); ctx.fillStyle = col.stroke; ctx.fillRect(0, -2, hw * 1.1, 4); ctx.restore(); }
-    else if (def.onPoint) { poly(ctx, [[0, -hh * 1.15], [hw * 0.6, hh * 0.55], [-hw * 0.6, hh * 0.55]]); ctx.fill(); ctx.stroke(); }
-    else if (def.trains?.includes('kites')) { poly(ctx, [[0, -hh], [hw, 0], [0, hh], [-hw, 0]]); ctx.fill(); ctx.stroke(); ctx.fillStyle = col.dark; poly(ctx, [[0, -hh * 0.5], [hw * 0.5, 0], [0, hh * 0.5], [-hw * 0.5, 0]]); ctx.fill(); }
-    else { poly(ctx, [[-hw, -hh * 0.75], [hw, -hh * 0.75], [0, hh * 1.1]]); ctx.fill(); ctx.stroke(); ctx.fillStyle = col.dark; poly(ctx, [[-hw * 0.5, -hh * 0.42], [hw * 0.5, -hh * 0.42], [0, hh * 0.48]]); ctx.fill(); }
-  } else if (faction === 'red') {
-    ctx.fillRect(-hw, -hh, hw * 2, hh * 2); ctx.strokeRect(-hw, -hh, hw * 2, hh * 2);
-    ctx.fillStyle = col.dark;
-    if (def.hq) { ctx.fillRect(-hw * 0.7, -hh * 0.7, hw * 1.4, hh * 1.4); ctx.fillStyle = col.light; ctx.fillRect(-hw * 0.3, -hh * 0.3, hw * 0.6, hh * 0.6); ctx.fillStyle = col.fill; ctx.fillRect(-hw * 0.12, -hh * 0.12, hw * 0.24, hh * 0.24); }
-    else if (def.onOre) { ctx.fillRect(-hw * 0.5, -hh * 0.5, hw, hh); ctx.fillStyle = col.light; ctx.fillRect(-hw * 0.5, -hh * 0.5, hw * 0.5, hh * 0.5); }
-    else if (def.turret) { ctx.fillRect(-hw * 0.6, -hh * 0.6, hw * 1.2, hh * 1.2); ctx.save(); ctx.rotate(opts.facing || 0); ctx.fillStyle = col.stroke; ctx.fillRect(0, -2.5, hw * 1.2, 5); ctx.restore(); }
-    else if (def.onPoint) { ctx.fillRect(-hw * 0.3, -hh, hw * 0.6, hh * 2); }
-    else if (def.upgrade) { ctx.fillRect(-hw * 0.7, -hh * 0.7, hw * 0.55, hh * 0.55); ctx.fillRect(hw * 0.15, -hh * 0.7, hw * 0.55, hh * 0.55); ctx.fillRect(-hw * 0.7, hh * 0.15, hw * 0.55, hh * 0.55); ctx.fillRect(hw * 0.15, hh * 0.15, hw * 0.55, hh * 0.55); }
-    else { ctx.fillRect(-hw * 0.7, -hh * 0.7, hw * 1.4, hh * 1.4); ctx.fillStyle = col.fill; ctx.fillRect(-hw * 0.7, -hh * 0.2, hw * 1.4, hh * 0.4); }
-  } else {
-    const R = Math.min(hw, hh);
-    ctx.beginPath(); ctx.arc(0, 0, R, 0, TAU); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = col.dark;
-    if (def.hq) { ctx.beginPath(); ctx.arc(0, 0, R * 0.7, 0, TAU); ctx.fill(); ctx.strokeStyle = col.light; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(0, 0, R * 0.45, 0, TAU); ctx.stroke(); ctx.fillStyle = col.light; ctx.beginPath(); ctx.arc(0, 0, R * 0.2, 0, TAU); ctx.fill(); }
-    else if (def.onOre) { ctx.beginPath(); ctx.arc(0, 0, R * 0.5, 0, TAU); ctx.fill(); ctx.fillStyle = col.light; ctx.beginPath(); ctx.arc(-R * 0.2, -R * 0.2, R * 0.18, 0, TAU); ctx.fill(); }
-    else if (def.turret) { ctx.beginPath(); ctx.arc(0, 0, R * 0.55, 0, TAU); ctx.fill(); ctx.save(); ctx.rotate(opts.facing || 0); ctx.fillStyle = col.stroke; ctx.fillRect(0, -2, R * 1.2, 4); ctx.restore(); }
-    else if (def.onPoint) { ctx.strokeStyle = col.light; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(0, 0, R * 0.55, 0, TAU); ctx.stroke(); }
-    else if (def.upgrade) { for (let i = 0; i < 3; i++) { const an = t * 0.8 + (i * TAU) / 3; ctx.beginPath(); ctx.arc(Math.cos(an) * R * 0.45, Math.sin(an) * R * 0.45, R * 0.22, 0, TAU); ctx.fill(); } }
-    else { ctx.beginPath(); ctx.ellipse(0, 0, R * 0.75, R * 0.45, 0, 0, TAU); ctx.fill(); ctx.fillStyle = col.light; ctx.beginPath(); ctx.arc(0, 0, R * 0.2, 0, TAU); ctx.fill(); }
-  }
+  const half = Math.min(w, h) / 2 - 3;
+  ctx.save(); ctx.translate(x, y);
+  paint(ctx, buildingPrims(faction, def, opts.facing || 0, opts.time || 0), half, 0, canvasColors(col));
   ctx.restore();
 }
 
-/** Tiny icon for HUD buttons/minimap: returns an SVG string. */
-export function unitIconSVG(faction, shape, color, size = 28) {
-  const c = color, s = size, h = s / 2;
-  let body = '';
-  switch (faction) {
-    case 'blue':
-      body = shape === 'needle' ? `<polygon points="${s * 0.95},${h} ${s * 0.1},${s * 0.8} ${s * 0.25},${h} ${s * 0.1},${s * 0.2}" />`
-        : shape === 'chevron' ? `<polygon points="${s * 0.9},${h} ${s * 0.1},${s * 0.9} ${s * 0.4},${h} ${s * 0.1},${s * 0.1}" />`
-        : shape === 'kite' ? `<polygon points="${s * 0.8},${h} ${s * 0.2},${s * 0.97} ${s * 0.2},${s * 0.03}" />`
-        : shape === 'apex' ? `<polygon points="${h},${s * 0.05} ${s * 0.95},${s * 0.8} ${s * 0.05},${s * 0.8}" /><circle cx="${h}" cy="${s * 0.55}" r="${s * 0.12}" fill="#fff"/>`
-        : `<polygon points="${s * 0.92},${h} ${s * 0.12},${s * 0.9} ${s * 0.12},${s * 0.1}" />`;
-      break;
-    case 'red':
-      body = shape === 'wide' ? `<rect x="${s * 0.3}" y="${s * 0.1}" width="${s * 0.4}" height="${s * 0.8}" />`
-        : shape === 'tank' ? `<rect x="${s * 0.1}" y="${s * 0.25}" width="${s * 0.8}" height="${s * 0.5}" /><rect x="${h}" y="${s * 0.45}" width="${s * 0.45}" height="${s * 0.1}" fill="#111"/>`
-        : shape === 'foreman' ? `<rect x="${s * 0.2}" y="${s * 0.2}" width="${s * 0.6}" height="${s * 0.6}" transform="rotate(45 ${h} ${h})"/><rect x="${s * 0.45}" y="${s * 0.3}" width="${s * 0.1}" height="${s * 0.4}" fill="#fff"/>`
-        : shape === 'shield' ? `<rect x="${s * 0.15}" y="${s * 0.2}" width="${s * 0.5}" height="${s * 0.6}" /><rect x="${s * 0.7}" y="${s * 0.1}" width="${s * 0.15}" height="${s * 0.8}" fill="#fff" opacity=".8"/>`
-        : shape === 'mortar' ? `<rect x="${s * 0.15}" y="${s * 0.15}" width="${s * 0.7}" height="${s * 0.7}" /><rect x="${s * 0.38}" y="${s * 0.38}" width="${s * 0.24}" height="${s * 0.24}" fill="#111"/>`
-        : `<rect x="${s * 0.15}" y="${s * 0.15}" width="${s * 0.7}" height="${s * 0.7}" />`;
-      break;
-    default:
-      body = shape === 'lens' ? `<ellipse cx="${h}" cy="${h}" rx="${s * 0.45}" ry="${s * 0.22}" />`
-        : shape === 'ring' ? `<circle cx="${h}" cy="${h}" r="${s * 0.32}" fill="none" stroke="${c}" stroke-width="${s * 0.16}"/>`
-        : shape === 'halo' ? `<circle cx="${h}" cy="${h}" r="${s * 0.42}" /><circle cx="${h}" cy="${h}" r="${s * 0.22}" fill="none" stroke="#fff" stroke-width="${s * 0.07}"/>`
-        : shape === 'nova' ? `<circle cx="${h}" cy="${h}" r="${s * 0.44}" /><circle cx="${h}" cy="${h}" r="${s * 0.26}" fill="none" stroke="#111" stroke-width="2"/><circle cx="${h}" cy="${h}" r="${s * 0.1}" fill="#111"/>`
-        : shape === 'oracle' ? `<circle cx="${h}" cy="${h}" r="${s * 0.3}" /><circle cx="${h}" cy="${h}" r="${s * 0.44}" fill="none" stroke="${c}" stroke-width="2" stroke-dasharray="3 3"/>`
-        : `<circle cx="${h}" cy="${h}" r="${s * 0.4}" />`;
+// ---------- SVG rendering (interface icons), from the very same primitives
+function bounds(prims) {
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  const add = (x, y) => { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); };
+  for (const p of prims) {
+    if (p.k === 'poly') p.pts.forEach(([x, y]) => add(x, y));
+    else if (p.k === 'circle') { add(p.x - p.r, p.y - p.r); add(p.x + p.r, p.y + p.r); }
+    else if (p.k === 'ellipse') { add(p.x - p.rx, p.y - p.ry); add(p.x + p.rx, p.y + p.ry); }
+    else if (p.k === 'ring') { const e = p.r + p.w / 2; add(p.x - e, p.y - e); add(p.x + e, p.y + e); }
+    else if (p.k === 'line') { add(p.x1, p.y1); add(p.x2, p.y2); }
   }
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 ${s} ${s}" fill="${c}" stroke="none">${body}</svg>`;
+  return { x0, y0, x1, y1 };
 }
+function svg(prims, colors, size) {
+  const b = bounds(prims), pad = size * 0.08;
+  const scale = (size - pad * 2) / Math.max(b.x1 - b.x0, b.y1 - b.y0);
+  const ox = size / 2 - ((b.x0 + b.x1) / 2) * scale, oy = size / 2 - ((b.y0 + b.y1) / 2) * scale;
+  const X = (x) => (ox + x * scale).toFixed(2), Y = (y) => (oy + y * scale).toFixed(2), S = (v) => (v * scale).toFixed(2);
+  const body = prims.map((p) => {
+    const col = colors[p.c] || colors.fill;
+    if (p.k === 'poly') return `<polygon points="${p.pts.map(([x, y]) => `${X(x)},${Y(y)}`).join(' ')}" fill="${col}"/>`;
+    if (p.k === 'circle') return `<circle cx="${X(p.x)}" cy="${Y(p.y)}" r="${S(p.r)}" fill="${col}"/>`;
+    if (p.k === 'ellipse') return `<ellipse cx="${X(p.x)}" cy="${Y(p.y)}" rx="${S(p.rx)}" ry="${S(p.ry)}" fill="${col}"/>`;
+    if (p.k === 'ring') return `<circle cx="${X(p.x)}" cy="${Y(p.y)}" r="${S(p.r)}" fill="none" stroke="${col}" stroke-width="${S(p.w)}"/>`;
+    if (p.k === 'line') return `<line x1="${X(p.x1)}" y1="${Y(p.y1)}" x2="${X(p.x2)}" y2="${Y(p.y2)}" stroke="${col}" stroke-width="${S(p.w)}" stroke-linecap="round"/>`;
+    return '';
+  }).join('');
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">${body}</svg>`;
+}
+const iconColors = (faction, color) => { const f = FACTIONS[faction] || {}; return { fill: color, dark: f.dark || '#111', light: f.light || '#fff', mark: '#ffffff', white: '#ffffff' }; };
+
+/** Icon of a unit shape, facing right, in the faction's colours: the same silhouette the map draws. */
+export function unitIconSVG(faction, shape, color, size = 28) {
+  return svg((UNITS[shape] || UNITS.circle)(), iconColors(faction, color), size);
+}
+/** Icon of a structure: the same silhouette the map draws. */
 export function buildingIconSVG(faction, def, color, size = 28) {
-  const s = size, h = s / 2, c = color;
-  let body;
-  if (faction === 'blue') body = def.hq ? `<polygon points="${h},${s * 0.03} ${s * 0.95},${s * 0.84} ${s * 0.05},${s * 0.84}"/><polygon points="${h},${s * 0.34} ${s * 0.7},${s * 0.71} ${s * 0.3},${s * 0.71}" fill="#111"/>`
-    : def.turret ? `<polygon points="${h},${s * 0.1} ${s * 0.85},${s * 0.85} ${s * 0.15},${s * 0.85}"/><rect x="${h}" y="${s * 0.5}" width="${s * 0.4}" height="${s * 0.1}" fill="#fff"/>`
-    : def.onOre ? `<polygon points="${h},${s * 0.1} ${s * 0.9},${s * 0.9} ${s * 0.1},${s * 0.9}"/><circle cx="${h}" cy="${s * 0.68}" r="${s * 0.12}" fill="#111"/>`
-    : def.onPoint ? `<polygon points="${h},${s * 0.05} ${s * 0.75},${s * 0.9} ${s * 0.25},${s * 0.9}"/>`
-    : `<polygon points="${s * 0.1},${s * 0.15} ${s * 0.9},${s * 0.15} ${h},${s * 0.9}"/>`;
-  else if (faction === 'red') body = def.hq ? `<rect x="${s * 0.1}" y="${s * 0.1}" width="${s * 0.8}" height="${s * 0.8}"/><rect x="${s * 0.3}" y="${s * 0.3}" width="${s * 0.4}" height="${s * 0.4}" fill="#111"/>`
-    : def.turret ? `<rect x="${s * 0.15}" y="${s * 0.15}" width="${s * 0.7}" height="${s * 0.7}"/><rect x="${h}" y="${s * 0.45}" width="${s * 0.45}" height="${s * 0.1}" fill="#fff"/>`
-    : def.onOre ? `<rect x="${s * 0.15}" y="${s * 0.15}" width="${s * 0.7}" height="${s * 0.7}"/><rect x="${s * 0.25}" y="${s * 0.25}" width="${s * 0.25}" height="${s * 0.25}" fill="#fff" opacity=".7"/>`
-    : def.onPoint ? `<rect x="${s * 0.35}" y="${s * 0.05}" width="${s * 0.3}" height="${s * 0.9}"/>`
-    : def.upgrade ? `<rect x="${s * 0.1}" y="${s * 0.1}" width="${s * 0.35}" height="${s * 0.35}"/><rect x="${s * 0.55}" y="${s * 0.1}" width="${s * 0.35}" height="${s * 0.35}"/><rect x="${s * 0.1}" y="${s * 0.55}" width="${s * 0.35}" height="${s * 0.35}"/><rect x="${s * 0.55}" y="${s * 0.55}" width="${s * 0.35}" height="${s * 0.35}"/>`
-    : `<rect x="${s * 0.1}" y="${s * 0.1}" width="${s * 0.8}" height="${s * 0.8}"/><rect x="${s * 0.1}" y="${s * 0.4}" width="${s * 0.8}" height="${s * 0.2}" fill="#111"/>`;
-  else body = def.hq ? `<circle cx="${h}" cy="${h}" r="${s * 0.45}"/><circle cx="${h}" cy="${h}" r="${s * 0.25}" fill="#111"/><circle cx="${h}" cy="${h}" r="${s * 0.1}" fill="#fff"/>`
-    : def.turret ? `<circle cx="${h}" cy="${h}" r="${s * 0.4}"/><rect x="${h}" y="${s * 0.45}" width="${s * 0.45}" height="${s * 0.1}" fill="#fff"/>`
-    : def.onOre ? `<circle cx="${h}" cy="${h}" r="${s * 0.4}"/><circle cx="${s * 0.4}" cy="${s * 0.4}" r="${s * 0.1}" fill="#fff"/>`
-    : def.onPoint ? `<circle cx="${h}" cy="${h}" r="${s * 0.4}" fill="none" stroke="${c}" stroke-width="${s * 0.15}"/>`
-    : def.upgrade ? `<circle cx="${s * 0.35}" cy="${s * 0.35}" r="${s * 0.2}"/><circle cx="${s * 0.65}" cy="${s * 0.35}" r="${s * 0.2}"/><circle cx="${h}" cy="${s * 0.68}" r="${s * 0.2}"/>`
-    : `<circle cx="${h}" cy="${h}" r="${s * 0.45}"/><ellipse cx="${h}" cy="${h}" rx="${s * 0.3}" ry="${s * 0.16}" fill="#111"/>`;
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 ${s} ${s}" fill="${c}" stroke="none">${body}</svg>`;
+  return svg(buildingPrims(faction, def, 0, 0), iconColors(faction, color), size);
 }

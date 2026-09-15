@@ -111,7 +111,8 @@ export class Menu {
           <div class="fdetails">
             <div class="fhead">${factionEmblemSVG(k, 44, f.color)}<div><div class="fname">${f.name}</div><div class="ftag">${f.tagline}</div></div></div>
             <ul class="fplay">${f.playstyle.map((p) => `<li>${p}</li>`).join('')}</ul>
-            <div class="roster">${units.map((u) => `<span class="ric" data-k="${u.key}" title="${u.name}: ${u.role}">${unitIconSVG(k, u.shape, f.color, 22)}</span>`).join('')}<span class="sep"></span>${buildings.map((b) => `<span class="ric" data-k="${b.key}" title="${b.name}">${buildingIconSVG(k, b, f.color, 22)}</span>`).join('')}</div>
+            <div class="roster">${units.map((u) => `<span class="ric" data-k="${u.key}" title="${u.name}: ${u.role}">${unitIconSVG(k, u.shape, f.color, 22)}</span>`).join('')}</div>
+            <div class="roster">${buildings.map((b) => `<span class="ric" data-k="${b.key}" title="${b.name}">${buildingIconSVG(k, b, f.color, 22)}</span>`).join('')}</div>
             <div class="fbtns">
               <button class="big" id="btnCampaign">CAMPAIGN <span class="dim">${doneN}/${camp.chapters.length}</span></button>
               <button class="big secondary" id="btnSkirmish">SKIRMISH</button>

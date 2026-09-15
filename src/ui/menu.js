@@ -199,14 +199,10 @@ export class Menu {
         <div class="bar"><button class="nav" id="cxBack">${ico('left', 14)} ${f.name}</button><div class="bartitle">Codex <span class="dim">· ${f.name}</span></div><span></span></div>
         <div class="codex">
           <div class="cx-list">
-            <div class="cx-group">
-              <div class="cx-lh">Units</div>
-              ${units.map((u) => `<button class="cx-item ${u.key === d.key ? 'sel' : ''}" data-k="${u.key}">${unitIconSVG(k, u.shape, f.color, 22)}<span>${u.name}</span></button>`).join('')}
-            </div>
-            <div class="cx-group">
-              <div class="cx-lh">Structures</div>
-              ${buildings.map((b) => `<button class="cx-item ${b.key === d.key ? 'sel' : ''}" data-k="${b.key}">${buildingIconSVG(k, b, f.color, 22)}<span>${b.name}</span></button>`).join('')}
-            </div>
+            <div class="cx-lh">Units</div>
+            ${units.map((u) => `<button class="cx-item ${u.key === d.key ? 'sel' : ''}" data-k="${u.key}">${unitIconSVG(k, u.shape, f.color, 22)}<span>${u.name}</span></button>`).join('')}
+            <div class="cx-lh">Structures</div>
+            ${buildings.map((b) => `<button class="cx-item ${b.key === d.key ? 'sel' : ''}" data-k="${b.key}">${buildingIconSVG(k, b, f.color, 22)}<span>${b.name}</span></button>`).join('')}
           </div>
           <div class="cx-detail">
             ${pagerHTML(`

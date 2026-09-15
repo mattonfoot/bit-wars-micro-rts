@@ -269,7 +269,6 @@ html.native, html.native body { -webkit-touch-callout: none; overscroll-behavior
 .roster .ric:active { background: rgba(255,255,255,0.12); }
 .codex { flex: 1; min-height: 0; display: grid; grid-template-columns: 170px 1fr; gap: 10px; }
 .cx-list { min-height: 0; display: flex; flex-direction: column; gap: 3px; padding-right: 2px; }
-.cx-group { display: flex; flex-direction: column; gap: 3px; }
 .cx-lh { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin: 6px 0 2px 4px; }
 .cx-item { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; padding: 5px 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
 .cx-item svg { width: 22px; height: 22px; flex: 0 0 auto; }
@@ -296,8 +295,7 @@ html.native, html.native body { -webkit-touch-callout: none; overscroll-behavior
 /* short or narrow screens: the codex index becomes a single wrapped row of icons so it never needs to scroll */
 @media (max-width: 600px), (max-height: 500px) {
   .codex { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
-  .cx-list { gap: 4px; padding: 0; }
-  .cx-group { flex-direction: row; flex-wrap: wrap; gap: 4px; }
+  .cx-list { flex-direction: row; flex-wrap: wrap; gap: 4px; padding: 0; }
   .cx-lh { display: none; }
   .cx-item { width: auto; flex: 0 0 auto; padding: 4px 6px; }
   .cx-item span { display: none; }

@@ -4,6 +4,9 @@ import { THEMES, THEME_KEYS } from '../map/themes.js';
 import { unitIconSVG, buildingIconSVG } from '../render/shapes.js';
 import { CAMPAIGNS, LORE, actOf } from '../game/campaigns.js';
 import { ico, factionEmblemSVG } from './icons.js';
+import { warriorSVG } from './warrior.js';
+import { generateMap } from '../map/generator.js';
+import { TerrainLayer } from '../render/terrain.js';
 import { loadProgress } from '../game/campaign.js';
 import { CODEX } from '../game/codex.js';
 import { DMG_LABEL, ARMOR_LABEL } from '../game/data.js';
@@ -19,6 +22,7 @@ export class Menu {
     if (!FACTIONS[this.settings.faction]) this.settings.faction = 'blue';
     this.screen = 'title';
     this.render();
+    window.addEventListener('resize', () => { if (this.screen === 'title') this.drawTitleBackground(); });
   }
   save() { try { localStorage.setItem('bw_settings', JSON.stringify(this.settings)); } catch (e) { /* ignore */ } }
   show() { this.root.classList.remove('hidden'); }
@@ -44,6 +48,8 @@ export class Menu {
   renderTitle() {
     const r = this.root, save = this.loadSave();
     r.innerHTML = `
+      <canvas class="titlebg" id="titleBg"></canvas>
+      <div class="titleart">${warriorSVG('right', 'side-left')}${warriorSVG('left', 'side-right')}</div>
       <div class="screen title">
         <div class="titlehead">
           <h1><span class="b">BIT</span> <span class="r">WARS</span> <span class="g">${ico('circle', 30)}</span></h1>
@@ -61,6 +67,31 @@ export class Menu {
     if (save) r.querySelector('#btnResume').onclick = () => this.onResume(save);
     const native = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
     if (native || window.matchMedia('(display-mode: standalone)').matches || navigator.standalone) r.querySelector('#installHint').remove();
+    this.drawTitleBackground();
+  }
+  /** A fixed Verdant Basin battleground rendered once with the real terrain layer, reused as the title backdrop. */
+  titleBackdrop() {
+    if (!this.backdrop) this.backdrop = new TerrainLayer(generateMap({ size: 48, theme: 'verdant', seed: 'ridgeline' })).canvas;
+    return this.backdrop;
+  }
+  drawTitleBackground() {
+    const c = this.root.querySelector('#titleBg'); if (!c) return;
+    const dpr = Math.min(2, window.devicePixelRatio || 1), W = c.clientWidth, H = c.clientHeight;
+    if (!W || !H) return;
+    c.width = Math.round(W * dpr); c.height = Math.round(H * dpr);
+    const ctx = c.getContext('2d'); ctx.scale(dpr, dpr);
+    const src = this.titleBackdrop();
+    const s = Math.max(W / src.width, H / src.height) * 1.12; // cover the screen, slightly zoomed so the faded map rim stays off screen
+    const dw = src.width * s, dh = src.height * s;
+    ctx.fillStyle = '#07110b'; ctx.fillRect(0, 0, W, H);
+    ctx.drawImage(src, (W - dw) / 2, (H - dh) / 2, dw, dh);
+    ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.55; // a second pass brightens the line ink so the map reads through the page
+    ctx.drawImage(src, (W - dw) / 2, (H - dh) / 2, dw, dh);
+    ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+    ctx.fillStyle = 'rgba(20,80,40,0.16)'; ctx.fillRect(0, 0, W, H); // green wash
+    const g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, 'rgba(4,6,10,0.55)'); g.addColorStop(0.4, 'rgba(4,6,10,0.12)'); g.addColorStop(1, 'rgba(4,6,10,0.6)');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
   }
 
   // ---------- faction carousel

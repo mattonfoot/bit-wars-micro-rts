@@ -5,6 +5,7 @@ import { unitIconSVG, buildingIconSVG } from '../render/shapes.js';
 import { CAMPAIGNS, LORE, actOf } from '../game/campaigns.js';
 import { ico, factionEmblemSVG } from './icons.js';
 import { warriorSVG } from './warrior.js';
+import { pagerHTML, initPager } from './pager.js';
 import { generateMap } from '../map/generator.js';
 import { TerrainLayer } from '../render/terrain.js';
 import { loadProgress } from '../game/campaign.js';
@@ -119,16 +120,16 @@ export class Menu {
           </div>
           <div class="fhistory">
             <div class="hhead">History · ${camp.title}</div>
-            <div class="hscroll">
+            ${pagerHTML(`
               <p>${f.lore}</p>
               <p><b>${camp.goal}.</b> ${camp.backstory}</p>
               <p>${camp.intro}</p>
               <p class="dim">${LORE.world}</p>
-              <p class="dim">Roster: ${units.map((u) => u.name).join(', ')}. Structures: ${buildings.map((b) => b.name).join(', ')}.</p>
-            </div>
+              <p class="dim">Roster: ${units.map((u) => u.name).join(', ')}. Structures: ${buildings.map((b) => b.name).join(', ')}.</p>`)}
           </div>
         </div>
       </div>`;
+    initPager(r.querySelector('.fhistory .pager'));
     const step = (d) => { this.settings.faction = FACTION_KEYS[(idx + d + 3) % 3]; this.save(); this.renderFaction(); };
     r.querySelector('#btnHome').onclick = () => this.go('title');
     r.querySelector('#btnPrev').onclick = () => step(-1);
@@ -151,21 +152,22 @@ export class Menu {
     r.innerHTML = `
       <div class="screen" style="--fc:${f.color}">
         <div class="bar"><button class="nav" id="btnBack">${ico('left', 14)} ${f.name}</button><div class="bartitle">${camp.title} <span class="dim">· ${doneN}/${camp.chapters.length} complete</span></div><span></span></div>
-        <div class="chapters" id="chapters"></div>
+        ${pagerHTML('', 'chapters')}
       </div>`;
     r.querySelector('#btnBack').onclick = () => this.go('faction');
-    const list = r.querySelector('#chapters');
+    const list = r.querySelector('.chapters .pgcol'), end = list.lastElementChild;
     let lastAct = null;
     camp.chapters.forEach((ch, i) => {
       const act = actOf(camp, i);
-      if (act && act !== lastAct) { lastAct = act; const h = document.createElement('div'); h.className = 'acthead'; h.textContent = act.title; list.appendChild(h); }
+      if (act && act !== lastAct) { lastAct = act; const h = document.createElement('div'); h.className = 'acthead'; h.textContent = act.title; list.insertBefore(h, end); }
       const state = i < doneN ? 'done' : i === doneN ? 'next' : 'locked';
       const row = document.createElement('button');
       row.className = 'chapter ' + state;
       row.innerHTML = `<span class="num">${i + 1}</span><span class="body"><b>${ch.title}${ch.crossover ? ' <span class="xo">crossover</span>' : ''}</b><span class="brief">${ch.briefing}</span></span><span class="state">${ico(state === 'done' ? 'check' : state === 'next' ? 'play' : 'lock', 16)}</span>`;
       row.onclick = () => { if (state !== 'locked') this.showBriefing(camp, ch, i); };
-      list.appendChild(row);
+      list.insertBefore(row, end);
     });
+    initPager(r.querySelector('.chapters'), { focus: '.chapter.next' });
   }
 
   // ---------- skirmish setup
@@ -203,18 +205,19 @@ export class Menu {
             ${buildings.map((b) => `<button class="cx-item ${b.key === d.key ? 'sel' : ''}" data-k="${b.key}">${buildingIconSVG(k, b, f.color, 22)}<span>${b.name}</span></button>`).join('')}
           </div>
           <div class="cx-detail">
+            ${pagerHTML(`
             <div class="cx-top">${icon(cur, 48)}<div><div class="cx-name" style="color:${f.color}">${d.name}</div><div class="cx-role">${d.role || (d.hq ? 'Headquarters' : d.turret ? 'Static defence' : d.onOre ? 'Extractor' : d.onPoint ? 'Outpost' : d.trains ? 'Production' : 'Upgrade')}</div></div></div>
             <div class="cx-desc">${d.desc}</div>
             <div class="cx-stats">${stats}</div>
             <div class="cx-sec story">${c.story.map((p) => `<p>${p}</p>`).join('')}</div>
             <div class="cx-cols">${list('Strengths', c.strengths, 'good')}${list('Weaknesses', c.weaknesses, 'bad')}</div>
-            ${list('Tactics', c.tactics, 'tac')}
+            ${list('Tactics', c.tactics, 'tac')}`)}
           </div>
         </div>
       </div>`;
     this.root.querySelector('#cxBack').onclick = () => this.go('faction');
-    for (const b of this.root.querySelectorAll('.cx-item')) b.onclick = () => { this.codexKey = b.dataset.k; this.renderCodex(); const el = this.root.querySelector('.cx-detail'); if (el) el.scrollTop = 0; };
-    const selItem = this.root.querySelector('.cx-item.sel'); if (selItem) selItem.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    for (const b of this.root.querySelectorAll('.cx-item')) b.onclick = () => { this.codexKey = b.dataset.k; this.renderCodex(); };
+    initPager(this.root.querySelector('.cx-detail .pager'));
   }
   renderSkirmish() {
     const r = this.root, s = this.settings, f = FACTIONS[s.faction];
@@ -258,7 +261,7 @@ export class Menu {
     r.innerHTML = `
       <div class="screen">
         <div class="bar"><button class="nav" id="btnBack">${ico('left', 14)} Home</button><div class="bartitle">How to play</div><span></span></div>
-        <div class="hscroll help pad">
+        ${pagerHTML(`<div class="help pad">
           <table>
             <tr><td>Tap unit</td><td>Select squad. Tap a squad icon in the top bar to select it; tap again to jump the camera there. Double-tap a unit to select all of that type on screen.</td></tr>
             <tr><td>Tap ground</td><td>Move selected squads. Tap an enemy to attack it. The cross button deselects.</td></tr>
@@ -273,7 +276,7 @@ export class Menu {
           <p><b>Morale.</b> Sustained fire and casualties drain morale. A <b>broken</b> squad fights at a third of its strength and takes 50% more damage. Flanking does more damage and breaks squads faster. <b>Retreat</b> sprints a squad home to recover.</p>
           <p><b>Counters.</b> Light weapons shred infantry; anti-armour cracks vehicles; blast ruins clumps and structures; energy eats shields and armour. Every squad card shows what it is strong and weak against.</p>
           <div id="rosters"></div>
-        </div>
+        </div>`)}
       </div>`;
     r.querySelector('#btnBack').onclick = () => this.go('title');
     const ro = r.querySelector('#rosters');
@@ -286,6 +289,7 @@ export class Menu {
       for (const b of Object.values(f.buildings)) { const d = document.createElement('div'); d.className = 'u'; d.innerHTML = `${buildingIconSVG(k, b, f.color, 26)}<div><b>${b.name}</b> <span class="m">· ${b.cost.ore ? b.cost.ore + ' ore' : 'HQ'}${b.cost.flux ? ' ' + b.cost.flux + ' flux' : ''}</span><br>${b.desc}</div>`; ul.appendChild(d); }
       h.appendChild(ul); ro.appendChild(h);
     }
+    initPager(r.querySelector('.pager'));
   }
 
   // ---------- briefing / chapter end / pause / game over (overlays on top of whatever is showing)
@@ -298,18 +302,19 @@ export class Menu {
     r.innerHTML = `<div class="screen" style="--fc:${f.color}">
       <div class="bar"><button class="nav" id="chBack">${ico('left', 14)} Chapters</button><div class="bartitle">${camp.title} · Chapter ${i + 1}</div><span></span></div>
       <div class="brief2">
-        <div class="hscroll pad">
+        ${pagerHTML(`<div class="pad">
           <h1 style="font-size:24px;margin:0">${ch.title}</h1>
           <div class="sub">${THEMES[ch.theme].name} · vs ${vs}</div>
           ${ch.also?.length ? `<div class="sub xoline"><span class="xo">crossover</span> The same battle is fought in ${ch.also.map((a) => `${a.campaign} chapter ${a.index + 1}`).join(' and ')}.</div>` : ''}
           <div class="story">${ch.story.map((p) => `<p>${p}</p>`).join('')}</div>
           <div class="briefline"><b>Briefing.</b> ${ch.briefing}</div>
           ${stages}
-        </div>
+        </div>`)}
         <div class="briefside"><button class="big" id="chBegin">BEGIN CHAPTER</button></div>
       </div>
     </div>`;
     r.classList.remove('hidden');
+    initPager(r.querySelector('.pager'));
     r.querySelector('#chBegin').onclick = () => { r.classList.add('hidden'); this.onStartChapter(ch.key); };
     r.querySelector('#chBack').onclick = () => r.classList.add('hidden');
   }
@@ -321,10 +326,10 @@ export class Menu {
     r.innerHTML = `<div class="screen" style="--fc:${f.color}">
       <div class="bar"><span class="dim">${campaign.title} · Chapter ${index + 1}: ${chapter.title}</span><div class="bartitle" style="color:${won ? '#7CFC9A' : '#ff5f5f'}">${won ? (last ? 'CAMPAIGN COMPLETE' : 'CHAPTER COMPLETE') : 'CHAPTER FAILED'}</div><span class="dim">${fmt(time)}</span></div>
       <div class="brief2">
-        <div class="hscroll pad">
+        ${pagerHTML(`<div class="pad">
           ${won ? `<div class="story">${chapter.epilogue.map((p) => `<p>${p}</p>`).join('')}</div>` : `<div class="sub">${reason}</div><ul class="objlist">${objectives.map((o) => `<li class="${o.done ? 'done' : ''}">${ico(o.done ? 'check' : 'circle', 12)} ${o.text}${o.target > 1 ? ` (${o.cur}/${o.target})` : ''}</li>`).join('')}</ul>`}
           <div class="stats"><span>Squads killed</span><span>${me.kills} vs ${enemy.kills}</span><span>Squads lost</span><span>${me.losses}</span><span>Structures destroyed</span><span>${me.destroyed}</span></div>
-        </div>
+        </div>`)}
         <div class="briefside">
           ${won && handlers.next ? '<button class="big" id="ceNext">NEXT CHAPTER</button>' : ''}
           <button class="big ${won && handlers.next ? 'secondary' : ''}" id="ceReplay">${won ? 'Replay chapter' : 'RETRY'}</button>
@@ -333,6 +338,7 @@ export class Menu {
       </div>
     </div>`;
     r.classList.remove('hidden');
+    initPager(r.querySelector('.pager'));
     if (handlers.next) { const b = r.querySelector('#ceNext'); if (b) b.onclick = () => { r.classList.add('hidden'); handlers.next(); }; }
     r.querySelector('#ceReplay').onclick = () => { r.classList.add('hidden'); handlers.replay(); };
     r.querySelector('#ceMenu').onclick = () => { r.classList.add('hidden'); this.screen = 'campaign'; handlers.quit(); };

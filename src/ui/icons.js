@@ -27,12 +27,15 @@ const PATHS = {
   dice: 'M4 4h16v16H4zM8.5 8.5h.01M15.5 8.5h.01M12 12h.01M8.5 15.5h.01M15.5 15.5h.01',
   arrowRight: 'M5 12h14M13 6l6 6-6 6',
   detach: 'M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1L3.2 9.5l6.1-.9L12 3zM4 4l16 16',
+  pagePrev: 'M11.5 6.5L4.5 12l7 5.5zM20 6.5L13 12l7 5.5z',
+  pageNext: 'M4 6.5l7 5.5-7 5.5zM12.5 6.5l7 5.5-7 5.5z',
 };
+const FILLED = new Set(['circle', 'stop', 'pagePrev', 'pageNext']);
 
 /** Inline SVG for a named icon at the given pixel size. Extra classes are appended to the `ic` class. */
 export function ico(name, size = 16, cls = '') {
   const d = PATHS[name] || PATHS.circle;
-  const fill = name === 'circle' || name === 'stop' ? ' fill="currentColor" fill-opacity="0.9"' : '';
+  const fill = FILLED.has(name) ? ' fill="currentColor" fill-opacity="0.9"' : '';
   const sw = /\.01/.test(d) ? 2.4 : 1.8;
   return `<svg class="ic ${cls}" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"${fill}/></svg>`;
 }

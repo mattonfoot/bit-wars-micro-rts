@@ -56,10 +56,10 @@ export const FACTIONS = {
         key: 'kites', name: 'Kite Wing', building: 'spire', tier: 2,
         cost: { ore: 190, flux: 45 }, pop: 5, buildTime: 22,
         size: 3, hp: 82, armor: 'vehicle', speed: 150, sight: 10, radius: 7, flying: true,
-        weapon: { range: 4.5, dmg: 7, rof: 2.0, type: 'light', supp: 4, travel: 0 },
+        weapon: { range: 4.5, dmg: 7, rof: 2.0, type: 'light', supp: 4, travel: 0, structure: 3.5 },
         capRate: 0, canCapture: false, shape: 'kite', noCover: true,
         role: 'Air harasser', strong: 'Infantry, extractors', weak: 'Anti-armour, energy',
-        desc: 'Hovering raiders that ignore terrain. Perfect for raiding economy and pinning squads.',
+        desc: 'Hovering raiders that ignore terrain. Incendiary shot burns structures far harder than its calibre suggests: perfect for raiding economy and pinning squads.',
       },
       obelisk: {
         key: 'obelisk', name: 'Obelisk', building: 'spire', tier: 3, requires: 'nest',

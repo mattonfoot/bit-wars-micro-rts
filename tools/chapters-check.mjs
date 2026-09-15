@@ -21,7 +21,7 @@ try {
   await page.evaluate(() => { localStorage.clear(); localStorage.setItem('bw_campaign', JSON.stringify({ blue: 25, red: 15, green: 36 })); });
   await page.reload({ waitUntil: 'load' });
   await page.tap('.fpick[data-f="blue"]'); await page.waitForTimeout(200);
-  const goal = await page.evaluate(() => document.querySelector('.hscroll p b')?.textContent);
+  const goal = await page.evaluate(() => document.querySelector('.fhistory .pgcol p b')?.textContent);
   console.log('faction page goal:', goal); ok = ok && goal === 'The Bloom.';
   await page.screenshot({ path: `${out}/c40-faction.png` });
   await page.tap('#btnCampaign'); await page.waitForTimeout(300);

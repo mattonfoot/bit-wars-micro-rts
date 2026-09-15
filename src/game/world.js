@@ -861,7 +861,7 @@ export class World {
         x: src.x, y: src.y, sx: src.x, sy: src.y, tx: target.x + this.rng.range(-10, 10), ty: target.y + this.rng.range(-10, 10),
         t: 0, dur: Math.max(0.25, dur), owner: src.owner, faction: src.faction,
         dmg: weapon.dmg * n * dmgScale, type: weapon.type, supp: weapon.supp * n, splash: (weapon.splash || 0.6) * TILE,
-        terrain: weapon.terrain || 0, arc: !!weapon.indirect, srcId: src.id, flankMult,
+        terrain: weapon.terrain || 0, arc: !!weapon.indirect, srcId: src.id, flankMult, structure: weapon.structure || 1,
       });
       this.emit({ type: 'launch', x: src.x, y: src.y, faction: src.faction, arc: !!weapon.indirect });
       return;
@@ -883,7 +883,7 @@ export class World {
         }
         this.emit({ type: 'shot', x: fx, y: fy, tx: victim.px, ty: victim.py, faction: src.faction, wtype: w.type, melee: !!w.melee });
       } else {
-        this.damageBuilding(target, w.dmg * dmgScale, w.type, src);
+        this.damageBuilding(target, w.dmg * dmgScale * (w.structure || 1), w.type, src); // incendiary raiders burn structures far faster than their calibre suggests
         this.emit({ type: 'shot', x: fx, y: fy, tx: target.x + this.rng.range(-12, 12), ty: target.y + this.rng.range(-12, 12), faction: src.faction, wtype: w.type, melee: !!w.melee });
       }
       shots++;
@@ -1008,7 +1008,7 @@ export class World {
     }
     for (const b of this.buildings) {
       if (b.dead || !this.hostile(pr.owner, b.owner)) continue;
-      if (this.entityDist({ x: pr.tx, y: pr.ty }, b) <= R) this.damageBuilding(b, pr.dmg, pr.type, attacker);
+      if (this.entityDist({ x: pr.tx, y: pr.ty }, b) <= R) this.damageBuilding(b, pr.dmg * (pr.structure || 1), pr.type, attacker);
     }
     if (pr.terrain) this.damageTerrain(pr.tx, pr.ty, R, pr.terrain, pr.owner);
   }

@@ -246,4 +246,19 @@ check('Foundry chapter 1: holding in cover registers enough cover hits before th
   assert.ok((c.counters.cover || 0) >= 8, `cover hits ${c.counters.cover || 0}`);
 });
 
+check('Wings over Ash: the target rigs stand clear of the Foundry base and two Kite wings burn one in seconds', () => {
+  const ch = CAMPAIGNS.blue.chapters[3]; const { w, run } = start(ch);
+  const hq = w.buildings.find((b) => b.owner === 1 && b.def.hq);
+  const rigs = w.buildings.filter((b) => b.owner === 1 && b.def.key === 'drill');
+  assert.equal(rigs.length, 3);
+  for (const r of rigs) assert.ok(Math.hypot(r.x - hq.x, r.y - hq.y) > 20 * TILE, 'rig placed on a vein between the bases, not under the base bunker');
+  const rig = rigs[0];
+  const wings = [spawnNear(w, 0, 'kites', rig.x + 3 * TILE, rig.y), spawnNear(w, 0, 'kites', rig.x + 3 * TILE, rig.y + 12)];
+  w.cmdAttack(wings, rig);
+  const t0 = w.time;
+  run(30, () => rig.dead);
+  assert.ok(rig.dead, 'rig destroyed');
+  assert.ok(w.time - t0 < 14, `two wings burn a rig in ${(w.time - t0).toFixed(1)}s`);
+});
+
 console.log(`All ${passed} mechanic checks passed`);

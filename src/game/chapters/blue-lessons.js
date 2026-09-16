@@ -18,7 +18,7 @@ export const BLUE_LESSONS = {
         stage([obj('train', 'train', 'Train 2 Dart Swarms at the Hive', { key: 'darts', n: 2, hint: 'Tap the Hive, then tap Dart Swarm.' })]),
         stage([obj('lode', 'build', 'Build a Lode Burrow on an ore vein', { key: 'lode', n: 1, hint: 'Tap Build, choose Lode Burrow, tap the glowing vein.' })], 'Swarms need ore. Burrow into the vein beside the Hive.'),
         stage([obj('cap', 'capture', 'Capture the nearest strategic point', { rank: 0, hint: 'Select a swarm and tap the flag marker.' })], 'Flux comes only from strategic points. Stand on one to claim it.'),
-        stage([obj('kill', 'kill', 'Destroy the Bolt Squad guarding the second point', { n: 1, hint: 'Long-press the ground near them to attack-move.' }), obj('cap2', 'capture', 'Capture the second point', { rank: 2 })], 'A Foundry squad holds the next point. Eight blades beat four rifles up close.'),
+        stage([obj('kill', 'kill', 'Destroy the Bolt Squad guarding the second point', { n: 1, hint: 'Long-press the ground near them to attack-move.' }), obj('cap2', 'capture', 'Capture the second point', { rank: 2 })], 'A Foundry squad holds the next point. One swarm alone dies to four rifles; two swarms together beat them up close.'),
       ],
       hints: [{ at: 'start', text: 'Drag to pan, pinch to zoom. Your Hive is selected: tap Dart Swarm twice.' }, { at: 'stage:3', text: 'Darts are melee. Charge in together; do not trickle.' }],
     },
@@ -35,7 +35,7 @@ export const BLUE_LESSONS = {
         stage([obj('cap', 'capture', 'Capture the nearest point', { rank: 0 }), obj('cover', 'cover', 'Take 8 hits while in cover', { n: 8, hint: 'Park a squad beside a boulder facing the enemy, or inside brush.' }), obj('reinf', 'reinforce', 'Reinforce a damaged squad twice', { n: 2 })], 'Take the closest point, and fight from behind rocks and brush. The shield icon over a squad means the cover is working.'),
         stage([obj('tank', 'kill', 'Destroy the Crusher Tank', { key: 'crusher', n: 1 }), obj('cap3', 'capture', 'Capture the point it was guarding', { rank: 3 })], 'The tank sits at the far point. Needles first, Darts on its escort.'),
       ],
-      hints: [{ at: 'start', text: 'Needle Squads deal anti-armour damage: 1.5× against vehicles, weak in melee.' }, { at: 'time:150', text: 'Enemy infantry inbound. Hold your point from cover.' }],
+      hints: [{ at: 'start', text: 'Needle Squads deal anti-armour damage: 1.5× against vehicles, and their 6.5 range outreaches the tank. Weak in melee.' }, { at: 'time:150', text: 'Enemy infantry inbound. Hold your point from cover.' }],
     },
     {
       key: 'blue-3', title: 'The Long Way Round', theme: 'frost', size: 64, seed: 'shear-3',
@@ -46,7 +46,7 @@ export const BLUE_LESSONS = {
       enemy: garrison('red', { squads: [{ key: 'hammers', at: 'point:1', order: 'hold' }, { key: 'hammers', at: 'point:3', order: 'hold' }, { key: 'hammers', at: 'point:4', order: 'hold' }, { key: 'bolts', at: 'point:3' }, { key: 'bolts', at: 'point:4' }], points: [1, 3, 4], structures: [{ key: 'post', at: 'point:3' }] }),
       stages: [
         stage([obj('nest', 'build', 'Build a Nest', { key: 'nest', n: 1 }), obj('wedges', 'train', 'Train 2 Wedge Raiders', { key: 'wedges', n: 2 })]),
-        stage([obj('flank', 'flank', 'Land 8 flanking hits', { n: 8, hint: 'Select the Wedges, tap Flank, then tap a Hammer Team. They circle behind it on their own.' }), obj('broken', 'broken', 'Break 2 enemy squads', { n: 2 })], 'Attacks from behind deal extra damage and shred morale, and Wedges double the bonus. Use the Flank command: the squad swings wide around the gun team and hits it from the rear while it is still turning.'),
+        stage([obj('flank', 'flank', 'Land 8 flanking hits', { n: 8, hint: 'Select the Wedges, tap Flank, then tap a Hammer Team. They circle behind it on their own.' }), obj('broken', 'broken', 'Break 2 enemy squads', { n: 2 })], 'Attacks from behind deal extra damage and shred morale, and Wedges hit for double from behind. Use the Flank command: the squad swings wide around the gun team and hits it from the rear while it is still turning.'),
         stage([obj('post', 'destroy', 'Destroy the Watch Post', { key: 'post', n: 1 }), obj('cap', 'capture', 'Hold 4 strategic points', { n: 4 })], 'Now roll up the passes. The Watch Post must fall before its point can be taken.'),
       ],
       hints: [{ at: 'start', text: 'Hammer Teams must set up to fire, have a narrow arc and turn slowly. Never approach one from the front.' }, { at: 'stage:1', text: 'Keep the Darts in front of a Hammer Team to hold its attention, then send the Wedges round with Flank.' }, { at: 'stage:2', text: 'Broken squads fight at a third strength and take 50% more damage. Finish them.' }],

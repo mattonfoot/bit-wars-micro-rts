@@ -9,7 +9,7 @@ import { clamp, dist, angleTo, angleDiff, lerpAngle, TAU } from '../engine/math.
 
 export const TICK = 1 / 60;
 const VISION_INTERVAL = 6;
-const TRAVERSE_RATE = 1.0; // radians per second for arc-limited weapons
+const TRAVERSE_RATE = 0.6; // radians per second for arc-limited weapons: a full about-face takes about five seconds, so fast raiders can out-circle a set-up gun
 const NONE = -1;
 
 function formationSlots(n, radius) {
@@ -646,12 +646,14 @@ export class World {
       case 'flank': {
         const t = this.byId(o.targetId);
         if (!t || t.dead || (t.kind === 'squad' && !t.members.length)) { o.type = 'amove'; o.x = s.x; o.y = s.y; s.path = null; s.targetId = 0; break; }
-        // walk the wide arc without stopping to shoot; the side is chosen once, the route re-planned only if the target moves or turns
+        // walk the wide arc without stopping to shoot. The side and the facing to get behind are fixed when the
+        // order is given: re-planning against a gun that turns to track the raiders would only send them back out
+        // wide again and keep them in its arc for ever. The route is re-planned only if the target moves.
         allowFire = false; s.targetId = 0; target = null;
-        const tf = t.kind === 'squad' ? t.facing : 0;
-        if (o.side === undefined) o.side = angleDiff(angleTo(t.x, t.y, s.x, s.y), tf) >= 0 ? 1 : -1;
-        const stale = !o.wp || dist(t.x, t.y, o.tx, o.ty) > 1.5 * TILE || Math.abs(angleDiff(tf, o.tf)) > 0.6;
-        if (stale) { o.tx = t.x; o.ty = t.y; o.tf = tf; o.wp = this.flankWaypoints(s, t, o.side); s.path = null; }
+        const tf = o.tf ?? (t.kind === 'squad' ? t.facing : 0);
+        if (o.side === undefined) o.side = angleDiff(tf, angleTo(t.x, t.y, s.x, s.y)) >= 0 ? 1 : -1; // go wide on the side the squad is already on
+        const stale = !o.wp || dist(t.x, t.y, o.tx, o.ty) > 1.5 * TILE;
+        if (stale) { o.tx = t.x; o.ty = t.y; o.tf = tf; o.wp = this.flankWaypoints(s, { ...t, facing: tf }, o.side); s.path = null; }
         let goal = o.wp[Math.min(o.phase, 1)];
         if (dist(s.x, s.y, goal[0], goal[1]) < 1.2 * TILE) { o.phase++; s.path = null; goal = o.wp[1]; }
         if (o.phase >= 2) { o.type = 'attack'; o.x = t.x; o.y = t.y; s.targetId = t.id; s.path = null; target = t; chase = true; break; }

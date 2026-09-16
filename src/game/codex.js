@@ -4,19 +4,19 @@ export const CODEX = {
   // ---------------- Vector Swarm
   darts: {
     story: ['A Dart is the smallest thing the Hive can think. Eight of them share one thought at a time, and the thought is usually "closer". They are grown in seconds, shed like scales, and never counted.', 'Foundry soldiers call them "the weather". You do not fight the weather; you get under cover and wait for it to pass.'],
-    strengths: ['Cheapest squad in the war and the largest: eight members soak fire that would wipe a smaller unit', 'Melee damage ignores cover, so dug-in infantry gets no protection', 'Fast enough to catch artillery crews and gun teams before they turn'],
+    strengths: ['Cheapest squad in the war and the largest: eight members soak fire that would wipe a smaller unit', 'Melee damage ignores cover, so dug-in infantry gets no protection', 'Fast enough to catch artillery crews and gun teams from the side, before they turn'],
     weaknesses: ['Blast weapons and splash kill several members per shell', 'Suppression breaks them quickly: eight low-morale bodies is a lot of morale to lose', 'Nearly useless against vehicles and structures'],
     tactics: ['Charge in groups of two or three squads at once; a single swarm trickling in dies to a Bolt Squad', 'Send them around the side: melee from behind a squad gets the flank bonus and breaks morale fast', 'Reinforce constantly. A Dart member costs almost nothing; a fresh squad costs time', 'Use them to grab strategic points early while the enemy is still teching'],
   },
   needles: {
     story: ['When the first Crusher Tank rolled into the basin and Darts bounced off it, the Hive grew something longer. A Needle is a hollow spike a metre long, thrown hard enough to pass through plating and keep going.', 'Needle Squads fight standing off, five throwers loosing in rhythm. They have never learned to like being touched.'],
-    strengths: ['Anti-armour damage: 1.5× against vehicles and full damage against heavy infantry', 'Solid range lets them fire over a Dart screen', 'Cheap for what they kill'],
+    strengths: ['Anti-armour damage: 1.5× against vehicles and full damage against heavy infantry', 'Range of 6.5 tiles: they outrange Bolt Squads and Crusher Tanks and fire over a Dart screen', 'Cheap for what they kill'],
     weaknesses: ['Poor against light infantry and terrible in melee', 'Slow rate of fire: they need time on target', 'Suppression pins them like anything else'],
-    tactics: ['Keep them one step behind the Darts and let the Darts absorb the charge', 'Focus every Needle Squad on one vehicle; spreading fire lets shields and repair undo the damage', 'Put them in cover when facing Bolt Squads; the range advantage is small', 'Two Needle Squads kill a Crusher Tank before it reloads twice'],
+    tactics: ['Keep them one step behind the Darts and let the Darts absorb the charge', 'Focus every Needle Squad on one vehicle; spreading fire lets shields and repair undo the damage', 'Against Bolt Squads open fire at full range and keep backing off; toe to toe the Bolts win', 'Two Needle Squads kill a Crusher Tank in under five seconds, before its third shell'],
   },
   wedges: {
     story: ['Wedges are what happens when the Hive is angry and in a hurry. Four chevrons, each a blade folded twice, that cover ground faster than anything else in the Lattice.', 'The Foundry has a rule about Wedges: if you can see them, they are not where the attack is coming from.'],
-    strengths: ['Fastest unit in the game and the fastest capturer (1.6× capture rate)', 'Flank bonus is doubled: attacks from behind deal huge damage and shatter morale', 'Perfect for killing Hammer Teams, Mortars and Lens Teams that cannot turn in time'],
+    strengths: ['Fastest ground unit in the war and the fastest capturer (1.6× capture rate)', 'Attacks from behind deal double damage and shatter morale', 'Perfect for killing Mortars, Lens Teams and distracted Hammer Teams that cannot turn in time'],
     weaknesses: ['Only four members with modest health', 'Loses a straight fight to heavy infantry and turrets', 'Expensive to lose because of the Nest tech behind it'],
     tactics: ['Never attack from the front. Path them wide, around brush or over the ice, and hit the rear', 'Pair a Wedge raid with a frontal Dart charge so the enemy faces the wrong way', 'Send one squad to capture undefended points while the main army fights', 'Retreat them the moment the target breaks; broken squads are someone else\'s job'],
   },
@@ -28,7 +28,7 @@ export const CODEX = {
   },
   obelisk: {
     story: ['The Obelisk is the Hive\'s final argument: a walking pyramid the size of a Foundry, hollow, humming, lobbing shards of itself across canyons. It regrows what it throws.', 'The Apex grew the first one in the Ashfall while the Foundry\'s bunkers watched, out of range, and understood they would stay out of range.'],
-    strengths: ['Longest-ranged Swarm weapon with blast splash; wrecks structures and clumped infantry', 'Shells flatten cover and leave craters', 'Very high health for a Swarm unit'],
+    strengths: ['Longest-ranged Swarm weapon (8 tiles) with blast splash; wrecks structures and clumped infantry', 'Shells flatten cover and leave craters', 'Very high health for a Swarm unit'],
     weaknesses: ['Slow, expensive, and 8 population', 'Minimum range: helpless if enemies get close', 'Anti-armour fire and flanking take it apart'],
     tactics: ['Screen it with Darts in front and Needles beside it, and move as one blob', 'Target bunkers and turrets first: nothing else out-ranges them', 'Fire on defended chokepoints to destroy the cover before the swarm goes in', 'One Obelisk plus a full pop of infantry ends most games'],
   },
@@ -40,7 +40,7 @@ export const CODEX = {
   },
   hive: {
     story: ['The Hive is the Swarm\'s first shape and its only permanent one: a folded pyramid over the ore hum, dividing in the dark.', 'Every Dart, Needle and Apex begins here. If the Hive is broken, the Swarm does not retreat. It simply stops.'],
-    strengths: ['Spawns tier-one squads and the Apex', 'Has a spine launcher to shred small raids', 'Provides the widest build radius'],
+    strengths: ['Spawns tier-one squads and the Apex', 'Has a spine launcher to shred small raids', 'Wide build radius, like every headquarters'],
     weaknesses: ['Losing it loses the game', 'Blast and anti-armour weapons crack it faster than light fire', 'Cannot be rebuilt'],
     tactics: ['Keep at least one squad at home; the Hive\'s gun handles harassment but not an army', 'Set its rally point toward your forward position', 'Build a Thorn or two beside it before teching to the Spire'],
   },
@@ -64,7 +64,7 @@ export const CODEX = {
   },
   thorn: {
     story: ['A Thorn is a hollow spike that fires smaller spikes. It does not think. It does not need to.'],
-    strengths: ['Cheap, rapid-fire, high suppression', 'Excellent against light infantry raids'],
+    strengths: ['Cheap, rapid-fire, steady suppression', 'Excellent against light infantry raids'],
     weaknesses: ['Low health and light damage; vehicles ignore it', 'Short build radius'],
     tactics: ['Place one beside each extractor cluster', 'Use several together: a single Thorn just delays'],
   },
@@ -156,7 +156,7 @@ export const CODEX = {
   },
   lenses: {
     story: ['A Lens Team is two lenses that bend light until it cuts. From beyond the range of any rifle they open tanks like fruit.', 'They see further than anyone in the Lattice, and are the first to know when they are about to die.'],
-    strengths: ['Extreme range and sight', 'Very high energy damage per shot: kills vehicles and heroes', 'Good scouts'],
+    strengths: ['Extreme range and sight', 'Very high energy damage per shot: two teams kill a Crusher Tank in about seven seconds', 'Good scouts'],
     weaknesses: ['Only two members with little health', 'Slow rate of fire', 'Helpless in melee or when flanked'],
     tactics: ['Keep them at the very back, behind Wardens or Pulse Rings', 'Target vehicles and heroes; ignore infantry unless nothing else is in range', 'Use their sight to see attacks coming and reposition early', 'Retreat them the moment fast units appear'],
   },
@@ -186,7 +186,7 @@ export const CODEX = {
   },
   core: {
     story: ['The Core is a shielded dome the size of a hill. Wardens, Lenses and the Oracle grow within it. It has never been cracked, which is why the Collective has never had to learn what happens next.'],
-    strengths: ['A large shield on top of its health', 'Long-range beam emplacement', 'Widest build radius'],
+    strengths: ['A large shield on top of its health', 'Long-range beam emplacement', 'Wide build radius, like every headquarters'],
     weaknesses: ['Losing it loses the game', 'Sustained blast fire burns through the shield'],
     tactics: ['Two Bastions cover the approaches better than a squad', 'Rally new squads to a Halo, not to the front', 'Let the shield recharge: pull raiders away rather than fighting beside the Core'],
   },
@@ -205,7 +205,7 @@ export const CODEX = {
   bastion: {
     story: ['A Bastion is a Lens Team that stopped moving and grew a shield the size of a house.'],
     strengths: ['Longest-ranged turret in the game with energy damage', 'Thick shield'],
-    weaknesses: ['Slow rate of fire; swarms can rush it', 'Mortars and Obelisks outrange it'],
+    weaknesses: ['Slow rate of fire; swarms can rush it', 'Mortars, Novas and Obelisks outrange it'],
     tactics: ['Cover approaches, not the Core itself', 'Pair with a Pulse Ring to handle swarms'],
   },
   sanctum: {

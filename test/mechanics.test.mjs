@@ -226,7 +226,7 @@ check('set-up guns traverse slowly and cannot fire outside their arc', () => {
   const shots = () => w.events.filter((e) => e.type === 'shot' || e.type === 'muzzle').length;
   let firedEarly = false, firedLater = false;
   let prevCd = gun.cooldown;
-  for (let i = 0; i < 240; i++) { w.tick(TICK); if (gun.cooldown > prevCd && i < 90) firedEarly = true; prevCd = gun.cooldown; w.events.length = 0; }
+  for (let i = 0; i < 390; i++) { w.tick(TICK); if (gun.cooldown > prevCd && i < 90) firedEarly = true; prevCd = gun.cooldown; w.events.length = 0; }
   const turned = Math.abs(Math.abs(gun.facing) - Math.PI) < 0.5;
   assert.ok(turned, `gun traverses toward the attacker over a few seconds (facing ${gun.facing.toFixed(2)})`);
   void shots; void firedLater; void run;

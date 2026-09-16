@@ -17,7 +17,7 @@ export const RED_LESSONS = {
       waves: [wave(75, [{ key: 'needles', n: 1 }], { text: 'Needle Squad inbound. Hold in cover.' }), wave(140, [{ key: 'needles', n: 1 }, { key: 'darts', n: 1 }], { text: 'Needles and a swarm. Stay in cover.' }), wave(210, [{ key: 'needles', n: 2 }, { key: 'darts', n: 1 }], { text: 'Last wave. Hold the line.' })],
       stages: [
         stage([obj('train', 'train', 'Train 2 Bolt Squads', { key: 'bolts', n: 2, hint: 'Tap the Foundry, then Bolt Squad.' }), obj('drill', 'build', 'Build a Drill Rig on an ore vein', { key: 'drill', n: 1 })]),
-        stage([obj('cover', 'cover', 'Take 8 hits while in cover', { n: 8, hint: 'The blue shield icon over a squad means cover is working. Cover stops shots, not blades: Darts ignore it.' }), obj('survive', 'survive', 'Survive the swarm waves', { seconds: 260 })], 'Needle Squads are coming. Put your squads behind walls, in rubble or in scrub and order Hold. Cover halves the damage from shots; melee swarms ignore it.'),
+        stage([obj('cover', 'cover', 'Take 8 hits while in cover', { n: 8, hint: 'The blue shield icon over a squad means cover is working. Cover stops shots, not blades: Darts ignore it.' }), obj('survive', 'survive', 'Survive the swarm waves', { seconds: 260 })], 'Needle Squads are coming. Put your squads behind walls, in rubble or in scrub and order Hold. Heavy cover halves the damage from shots and light cover takes a quarter off; melee swarms ignore it.'),
         stage([obj('cap', 'capture', 'Capture the nearest strategic point', { rank: 0 }), obj('kill', 'kill', 'Destroy the swarm holding the second point', { n: 1 }), obj('cap2', 'capture', 'Capture the second point', { rank: 2 })], 'The street is yours. Take the point.'),
       ],
       hints: [{ at: 'start', text: 'Bolt Squads are heavy infantry: slow, tough, good against light infantry. The rubble and scrub in front of the Foundry is your cover.' }, { at: 'stage:1', text: 'Put each squad in the rubble or scrub, then tap Hold so it does not chase into the open.' }],
@@ -31,7 +31,7 @@ export const RED_LESSONS = {
       enemy: garrison('blue', { squads: [{ key: 'darts', at: 'point:1', n: 2 }, { key: 'darts', at: 'point:3', n: 2 }, { key: 'needles', at: 'point:3' }], points: [1, 3] }),
       waves: [wave(120, [{ key: 'darts', n: 2 }], { from: 'point:3', target: 'point:0', text: 'Swarm inbound on your point. Guns up.' }), wave(240, [{ key: 'darts', n: 2 }, { key: 'wedges', n: 1 }], { from: 'point:3', target: 'point:0', text: 'Wedges: they will try to get behind the guns.' })],
       stages: [
-        stage([obj('hammers', 'train', 'Train 2 Hammer Teams', { key: 'hammers', n: 2 }), obj('setup', 'setup', 'Set up a Hammer Team (stand still until the ▣ icon shows)', { hint: 'Hammers cannot fire while moving. Give them a moment.' })]),
+        stage([obj('hammers', 'train', 'Train 2 Hammer Teams', { key: 'hammers', n: 2 }), obj('setup', 'setup', 'Set up a Hammer Team (stand still until the set-up mark shows)', { hint: 'Hammers cannot fire while moving. Give them a moment.' })]),
         stage([obj('broken', 'broken', 'Break 4 enemy squads', { n: 4 }), obj('cap', 'capture', 'Capture the nearest point', { rank: 0 }), obj('reinf', 'reinforce', 'Reinforce a squad twice', { n: 2 })], 'Guns forward, Bolts on their flanks. Break the swarms as they come.'),
         stage([obj('cap1', 'capture', 'Capture the swarm point', { rank: 1 }), obj('cap3', 'capture', 'Capture the far point', { rank: 3 })], 'Clear the basin.'),
       ],

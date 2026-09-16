@@ -23,7 +23,7 @@ export const FACTIONS = {
     tagline: 'Numbers. Speed. Flanks.',
     color: '#3d8bff', alt: '#31d5e6', dark: '#1a3f86', light: '#a9ccff',
     lore: 'A hive that divides faster than it can be killed. Individually fragile, the Swarm wins by out-producing, out-running and out-flanking anything slower than itself.',
-    playstyle: ['Cheapest, fastest units', 'Large squads: losses feel small, wins feel huge', 'Flank bonus doubled', 'Weak to blast and suppression'],
+    playstyle: ['Cheapest, fastest units', 'Large squads: losses feel small, wins feel huge', 'Wedges deal double damage from behind', 'Weak to blast and suppression'],
     units: {
       darts: {
         key: 'darts', name: 'Dart Swarm', building: 'hive', tier: 1,
@@ -37,11 +37,11 @@ export const FACTIONS = {
       needles: {
         key: 'needles', name: 'Needle Squad', building: 'hive', tier: 1,
         cost: { ore: 120, flux: 15 }, pop: 4, buildTime: 16,
-        size: 5, hp: 24, armor: 'infantry', speed: 92, sight: 8, radius: 5,
-        weapon: { range: 5.5, dmg: 9, rof: 0.9, type: 'heavy', supp: 1 },
+        size: 5, hp: 30, armor: 'infantry', speed: 92, sight: 8, radius: 5,
+        weapon: { range: 6.5, dmg: 10, rof: 0.9, type: 'heavy', supp: 1 },
         capRate: 1.0, canCapture: true, shape: 'needle',
         role: 'Anti-armour', strong: 'Vehicles, heavy infantry', weak: 'Melee, suppression',
-        desc: 'Long piercing spikes. Punches through armour but folds in melee.',
+        desc: 'Long piercing spikes. Outranges rifles and tanks, punches through armour, folds in melee.',
       },
       wedges: {
         key: 'wedges', name: 'Wedge Raiders', building: 'nest', tier: 2,
@@ -50,7 +50,7 @@ export const FACTIONS = {
         weapon: { range: 2.2, dmg: 11, rof: 1.3, type: 'light', supp: 3 },
         capRate: 1.6, canCapture: true, shape: 'chevron', flankMult: 1.6,
         role: 'Flanker / capturer', strong: 'Artillery, gun teams, points', weak: 'Heavy infantry, turrets',
-        desc: 'Fastest unit in the war. Captures quickly and deals brutal damage from behind.',
+        desc: 'Fastest thing on the ground. Captures quickly and deals double damage from behind.',
       },
       kites: {
         key: 'kites', name: 'Kite Wing', building: 'spire', tier: 2,
@@ -65,7 +65,7 @@ export const FACTIONS = {
         key: 'obelisk', name: 'Obelisk', building: 'spire', tier: 3, requires: 'nest',
         cost: { ore: 320, flux: 110 }, pop: 8, buildTime: 40,
         size: 1, hp: 520, armor: 'vehicle', speed: 55, sight: 9, radius: 13,
-        weapon: { range: 7.5, dmg: 55, rof: 0.35, type: 'blast', supp: 12, splash: 1.3, travel: 260, minRange: 2, terrain: 60 },
+        weapon: { range: 8, dmg: 55, rof: 0.35, type: 'blast', supp: 12, splash: 1.3, travel: 260, minRange: 2, terrain: 60 },
         capRate: 0, canCapture: false, shape: 'obelisk', noCover: true,
         role: 'Siege walker', strong: 'Structures, clumps', weak: 'Anti-armour, flanking',
         desc: 'A walking pyramid that lobs shattering bolts. Slow, but nothing stands after it.',
@@ -78,7 +78,7 @@ export const FACTIONS = {
         capRate: 1.2, canCapture: true, shape: 'apex',
         aura: { radius: 5, speed: 1.2, moraleRegen: 2.0 },
         role: 'Hero: speed + morale aura', strong: 'Everything, briefly', weak: 'Being alone',
-        desc: 'The point of the spear. Nearby squads move faster and never break.',
+        desc: 'The point of the spear. Nearby squads move faster and hold their nerve.',
       },
     },
     buildings: {
@@ -186,7 +186,7 @@ export const FACTIONS = {
         key: 'lenses', name: 'Lens Team', building: 'core', tier: 1,
         cost: { ore: 160, flux: 35 }, pop: 4, buildTime: 22,
         size: 2, hp: 30, shield: 25, armor: 'infantry', speed: 80, sight: 11, radius: 5.5,
-        weapon: { range: 8.5, dmg: 34, rof: 0.45, type: 'energy', supp: 2 },
+        weapon: { range: 8.5, dmg: 44, rof: 0.45, type: 'energy', supp: 2 },
         capRate: 0.8, canCapture: true, shape: 'lens',
         role: 'Sniper / anti-armour', strong: 'Vehicles, heroes', weak: 'Melee, flankers',
         desc: 'Focused beams from extreme range. Sees far, hits hard, dies fast.',

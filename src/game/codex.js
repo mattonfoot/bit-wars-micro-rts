@@ -48,7 +48,7 @@ export const CODEX = {
     story: ['A Lode Burrow is a piece of the Swarm that fell into an ore vein and kept eating. It never comes out again.', 'The Hive can taste the ore through it from across the map.'],
     strengths: ['Cheapest extractor in the war', 'Fast to grow'],
     weaknesses: ['Low health; Kite-style raids kill it quickly', 'Only useful on an ore vein'],
-    tactics: ['Claim both base veins before anything else', 'Push a Burrow onto contested veins once a point nearby is yours', 'Rebuild immediately when one dies: it pays for itself in under a minute'],
+    tactics: ['Claim both base veins before anything else', 'Push a Burrow onto contested veins once a point within 12 tiles is yours', 'Rebuild immediately when one dies: it pays for itself in under a minute'],
   },
   nest: {
     story: ['The Nest is where the Hive keeps the Wedges it is not yet ready to use. It is warm, dark, and constantly moving.'],
@@ -121,7 +121,7 @@ export const CODEX = {
     story: ['A Drill Rig is a machine that goes down. It never comes back up, but ore does.'],
     strengths: ['Tough for an extractor', 'Reliable income'],
     weaknesses: ['Kites and Wedges will find it', 'Only useful on an ore vein'],
-    tactics: ['Claim both base veins in the first minute', 'Put a Bunker between forward rigs and the enemy'],
+    tactics: ['Claim both base veins in the first minute', 'Capture a point to unlock the veins around it, then put a Bunker between forward rigs and the enemy'],
   },
   works: {
     story: ['The Iron Works is where the Foundry keeps its heavy ideas: Breachers, Crushers and Mortars roll out of it in that order.'],
@@ -194,7 +194,7 @@ export const CODEX = {
     story: ['A Siphon is a shielded well that drinks ore through the crystal. It is quiet, patient, and worth more than it looks.'],
     strengths: ['Shielded extractor: shrugs off small raids'],
     weaknesses: ['Low health under the shield', 'Only useful on an ore vein'],
-    tactics: ['Claim both base veins first', 'Rebuild forward Siphons behind a Beacon'],
+    tactics: ['Claim both base veins first', 'Capture a point to reach the veins around it, and rebuild forward Siphons behind a Beacon'],
   },
   array: {
     story: ['The Array is a shielded dome full of resonance. Pulse Rings, Halos and, with a Sanctum, Nova Spheres grow inside.'],

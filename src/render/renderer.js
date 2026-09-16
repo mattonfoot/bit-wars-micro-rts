@@ -313,7 +313,7 @@ export class Renderer {
     }
     ctx.setLineDash([]);
     if (!def) return; // no structure chosen yet: radius hints only
-    if (def.onOre) { ctx.strokeStyle = '#ffe680'; ctx.lineWidth = 2; for (const o of world.ore) if (!o.building && world.explored(this.viewer, o.cell)) { ctx.beginPath(); ctx.arc(o.x, o.y, TILE * 0.7 + Math.sin(this.time * 6) * 2, 0, TAU); ctx.stroke(); } }
+    if (def.onOre) { ctx.lineWidth = 2; for (const o of world.ore) if ((!o.building || world.byId(o.building)?.dead) && world.explored(this.viewer, o.cell)) { const ok = world.extractorSiteOk(this.viewer, o.x, o.y); ctx.strokeStyle = ok ? '#ffe680' : 'rgba(255,230,128,0.28)'; ctx.setLineDash(ok ? [] : [4, 4]); ctx.beginPath(); ctx.arc(o.x, o.y, TILE * 0.7 + (ok ? Math.sin(this.time * 6) * 2 : 0), 0, TAU); ctx.stroke(); } ctx.setLineDash([]); } // dashed veins need a nearby point captured first
     if (def.onPoint) { ctx.strokeStyle = '#ffe680'; ctx.lineWidth = 2; for (const p of world.points) if (p.owner === this.viewer && !p.outpost) { ctx.beginPath(); ctx.arc(p.x, p.y, TILE * 1.1 + Math.sin(this.time * 6) * 2, 0, TAU); ctx.stroke(); } }
     if (g.cell === undefined || g.cell < 0) return;
     const cells = world.footprint(def, g.cell);

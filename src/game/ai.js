@@ -55,7 +55,7 @@ export class AI {
     this.saving = false;
     const want = (k) => { if (afford(k)) return true; this.saving = true; return false; };
     // extractors on reachable free veins (within build radius), nearest first
-    const free = w.ore.filter((o) => !o.building || w.byId(o.building)?.dead).filter((o) => w.buildRadiusOk(this.pid, o.x, o.y)).sort((a, b) => dist(a.x, a.y, hq.x, hq.y) - dist(b.x, b.y, hq.x, hq.y));
+    const free = w.ore.filter((o) => !o.building || w.byId(o.building)?.dead).filter((o) => w.extractorSiteOk(this.pid, o.x, o.y)).sort((a, b) => dist(a.x, a.y, hq.x, hq.y) - dist(b.x, b.y, hq.x, hq.y));
     if (free.length) {
       if (!want(bo.ext)) return;
       for (const o of free) if (w.cmdBuild(this.pid, bo.ext, o.cell).ok) return;

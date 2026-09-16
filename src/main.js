@@ -471,7 +471,7 @@ class Game {
   startBuild(key) {
     this.buildGhost = { key };
     const def = FACTIONS[this.world.players[this.viewer].faction].buildings[key];
-    this.hud.setMode(def.onOre ? 'BUILD: tap an ore vein' : def.onPoint ? 'BUILD: tap a captured point' : `BUILD: tap where to place ${def.name}`);
+    this.hud.setMode(def.onOre ? 'BUILD: tap a vein near your base or a held point' : def.onPoint ? 'BUILD: tap a captured point' : `BUILD: tap where to place ${def.name}`);
     this.audio.play('ui');
   }
   placeGhost(wx, wy, confirmIfSame) {

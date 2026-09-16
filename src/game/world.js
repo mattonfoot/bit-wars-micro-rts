@@ -9,6 +9,7 @@ import { clamp, dist, angleTo, angleDiff, lerpAngle, TAU } from '../engine/math.
 
 export const TICK = 1 / 60;
 const VISION_INTERVAL = 6;
+const POINT_ORE_RADIUS = 12; // tiles: a held strategic point lets extractors be built on the veins around it
 const TRAVERSE_RATE = 0.6; // radians per second for arc-limited weapons: a full about-face takes about five seconds, so fast raiders can out-circle a set-up gun
 const NONE = -1;
 
@@ -223,6 +224,11 @@ export class World {
     }
     return false;
   }
+  /** Extractors may also go on any vein near a strategic point the owner holds: capturing the ground claims the ore around it. */
+  extractorSiteOk(owner, x, y) {
+    if (this.buildRadiusOk(owner, x, y)) return true;
+    return this.points.some((pt) => pt.owner === owner && dist(x, y, pt.x, pt.y) <= POINT_ORE_RADIUS * TILE);
+  }
   canPlace(owner, key, cell) {
     const def = this.faction(owner).buildings[key];
     if (!def || def.hq) return { ok: false, reason: 'Cannot build that' };
@@ -251,7 +257,8 @@ export class World {
       if (!this.explored(owner, cell)) return { ok: false, reason: 'Unexplored' };
     }
     const [x, y] = this.grid.center(cell);
-    if (!this.buildRadiusOk(owner, x, y)) return { ok: false, reason: 'Too far from your structures' };
+    if (def.onOre) { if (!this.extractorSiteOk(owner, x, y)) return { ok: false, reason: 'Too far: capture a point near this vein first' }; }
+    else if (!this.buildRadiusOk(owner, x, y)) return { ok: false, reason: 'Too far from your structures' };
     return { ok: true };
   }
 

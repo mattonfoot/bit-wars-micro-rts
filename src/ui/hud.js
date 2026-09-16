@@ -184,7 +184,7 @@ export class HUD {
         cmd.appendChild(el);
       }
       if (gh?.key && gh.cell !== undefined) cmd.appendChild(this.btn(gh.ok ? ico('check', 14) + ' Confirm placement' : ico('close', 14) + ' ' + (gh.reason || 'Invalid'), () => g.confirmBuild(), 'wide ' + (gh.ok ? 'on' : 'dis')));
-      else if (gh?.key) { const h = document.createElement('div'); h.className = 'hint'; h.textContent = f.buildings[gh.key].onOre ? 'Tap an ore vein' : f.buildings[gh.key].onPoint ? 'Tap a captured strategic point' : 'Tap where to build (near your structures)'; cmd.appendChild(h); }
+      else if (gh?.key) { const h = document.createElement('div'); h.className = 'hint'; h.textContent = f.buildings[gh.key].onOre ? 'Tap a vein near your base or a point you hold' : f.buildings[gh.key].onPoint ? 'Tap a captured strategic point' : 'Tap where to build (near your structures)'; cmd.appendChild(h); }
       cmd.appendChild(this.btn('Cancel', () => g.setMode('normal'), 'wide'));
       return;
     }

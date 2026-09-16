@@ -261,4 +261,17 @@ check('Wings over Ash: the target rigs stand clear of the Foundry base and two K
   assert.ok(w.time - t0 < 14, `two wings burn a rig in ${(w.time - t0).toFixed(1)}s`);
 });
 
+check('extractors can be built on veins near a held strategic point, not on veins far from everything', () => {
+  const ch = CAMPAIGNS.blue.chapters[1]; const { w } = start(ch);
+  const hq = w.byId(w.players[0].hqId);
+  const far = w.ore.filter((o) => Math.hypot(o.x - hq.x, o.y - hq.y) > 12 * TILE && !o.building);
+  assert.ok(far.length, 'forward veins exist');
+  const pick = far.map((o) => { const pt = w.points.map((p) => ({ p, d: Math.hypot(p.x - o.x, p.y - o.y) })).sort((a, b) => a.d - b.d)[0]; return { o, pt: pt.p, d: pt.d }; }).filter((x) => x.d <= 12 * TILE)[0];
+  assert.ok(pick, 'a forward vein within 12 tiles of a point');
+  w.players[0].ore = 9999; w.players[0].flux = 9999;
+  assert.equal(w.canPlace(0, 'lode', pick.o.cell).ok, false, 'blocked before the point is held');
+  pick.pt.owner = 0;
+  assert.equal(w.canPlace(0, 'lode', pick.o.cell).ok, true, 'allowed once the nearby point is held');
+});
+
 console.log(`All ${passed} mechanic checks passed`);

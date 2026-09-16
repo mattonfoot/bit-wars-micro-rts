@@ -271,7 +271,7 @@ export class Menu {
             <tr><td>Drag / pinch</td><td>Pan and zoom. Tap the minimap to jump. Use <b>Box</b> to drag-select.</td></tr>
             <tr><td>Mouse</td><td>Left-click/drag selects, right-click commands, wheel zooms. Keys: A attack-move, H hold, S stop, R retreat, B build, Esc cancel, Space jump to last alert.</td></tr>
           </table>
-          <p><b>Economy.</b> <span style="color:#ffe680">Ore</span> comes from extractors built on ore veins. <span style="color:#7fd3ff">Flux</span> comes from <b>strategic points</b>: stand infantry on a point to capture it, fortify it with an outpost to earn more and make it harder to take back.</p>
+          <p><b>Economy.</b> <span style="color:#ffe680">Ore</span> comes from extractors built on ore veins, near your structures or within reach of a strategic point you hold. <span style="color:#7fd3ff">Flux</span> comes from <b>strategic points</b>: stand infantry on a point to capture it, fortify it with an outpost to earn more and make it harder to take back.</p>
           <p><b>Squads.</b> You command squads, not soldiers. <b>Reinforce</b> a bled squad in the field, or <b>attach</b> your hero to it mid-fight. Losing a squad is permanent; losing your HQ is the end.</p>
           <p><b>Cover.</b> Brush, craters and rubble give light cover. Standing behind rocks, walls and ruins gives heavy cover from that side. Blast weapons flatten cover and leave craters. Vehicles ignore cover.</p>
           <p><b>Morale.</b> Sustained fire and casualties drain morale. A <b>broken</b> squad fights at a third of its strength and takes 50% more damage. Flanking does more damage and breaks squads faster. <b>Retreat</b> sprints a squad home to recover.</p>

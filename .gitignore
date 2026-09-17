@@ -155,3 +155,8 @@ ios/App/build/
 ios/App/DerivedData/
 xcuserdata/
 *.xcuserstate
+
+# desktop shell output
+desktop/app/
+desktop/dist/
+desktop/steam_appid.txt

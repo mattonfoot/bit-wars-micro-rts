@@ -67,7 +67,7 @@ export class Menu {
     r.querySelector('#btnHelp').onclick = () => this.go('help');
     if (save) r.querySelector('#btnResume').onclick = () => this.onResume(save);
     const native = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
-    if (native || window.matchMedia('(display-mode: standalone)').matches || navigator.standalone) r.querySelector('#installHint').remove();
+    if (native || window.desktop || window.matchMedia('(display-mode: standalone)').matches || navigator.standalone) r.querySelector('#installHint').remove();
     this.drawTitleBackground();
   }
   /** A fixed Verdant Basin battleground rendered once with the real terrain layer, reused as the title backdrop. */

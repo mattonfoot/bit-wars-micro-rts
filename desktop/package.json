@@ -1,0 +1,44 @@
+{
+  "name": "bit-wars-desktop",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Bit Wars: Micro RTS desktop shell for macOS, Windows and Linux (Steam-ready).",
+  "main": "main.cjs",
+  "scripts": {
+    "sync": "node sync.mjs",
+    "start": "npm run sync && electron .",
+    "dist:mac": "npm run sync && electron-builder --mac",
+    "dist:win": "npm run sync && electron-builder --win",
+    "dist:linux": "npm run sync && electron-builder --linux",
+    "dist": "npm run sync && electron-builder --mac --win --linux"
+  },
+  "devDependencies": {
+    "electron": "^44.4.1",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "com.bitwars.microrts",
+    "productName": "Bit Wars",
+    "copyright": "Copyright © 2026",
+    "directories": { "output": "dist", "buildResources": "build" },
+    "files": ["main.cjs", "preload.cjs", "steam.cjs", "app/**/*"],
+    "asar": true,
+    "artifactName": "BitWars-${version}-${os}-${arch}.${ext}",
+    "publish": null,
+    "asarUnpack": ["node_modules/steamworks.js/**"],
+    "mac": {
+      "category": "public.app-category.strategy-games",
+      "target": [{ "target": "dmg", "arch": ["universal"] }, { "target": "zip", "arch": ["universal"] }],
+      "icon": "build/icon.png",
+      "darkModeSupport": true,
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist"
+    },
+    "dmg": { "contents": [{ "x": 130, "y": 220 }, { "x": 410, "y": 220, "type": "link", "path": "/Applications" }] },
+    "win": { "target": ["nsis", "zip"], "icon": "build/icon.png" },
+    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true },
+    "linux": { "target": ["AppImage", "tar.gz"], "category": "Game", "icon": "build/icon.png" }
+  }
+}

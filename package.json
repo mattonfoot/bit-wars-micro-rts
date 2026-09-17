@@ -18,7 +18,12 @@
     "test:save": "node test/save.test.mjs",
     "test:campaign": "node test/campaign.test.mjs",
     "test:mechanics": "node test/mechanics.test.mjs",
-    "check:chapters": "node tools/chapters-check.mjs"
+    "check:chapters": "node tools/chapters-check.mjs",
+    "desktop": "npm --prefix desktop start",
+    "desktop:mac": "npm --prefix desktop run dist:mac",
+    "desktop:win": "npm --prefix desktop run dist:win",
+    "desktop:linux": "npm --prefix desktop run dist:linux",
+    "check:desktop": "xvfb-run -a node tools/desktop-smoke.mjs"
   },
   "license": "MIT",
   "devDependencies": {

@@ -193,7 +193,7 @@ class Game {
       this.audio.play(won ? 'victory' : 'defeat');
       if (this.campaign) {
         const found = chapterByKey(this.campaign.def.key);
-        if (won) markComplete(found.campaign.faction, found.index);
+        if (won) { markComplete(found.campaign.faction, found.index); window.desktop?.achievement?.(`chapter_${found.chapter.key}`); }
         const next = found.campaign.chapters[found.index + 1];
         setTimeout(() => this.menu.showChapterEnd({
           won, reason: this.campaign.reason, campaign: found.campaign, chapter: found.chapter, index: found.index, time: this.world.time, me: this.world.players[0].stats, enemy: this.enemyStats(), objectives: this.campaign.list(),
@@ -509,9 +509,16 @@ function nativeSetup(game) {
   }
   document.documentElement.classList.add('native');
 }
+// Desktop shell (Electron) integration: saves live in a file via the preload mirror, no service worker, F11 fullscreen.
+function desktopSetup(game) {
+  document.documentElement.classList.add('desktop');
+  window.addEventListener('keydown', (e) => { if (e.key === 'F11') { e.preventDefault(); window.desktop.toggleFullscreen(); } });
+  window.addEventListener('blur', () => { if (game.running && !game.paused) game.openPause(); });
+}
 
 window.addEventListener('load', () => {
   window.game = new Game();
   if (isNative) nativeSetup(window.game);
+  else if (window.desktop) desktopSetup(window.game);
   else if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('./sw.js').catch(() => {});
 });

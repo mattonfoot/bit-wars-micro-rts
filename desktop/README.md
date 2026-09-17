@@ -16,9 +16,21 @@ Windows and Linux, with a dormant Steamworks bridge for a later Steam release.
     npm run dist:win      # NSIS installer and .zip (run on Windows, or on a Mac with Wine)
     npm run dist:linux    # AppImage and tar.gz
 
-Signing: on macOS set `CSC_LINK` and `CSC_KEY_PASSWORD` (Developer ID Application certificate) and
-`APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID` for notarisation; electron-builder picks them up.
-Unsigned builds run locally but Gatekeeper will warn other users.
+### macOS signing and notarisation
+
+A dmg or zip handed out directly, and a build uploaded to Steam, must be signed with a **Developer ID
+Application** certificate. An "Apple Distribution" certificate is for Mac App Store submissions only and will not
+pass Gatekeeper or notarisation for direct distribution. Create the Developer ID certificate in the Apple Developer
+portal (account holder role) and add it to the login keychain; electron-builder then selects it automatically.
+
+    security find-identity -v -p codesigning      # list the identities codesign can see
+
+- "ambiguous (matches ... login.keychain-db and ... System.keychain)": the same certificate is installed twice.
+  Delete one copy in Keychain Access, or pick one by hash: `CSC_NAME=<sha1-hash> npm run dist:mac`.
+- Notarisation: set `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD` and `APPLE_TEAM_ID`; electron-builder uploads and
+  staples the ticket after signing.
+- Unsigned build for local testing only: `CSC_IDENTITY_AUTO_DISCOVERY=false npm run dist:mac`.
+- CI without a keychain: `CSC_LINK` (base64 .p12) and `CSC_KEY_PASSWORD`.
 
 ## Saves
 
